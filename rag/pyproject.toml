@@ -1,0 +1,19 @@
+[project]
+name = "nexus-rag"
+version = "0.1.0"
+description = "NEXUS personal RAG chatbot — Obsidian vault × Qdrant × Groq"
+requires-python = ">=3.11"
+dependencies = [
+    "qdrant-client[fastembed]>=1.14.0",
+    "groq>=0.13.0",
+    "python-frontmatter>=1.1.0",
+    "python-dotenv>=1.0.0",
+    "chainlit>=2.0.0",
+    "watchdog>=6.0.0",
+    "tiktoken>=0.8.0",
+    "rich>=13.0.0",
+    "pypdf>=4.0.0",
+]
+
+[tool.uv]
+package = false

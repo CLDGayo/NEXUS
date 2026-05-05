@@ -162,24 +162,63 @@ Chat UI (Chainlit web app at chat.nexus.gayo-sphere.cloud)
 | Chat UI | Chainlit | Web chat with citations |
 | Package manager | `uv` | Fast Python dependency management |
 
-**Source files (to be built):**
+**Source files:**
 ```
 rag/
 ├── ingest.py       Scan vault → chunk → embed → upsert to Qdrant
-├── query.py        Embed user query → search Qdrant → call Groq → return answer
+├── query.py        Embed user query → search Qdrant → call Groq → stream answer
 ├── chat.py         Chainlit web app (chat interface)
 ├── watcher.py      watchdog daemon — auto-reindex on file changes
 ├── pyproject.toml  uv project config
 └── .env            API keys (gitignored)
 ```
 
+**RAG Commands (run from vault root):**
+```bash
+# Open SSH tunnel to Qdrant on VPS (run once per terminal session)
+ssh -L 6333:127.0.0.1:6333 root@72.62.196.231 -N -f
+
+# Full vault reindex
+cd rag && uv run python ingest.py
+
+# Incremental reindex (only changed files)
+cd rag && uv run python ingest.py --changed
+
+# Single file reindex
+cd rag && uv run python ingest.py --file "06 - Concepts/My Note.md"
+
+# Local chat (dev mode)
+cd rag && uv run chainlit run chat.py --port 8501
+
+# Start file watcher (auto-reindex on save)
+cd rag && uv run python watcher.py
+
+# Full deploy (sync vault + code to VPS, reindex, restart Chainlit)
+./deploy-rag.sh
+```
+
 **Collection name:** `nexus-vault`
 **Chunk strategy:** Split by markdown headers + paragraphs, max 512 tokens, overlap 50 tokens. Metadata per chunk: `file`, `folder`, `tags`, `date_modified`, `wikilinks`.
 
-**Qdrant on VPS:**
-- Run as Docker container on VPS port 6333 (internal only)
-- Optionally expose via `rag.nexus.gayo-sphere.cloud` reverse proxy
-- Or use Qdrant Cloud free tier (1GB, no infra to manage)
+**Qdrant on VPS (already running):**
+- Docker container: `qdrant-nexus` on VPS port 6333 (internal only, `127.0.0.1:6333`)
+- API key: `HOXH_TDp3cs8Nx0dfaw20cXk2XA9z-MQjKX3nCeUAxI`
+- Persistent data at: `/home/nexus-qdrant/storage/`
+- Reverse proxy `qdrant.nexus.gayo-sphere.cloud` → `127.0.0.1:6333` created (needs DNS A record)
+
+**Chainlit on VPS (already running):**
+- systemd service: `nexus-chat` (auto-restarts on reboot)
+- Port: `127.0.0.1:8501`
+- Reverse proxy `chat.nexus.gayo-sphere.cloud` → `127.0.0.1:8501` created (needs DNS A record)
+- Logs: `journalctl -u nexus-chat -f`
+- Restart: `systemctl restart nexus-chat`
+
+**Two manual steps remaining:**
+1. Add your `GROQ_API_KEY` to `rag/.env` and `/home/nexus-rag/.env` on VPS
+2. Point DNS A records for `chat.nexus.gayo-sphere.cloud` and `qdrant.nexus.gayo-sphere.cloud` → `72.62.196.231`, then run:
+   ```bash
+   ssh root@72.62.196.231 "clpctl lets-encrypt:install:certificate --domainName=chat.nexus.gayo-sphere.cloud"
+   ```
 
 **Groq models available:**
 - `llama-3.3-70b-versatile` — best quality (recommended for RAG)
