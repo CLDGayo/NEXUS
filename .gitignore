@@ -1,0 +1,16 @@
+# Secrets
+rag/.env
+**/.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+rag/.venv/
+
+# Quartz build output
+_publish/node_modules/
+_publish/public/
+
+# macOS
+.DS_Store
