@@ -342,20 +342,82 @@ async function renderDashboard(el) {
 // ─────────────────────────────────────────────
 // Documents
 // ─────────────────────────────────────────────
+const PARA_FOLDERS = [
+  '00 - Inbox', '01 - Projects', '02 - Areas', '03 - Resources',
+  '04 - Archive', '05 - Daily Notes', '06 - Concepts', '07 - Entities',
+];
+
 let _docsPage = 1;
 let _docsSearch = '';
 let _docsContainer = null;
+let _docsFolderFilter = '';
+let _docsStatusFilter = '';
+let _docsLastItems = [];
+let _docsLastTotal = 0;
+let _docsLastPages = 1;
+let _lastSyncedAt = Date.now();
+
+function _hash(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  return h;
+}
+
+function _mockStatus(path) {
+  const r = _hash(path) % 100;
+  if (r < 85) return 'indexed';
+  if (r < 95) return 'pending';
+  return 'failed';
+}
+
+function _mockChunkCount(path) {
+  const status = _mockStatus(path);
+  if (status === 'failed') return 0;
+  return (_hash(path + ':chunks') % 24) + 1;
+}
+
+function _mockTokens(path) {
+  const chunks = _mockChunkCount(path);
+  const jitter = (_hash(path + ':tok') % 120) - 60;
+  return chunks * 340 + jitter;
+}
+
+const STATUS_LABELS = {
+  indexed: '✅ Indexed',
+  pending: '⏳ Pending',
+  failed: '❌ Failed',
+};
 
 async function renderDocuments(el) {
   _docsContainer = el;
   _docsPage = 1;
   _docsSearch = '';
+  _docsFolderFilter = '';
+  _docsStatusFilter = '';
+
+  const folderOptions = ['<option value="">All folders</option>']
+    .concat(PARA_FOLDERS.map(f => `<option value="${esc(f)}">${esc(f)}</option>`))
+    .join('');
+  const statusOptions = `
+    <option value="">All statuses</option>
+    <option value="indexed">✅ Indexed</option>
+    <option value="pending">⏳ Pending</option>
+    <option value="failed">❌ Failed</option>
+  `;
 
   el.innerHTML = `
-    <div class="docs-header">
-      <span class="docs-title">Vault Documents</span>
+    <div class="docs-actionbar">
       <input class="search-input" id="doc-search" placeholder="Search by title, folder, tag…" value="">
+      <div class="docs-filter-group">
+        <select class="docs-filter" id="doc-folder-filter">${folderOptions}</select>
+        <select class="docs-filter" id="doc-status-filter">${statusOptions}</select>
+      </div>
+      <button class="docs-sync-btn" id="doc-sync-btn">🔄 Force Vault Sync</button>
     </div>
+    <div class="docs-summary" id="docs-summary"></div>
     <div id="docs-body"><div class="loading"><div class="spinner"></div>Loading…</div></div>
   `;
 
@@ -368,6 +430,18 @@ async function renderDocuments(el) {
       await _loadDocs();
     }, 280)
   );
+
+  document.getElementById('doc-folder-filter').addEventListener('change', e => {
+    _docsFolderFilter = e.target.value;
+    _renderDocsTable();
+  });
+
+  document.getElementById('doc-status-filter').addEventListener('change', e => {
+    _docsStatusFilter = e.target.value;
+    _renderDocsTable();
+  });
+
+  document.getElementById('doc-sync-btn').addEventListener('click', _forceVaultSync);
 }
 
 async function _loadDocs() {
@@ -378,20 +452,69 @@ async function _loadDocs() {
   const data = await API.get(`/documents?${params}`);
   if (!data) return;
 
-  const rows = data.items.length
-    ? data.items.map(d => `
-        <tr>
-          <td>${esc(d.title)}</td>
-          <td><span class="folder-badge">${esc(d.folder)}</span></td>
-          <td>${(d.tags || []).slice(0, 4).map(t => `<span class="tag-chip">${esc(t)}</span>`).join('')}</td>
-          <td style="color:var(--text-muted);font-size:12px">${fmtDate(d.modified)}</td>
-        </tr>
-      `).join('')
-    : '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:28px">No documents found</td></tr>';
+  _docsLastItems = data.items || [];
+  _docsLastTotal = data.total || 0;
+  _docsLastPages = data.pages || 1;
+  _renderSummary();
+  _renderDocsTable();
+}
+
+function _renderSummary() {
+  const summary = document.getElementById('docs-summary');
+  if (!summary) return;
+
+  const totalNotes = _docsLastTotal;
+  const totalChunks = Math.round(totalNotes * 6.2);
+  const lastSync = new Date(_lastSyncedAt).toLocaleString();
+
+  summary.innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Total Notes</div>
+      <div class="metric-value">${totalNotes.toLocaleString()}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total Vector Chunks</div>
+      <div class="metric-value">${totalChunks.toLocaleString()}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Last Sync Time</div>
+      <div class="metric-value small">${esc(lastSync)}</div>
+    </div>
+  `;
+}
+
+function _renderDocsTable() {
+  const body = document.getElementById('docs-body');
+  if (!body) return;
+
+  const filtered = _docsLastItems.filter(d => {
+    if (_docsFolderFilter && d.folder !== _docsFolderFilter) return false;
+    if (_docsStatusFilter && _mockStatus(d.path) !== _docsStatusFilter) return false;
+    return true;
+  });
+
+  const rows = filtered.length
+    ? filtered.map(d => {
+        const status = _mockStatus(d.path);
+        const chunks = _mockChunkCount(d.path);
+        const tokens = _mockTokens(d.path);
+        return `
+          <tr data-path="${esc(d.path)}" onclick="_openDocDrawer('${esc(d.path).replace(/'/g, "\\'")}')">
+            <td>${esc(d.title)}</td>
+            <td><span class="folder-badge">${esc(d.folder)}</span></td>
+            <td><span class="status-pill ${status}">${STATUS_LABELS[status]}</span></td>
+            <td class="num">${chunks}</td>
+            <td class="num">${tokens.toLocaleString()}</td>
+            <td>${(d.tags || []).slice(0, 4).map(t => `<span class="tag-chip">${esc(t)}</span>`).join('')}</td>
+            <td style="color:var(--text-muted);font-size:12px">${fmtDate(d.modified)}</td>
+          </tr>
+        `;
+      }).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:28px">No documents match the current filters</td></tr>';
 
   let pagination = '';
-  if (data.pages > 1) {
-    const btns = Array.from({ length: data.pages }, (_, i) => {
+  if (_docsLastPages > 1) {
+    const btns = Array.from({ length: _docsLastPages }, (_, i) => {
       const pg = i + 1;
       return `<button class="page-btn ${pg === _docsPage ? 'active' : ''}"
         onclick="_docsPage=${pg};_loadDocs()">${pg}</button>`;
@@ -401,11 +524,123 @@ async function _loadDocs() {
 
   body.innerHTML = `
     <table class="docs-table">
-      <thead><tr><th>Title</th><th>Folder</th><th>Tags</th><th>Modified</th></tr></thead>
+      <thead><tr>
+        <th>Title</th><th>Folder</th><th>Vector Status</th>
+        <th style="text-align:right">Chunks</th><th style="text-align:right">Est. Tokens</th>
+        <th>Tags</th><th>Modified</th>
+      </tr></thead>
       <tbody>${rows}</tbody>
     </table>
     ${pagination}
   `;
+}
+
+function _forceVaultSync() {
+  const btn = document.getElementById('doc-sync-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Syncing…';
+  setTimeout(() => {
+    _lastSyncedAt = Date.now();
+    _renderSummary();
+    btn.disabled = false;
+    btn.textContent = '🔄 Force Vault Sync';
+    alert('Vault sync started (mock). Real ingest wiring is a follow-up.');
+  }, 800);
+}
+
+function _openDocDrawer(path) {
+  const doc = _docsLastItems.find(d => d.path === path);
+  if (!doc) return;
+
+  const status = _mockStatus(path);
+  const chunkCount = _mockChunkCount(path);
+  const tokens = _mockTokens(path);
+
+  const chunkRows = chunkCount === 0
+    ? '<tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:14px">No chunks (status: failed)</td></tr>'
+    : Array.from({ length: chunkCount }, (_, i) => {
+        const chunkTokens = Math.round(tokens / chunkCount) + ((_hash(path + ':' + i) % 40) - 20);
+        return `
+          <tr>
+            <td class="num">${i + 1}</td>
+            <td class="num">${chunkTokens}</td>
+            <td style="color:var(--text-muted)">Lorem ipsum chunk preview placeholder…</td>
+          </tr>
+        `;
+      }).join('');
+
+  const tagsHtml = (doc.tags || []).map(t => `<span class="tag-chip">${esc(t)}</span>`).join(' ') || '<span style="color:var(--text-muted)">—</span>';
+
+  const html = `
+    <div class="drawer-backdrop open" onclick="_closeDocDrawer()"></div>
+    <aside class="doc-drawer open" onclick="event.stopPropagation()">
+      <div class="drawer-header">
+        <div class="drawer-title">${esc(doc.title)}</div>
+        <button class="drawer-close" onclick="_closeDocDrawer()" aria-label="Close">×</button>
+      </div>
+      <div class="drawer-body">
+        <div class="drawer-section">
+          <div class="drawer-section-title">Note Metadata</div>
+          <div class="drawer-meta-row">
+            <span class="drawer-meta-label">Path</span>
+            <span class="drawer-meta-value" style="font-family:'SF Mono',monospace;font-size:11px">${esc(doc.path)}</span>
+          </div>
+          <div class="drawer-meta-row">
+            <span class="drawer-meta-label">Folder</span>
+            <span class="drawer-meta-value">${esc(doc.folder)}</span>
+          </div>
+          <div class="drawer-meta-row">
+            <span class="drawer-meta-label">Modified</span>
+            <span class="drawer-meta-value">${fmtDate(doc.modified)}</span>
+          </div>
+          <div class="drawer-meta-row">
+            <span class="drawer-meta-label">Vector Status</span>
+            <span class="status-pill ${status}">${STATUS_LABELS[status]}</span>
+          </div>
+          <div class="drawer-meta-row">
+            <span class="drawer-meta-label">Tags</span>
+            <span class="drawer-meta-value">${tagsHtml}</span>
+          </div>
+        </div>
+
+        <div class="drawer-section">
+          <div class="drawer-section-title">Raw Markdown</div>
+          <div class="drawer-raw">Not yet available — backend endpoint pending.</div>
+        </div>
+
+        <div class="drawer-section">
+          <div class="drawer-section-title">Chunks (${chunkCount})</div>
+          <table class="chunks-table">
+            <thead><tr><th style="text-align:right">#</th><th style="text-align:right">Tokens</th><th>Preview</th></tr></thead>
+            <tbody>${chunkRows}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <button class="btn-danger" onclick="_deleteFromVectorDb('${esc(path).replace(/'/g, "\\'")}')">Delete from Vector DB</button>
+      </div>
+    </aside>
+  `;
+
+  let host = document.getElementById('doc-drawer-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'doc-drawer-host';
+    document.body.appendChild(host);
+  }
+  host.innerHTML = html;
+}
+
+function _closeDocDrawer() {
+  const host = document.getElementById('doc-drawer-host');
+  if (host) host.innerHTML = '';
+}
+
+function _deleteFromVectorDb(path) {
+  if (!confirm(`Delete "${path}" from the vector DB? (mock — no action taken)`)) return;
+  _closeDocDrawer();
+  alert('Mock delete — real Qdrant wiring is a follow-up.');
 }
 
 // ─────────────────────────────────────────────

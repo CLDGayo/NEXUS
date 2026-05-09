@@ -1,0 +1,313 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: NEXUS
+        - generic [ref=e6]: Knowledge Base
+      - navigation [ref=e7]:
+        - link "Dashboard" [ref=e8] [cursor=pointer]:
+          - /url: "#dashboard"
+          - img [ref=e9]
+          - text: Dashboard
+        - link "Documents" [ref=e14] [cursor=pointer]:
+          - /url: "#documents"
+          - img [ref=e15]
+          - text: Documents
+        - link "Chat" [ref=e18] [cursor=pointer]:
+          - /url: "#chat"
+          - img [ref=e19]
+          - text: Chat
+        - link "Conversations" [ref=e21] [cursor=pointer]:
+          - /url: "#conversations"
+          - img [ref=e22]
+          - text: Conversations
+        - link "Logs" [ref=e24] [cursor=pointer]:
+          - /url: "#logs"
+          - img [ref=e25]
+          - text: Logs
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - generic [ref=e28]: C
+          - generic [ref=e29]:
+            - generic [ref=e30]: Clarence
+            - generic [ref=e31]: Admin
+        - button "Sign Out" [ref=e32] [cursor=pointer]
+    - main [ref=e33]:
+      - generic [ref=e34]:
+        - heading "Documents" [level=1] [ref=e59]
+        - generic [ref=e36]: System Active
+      - generic [ref=e38]:
+        - generic [ref=e60]:
+          - textbox "Search by title, folder, tag…" [ref=e61]
+          - generic [ref=e62]:
+            - combobox [ref=e63] [cursor=pointer]:
+              - option "All folders" [selected]
+              - option "00 - Inbox"
+              - option "01 - Projects"
+              - option "02 - Areas"
+              - option "03 - Resources"
+              - option "04 - Archive"
+              - option "05 - Daily Notes"
+              - option "06 - Concepts"
+              - option "07 - Entities"
+            - combobox [ref=e64] [cursor=pointer]:
+              - option "All statuses" [selected]
+              - option "✅ Indexed"
+              - option "⏳ Pending"
+              - option "❌ Failed"
+          - button "🔄 Force Vault Sync" [ref=e65] [cursor=pointer]
+        - generic [ref=e66]:
+          - generic [ref=e67]:
+            - generic [ref=e68]: Total Notes
+            - generic [ref=e69]: "9"
+          - generic [ref=e70]:
+            - generic [ref=e71]: Total Vector Chunks
+            - generic [ref=e72]: "56"
+          - generic [ref=e73]:
+            - generic [ref=e74]: Last Sync Time
+            - generic [ref=e75]: 5/9/2026, 2:22:29 PM
+        - table [ref=e77]:
+          - rowgroup [ref=e78]:
+            - row "Title Folder Vector Status Chunks Est. Tokens Tags Modified" [ref=e79]:
+              - columnheader "Title" [ref=e80]
+              - columnheader "Folder" [ref=e81]
+              - columnheader "Vector Status" [ref=e82]
+              - columnheader "Chunks" [ref=e83]
+              - columnheader "Est. Tokens" [ref=e84]
+              - columnheader "Tags" [ref=e85]
+              - columnheader "Modified" [ref=e86]
+          - rowgroup [ref=e87]:
+            - row "Clarence Portfolio Site 01 - Projects ✅ Indexed 21 7,198 project web portfolio active 5/5/2026, 9:45:03 PM" [ref=e88] [cursor=pointer]:
+              - cell "Clarence Portfolio Site" [ref=e89]
+              - cell "01 - Projects" [ref=e90]:
+                - generic [ref=e91]: 01 - Projects
+              - cell "✅ Indexed" [ref=e92]:
+                - generic [ref=e93]: ✅ Indexed
+              - cell "21" [ref=e94]
+              - cell "7,198" [ref=e95]
+              - cell "project web portfolio active" [ref=e96]:
+                - generic [ref=e97]: project
+                - generic [ref=e98]: web
+                - generic [ref=e99]: portfolio
+                - generic [ref=e100]: active
+              - cell "5/5/2026, 9:45:03 PM" [ref=e101]
+            - row "2026-05-05 05 - Daily Notes ✅ Indexed 15 5,053 daily-note 5/5/2026, 9:45:45 PM" [ref=e102] [cursor=pointer]:
+              - cell "2026-05-05" [ref=e103]
+              - cell "05 - Daily Notes" [ref=e104]:
+                - generic [ref=e105]: 05 - Daily Notes
+              - cell "✅ Indexed" [ref=e106]:
+                - generic [ref=e107]: ✅ Indexed
+              - cell "15" [ref=e108]
+              - cell "5,053" [ref=e109]
+              - cell "daily-note" [ref=e110]:
+                - generic [ref=e111]: daily-note
+              - cell "5/5/2026, 9:45:45 PM" [ref=e112]
+            - row "GSAP Puppeteer Verification Workaround 06 - Concepts ✅ Indexed 22 7,444 concept gsap puppeteer testing 5/5/2026, 9:45:33 PM" [ref=e113] [cursor=pointer]:
+              - cell "GSAP Puppeteer Verification Workaround" [ref=e114]
+              - cell "06 - Concepts" [ref=e115]:
+                - generic [ref=e116]: 06 - Concepts
+              - cell "✅ Indexed" [ref=e117]:
+                - generic [ref=e118]: ✅ Indexed
+              - cell "22" [ref=e119]
+              - cell "7,444" [ref=e120]
+              - cell "concept gsap puppeteer testing" [ref=e121]:
+                - generic [ref=e122]: concept
+                - generic [ref=e123]: gsap
+                - generic [ref=e124]: puppeteer
+                - generic [ref=e125]: testing
+              - cell "5/5/2026, 9:45:33 PM" [ref=e126]
+            - row "Theme-Aware CSS Variables 06 - Concepts ✅ Indexed 1 338 concept css dark-mode theming 5/5/2026, 9:45:27 PM" [ref=e127] [cursor=pointer]:
+              - cell "Theme-Aware CSS Variables" [ref=e128]
+              - cell "06 - Concepts" [ref=e129]:
+                - generic [ref=e130]: 06 - Concepts
+              - cell "✅ Indexed" [ref=e131]:
+                - generic [ref=e132]: ✅ Indexed
+              - cell "1" [ref=e133]
+              - cell "338" [ref=e134]
+              - cell "concept css dark-mode theming" [ref=e135]:
+                - generic [ref=e136]: concept
+                - generic [ref=e137]: css
+                - generic [ref=e138]: dark-mode
+                - generic [ref=e139]: theming
+              - cell "5/5/2026, 9:45:27 PM" [ref=e140]
+            - row "GayoWordpress-VPS 07 - Entities ✅ Indexed 17 5,800 entity tool infrastructure vps 5/5/2026, 9:45:39 PM" [ref=e141] [cursor=pointer]:
+              - cell "GayoWordpress-VPS" [ref=e142]
+              - cell "07 - Entities" [ref=e143]:
+                - generic [ref=e144]: 07 - Entities
+              - cell "✅ Indexed" [ref=e145]:
+                - generic [ref=e146]: ✅ Indexed
+              - cell "17" [ref=e147]
+              - cell "5,800" [ref=e148]
+              - cell "entity tool infrastructure vps" [ref=e149]:
+                - generic [ref=e150]: entity
+                - generic [ref=e151]: tool
+                - generic [ref=e152]: infrastructure
+                - generic [ref=e153]: vps
+              - cell "5/5/2026, 9:45:39 PM" [ref=e154]
+            - row "CLAUDE / ✅ Indexed 17 5,784 5/6/2026, 12:13:10 AM" [ref=e155] [cursor=pointer]:
+              - cell "CLAUDE" [ref=e156]
+              - cell / [ref=e157]:
+                - generic [ref=e158]: /
+              - cell "✅ Indexed" [ref=e159]:
+                - generic [ref=e160]: ✅ Indexed
+              - cell "17" [ref=e161]
+              - cell "5,784" [ref=e162]
+              - cell [ref=e163]
+              - cell "5/6/2026, 12:13:10 AM" [ref=e164]
+            - 'row "Dev Log: Clarence Portfolio Site — 2026-05-05 Dev Logs ✅ Indexed 1 380 dev-log portfolio css gsap 5/5/2026, 9:45:18 PM" [ref=e165] [cursor=pointer]':
+              - 'cell "Dev Log: Clarence Portfolio Site — 2026-05-05" [ref=e166]'
+              - cell "Dev Logs" [ref=e167]:
+                - generic [ref=e168]: Dev Logs
+              - cell "✅ Indexed" [ref=e169]:
+                - generic [ref=e170]: ✅ Indexed
+              - cell "1" [ref=e171]
+              - cell "380" [ref=e172]
+              - cell "dev-log portfolio css gsap" [ref=e173]:
+                - generic [ref=e174]: dev-log
+                - generic [ref=e175]: portfolio
+                - generic [ref=e176]: css
+                - generic [ref=e177]: gsap
+              - cell "5/5/2026, 9:45:18 PM" [ref=e178]
+            - row "README / ✅ Indexed 9 3,000 5/5/2026, 11:48:29 PM" [ref=e179] [cursor=pointer]:
+              - cell "README" [ref=e180]
+              - cell / [ref=e181]:
+                - generic [ref=e182]: /
+              - cell "✅ Indexed" [ref=e183]:
+                - generic [ref=e184]: ✅ Indexed
+              - cell "9" [ref=e185]
+              - cell "3,000" [ref=e186]
+              - cell [ref=e187]
+              - cell "5/5/2026, 11:48:29 PM" [ref=e188]
+            - row "NEXUS / ✅ Indexed 17 5,728 5/5/2026, 6:23:04 PM" [ref=e189] [cursor=pointer]:
+              - cell "NEXUS" [ref=e190]
+              - cell / [ref=e191]:
+                - generic [ref=e192]: /
+              - cell "✅ Indexed" [ref=e193]:
+                - generic [ref=e194]: ✅ Indexed
+              - cell "17" [ref=e195]
+              - cell "5,728" [ref=e196]
+              - cell [ref=e197]
+              - cell "5/5/2026, 6:23:04 PM" [ref=e198]
+  - complementary [ref=e201]:
+    - generic [ref=e202]:
+      - generic [ref=e203]: Clarence Portfolio Site
+      - button "Close" [ref=e204] [cursor=pointer]: ×
+    - generic [ref=e205]:
+      - generic [ref=e206]:
+        - generic [ref=e207]: Note Metadata
+        - generic [ref=e208]:
+          - generic [ref=e209]: Path
+          - generic [ref=e210]: 01 - Projects/Clarence Portfolio Site.md
+        - generic [ref=e211]:
+          - generic [ref=e212]: Folder
+          - generic [ref=e213]: 01 - Projects
+        - generic [ref=e214]:
+          - generic [ref=e215]: Modified
+          - generic [ref=e216]: 5/5/2026, 9:45:03 PM
+        - generic [ref=e217]:
+          - generic [ref=e218]: Vector Status
+          - generic [ref=e219]: ✅ Indexed
+        - generic [ref=e220]:
+          - generic [ref=e221]: Tags
+          - generic [ref=e222]:
+            - generic [ref=e223]: project
+            - generic [ref=e224]: web
+            - generic [ref=e225]: portfolio
+            - generic [ref=e226]: active
+      - generic [ref=e227]:
+        - generic [ref=e228]: Raw Markdown
+        - generic [ref=e229]: Not yet available — backend endpoint pending.
+      - generic [ref=e230]:
+        - generic [ref=e231]: Chunks (21)
+        - table [ref=e232]:
+          - rowgroup [ref=e233]:
+            - row "# Tokens Preview" [ref=e234]:
+              - columnheader "#" [ref=e235]
+              - columnheader "Tokens" [ref=e236]
+              - columnheader "Preview" [ref=e237]
+          - rowgroup [ref=e238]:
+            - row "1 339 Lorem ipsum chunk preview placeholder…" [ref=e239]:
+              - cell "1" [ref=e240]
+              - cell "339" [ref=e241]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e242]
+            - row "2 359 Lorem ipsum chunk preview placeholder…" [ref=e243]:
+              - cell "2" [ref=e244]
+              - cell "359" [ref=e245]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e246]
+            - row "3 337 Lorem ipsum chunk preview placeholder…" [ref=e247]:
+              - cell "3" [ref=e248]
+              - cell "337" [ref=e249]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e250]
+            - row "4 355 Lorem ipsum chunk preview placeholder…" [ref=e251]:
+              - cell "4" [ref=e252]
+              - cell "355" [ref=e253]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e254]
+            - row "5 335 Lorem ipsum chunk preview placeholder…" [ref=e255]:
+              - cell "5" [ref=e256]
+              - cell "335" [ref=e257]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e258]
+            - row "6 355 Lorem ipsum chunk preview placeholder…" [ref=e259]:
+              - cell "6" [ref=e260]
+              - cell "355" [ref=e261]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e262]
+            - row "7 333 Lorem ipsum chunk preview placeholder…" [ref=e263]:
+              - cell "7" [ref=e264]
+              - cell "333" [ref=e265]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e266]
+            - row "8 351 Lorem ipsum chunk preview placeholder…" [ref=e267]:
+              - cell "8" [ref=e268]
+              - cell "351" [ref=e269]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e270]
+            - row "9 331 Lorem ipsum chunk preview placeholder…" [ref=e271]:
+              - cell "9" [ref=e272]
+              - cell "331" [ref=e273]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e274]
+            - row "10 351 Lorem ipsum chunk preview placeholder…" [ref=e275]:
+              - cell "10" [ref=e276]
+              - cell "351" [ref=e277]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e278]
+            - row "11 327 Lorem ipsum chunk preview placeholder…" [ref=e279]:
+              - cell "11" [ref=e280]
+              - cell "327" [ref=e281]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e282]
+            - row "12 347 Lorem ipsum chunk preview placeholder…" [ref=e283]:
+              - cell "12" [ref=e284]
+              - cell "347" [ref=e285]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e286]
+            - row "13 325 Lorem ipsum chunk preview placeholder…" [ref=e287]:
+              - cell "13" [ref=e288]
+              - cell "325" [ref=e289]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e290]
+            - row "14 343 Lorem ipsum chunk preview placeholder…" [ref=e291]:
+              - cell "14" [ref=e292]
+              - cell "343" [ref=e293]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e294]
+            - row "15 331 Lorem ipsum chunk preview placeholder…" [ref=e295]:
+              - cell "15" [ref=e296]
+              - cell "331" [ref=e297]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e298]
+            - row "16 351 Lorem ipsum chunk preview placeholder…" [ref=e299]:
+              - cell "16" [ref=e300]
+              - cell "351" [ref=e301]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e302]
+            - row "17 329 Lorem ipsum chunk preview placeholder…" [ref=e303]:
+              - cell "17" [ref=e304]
+              - cell "329" [ref=e305]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e306]
+            - row "18 347 Lorem ipsum chunk preview placeholder…" [ref=e307]:
+              - cell "18" [ref=e308]
+              - cell "347" [ref=e309]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e310]
+            - row "19 359 Lorem ipsum chunk preview placeholder…" [ref=e311]:
+              - cell "19" [ref=e312]
+              - cell "359" [ref=e313]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e314]
+            - row "20 339 Lorem ipsum chunk preview placeholder…" [ref=e315]:
+              - cell "20" [ref=e316]
+              - cell "339" [ref=e317]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e318]
+            - row "21 349 Lorem ipsum chunk preview placeholder…" [ref=e319]:
+              - cell "21" [ref=e320]
+              - cell "349" [ref=e321]
+              - cell "Lorem ipsum chunk preview placeholder…" [ref=e322]
+    - button "Delete from Vector DB" [ref=e324] [cursor=pointer]
