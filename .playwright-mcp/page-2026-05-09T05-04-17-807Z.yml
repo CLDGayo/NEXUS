@@ -1,0 +1,135 @@
+- generic [ref=e9]:
+  - complementary [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]: NEXUS
+      - generic [ref=e13]: Knowledge Base
+    - navigation [ref=e14]:
+      - link "Dashboard" [ref=e15] [cursor=pointer]:
+        - /url: "#dashboard"
+        - img [ref=e16]
+        - text: Dashboard
+      - link "Documents" [ref=e21] [cursor=pointer]:
+        - /url: "#documents"
+        - img [ref=e22]
+        - text: Documents
+      - link "Chat" [ref=e25] [cursor=pointer]:
+        - /url: "#chat"
+        - img [ref=e26]
+        - text: Chat
+      - link "Conversations" [ref=e28] [cursor=pointer]:
+        - /url: "#conversations"
+        - img [ref=e29]
+        - text: Conversations
+      - link "Logs" [ref=e31] [cursor=pointer]:
+        - /url: "#logs"
+        - img [ref=e32]
+        - text: Logs
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: C
+        - generic [ref=e36]:
+          - generic [ref=e37]: Clarence
+          - generic [ref=e38]: Admin
+      - button "Sign Out" [ref=e39] [cursor=pointer]
+  - main [ref=e40]:
+    - generic [ref=e41]:
+      - heading "Dashboard" [level=1] [ref=e42]
+      - generic [ref=e43]: System Active
+    - generic [ref=e45]:
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - generic [ref=e49]: Total Obsidian Notes
+          - generic [ref=e50]: "9"
+          - generic [ref=e51]: Markdown files in vault
+        - generic [ref=e52]:
+          - generic [ref=e53]: Indexed Qdrant Chunks
+          - generic [ref=e54]: "0"
+          - generic [ref=e55]: Vectors in nexus-vault
+        - generic [ref=e56]:
+          - generic [ref=e57]: Pending Inbox Items
+          - generic [ref=e58]: "0"
+          - generic [ref=e59]: Files in 00 - Inbox
+        - generic [ref=e60]:
+          - generic [ref=e61]: Avg Retrieval Latency
+          - generic [ref=e62]: 0.85s
+          - generic [ref=e63]: p50 across 24h
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e66]: System Health
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - generic [ref=e69]: Qdrant Vector DB
+              - generic [ref=e70]: "Tip: ssh -L 6333:127.0.0.1:6333 root@72.62.196.231 -N -f"
+            - generic [ref=e71]: Degraded
+          - generic [ref=e72]:
+            - generic [ref=e73]: Groq API
+            - generic [ref=e74]: Active
+          - generic [ref=e75]:
+            - generic [ref=e76]: File Watcher
+            - generic [ref=e77]: Active
+        - generic [ref=e78]:
+          - generic [ref=e79]: Groq Usage (30d)
+          - generic [ref=e80]:
+            - generic [ref=e81]: Total Tokens
+            - generic [ref=e82]: 1,482,500
+          - generic [ref=e83]:
+            - generic [ref=e84]: Estimated Cost
+            - generic [ref=e85]: $11.86
+          - generic [ref=e86]:
+            - generic [ref=e87]: Current Model
+            - generic [ref=e88]: llama-3.3-70b-versatile
+      - generic [ref=e89]:
+        - generic [ref=e91]: Query Volume Over Time (7d)
+        - generic [ref=e95]: Document Ingestion Activity (7d)
+      - generic [ref=e98]:
+        - generic [ref=e99]: Recent Vault Activity
+        - table [ref=e100]:
+          - rowgroup [ref=e101]:
+            - row "Timestamp File Folder Status" [ref=e102]:
+              - columnheader "Timestamp" [ref=e103]
+              - columnheader "File" [ref=e104]
+              - columnheader "Folder" [ref=e105]
+              - columnheader "Status" [ref=e106]
+          - rowgroup [ref=e107]:
+            - row "5/9/2026, 1:50:08 PM Theme-Aware CSS Variables.md 06 - Concepts Indexed" [ref=e108]:
+              - cell "5/9/2026, 1:50:08 PM" [ref=e109]
+              - cell "Theme-Aware CSS Variables.md" [ref=e110]
+              - cell "06 - Concepts" [ref=e111]:
+                - generic [ref=e112]: 06 - Concepts
+              - cell "Indexed" [ref=e113]:
+                - generic [ref=e114]: Indexed
+            - row "5/9/2026, 1:15:08 PM 2026-05-09.md 05 - Daily Notes Indexed" [ref=e115]:
+              - cell "5/9/2026, 1:15:08 PM" [ref=e116]
+              - cell "2026-05-09.md" [ref=e117]
+              - cell "05 - Daily Notes" [ref=e118]:
+                - generic [ref=e119]: 05 - Daily Notes
+              - cell "Indexed" [ref=e120]:
+                - generic [ref=e121]: Indexed
+            - row "5/9/2026, 11:58:08 AM GSAP Puppeteer Verification Workaround.md 06 - Concepts Indexed" [ref=e122]:
+              - cell "5/9/2026, 11:58:08 AM" [ref=e123]
+              - cell "GSAP Puppeteer Verification Workaround.md" [ref=e124]
+              - cell "06 - Concepts" [ref=e125]:
+                - generic [ref=e126]: 06 - Concepts
+              - cell "Indexed" [ref=e127]:
+                - generic [ref=e128]: Indexed
+            - row "5/9/2026, 10:32:08 AM Quick capture — pricing idea.md 00 - Inbox Pending" [ref=e129]:
+              - cell "5/9/2026, 10:32:08 AM" [ref=e130]
+              - cell "Quick capture — pricing idea.md" [ref=e131]
+              - cell "00 - Inbox" [ref=e132]:
+                - generic [ref=e133]: 00 - Inbox
+              - cell "Pending" [ref=e134]:
+                - generic [ref=e135]: Pending
+            - row "5/9/2026, 8:02:08 AM NEXUS RAG Roadmap.md 01 - Projects Indexed" [ref=e136]:
+              - cell "5/9/2026, 8:02:08 AM" [ref=e137]
+              - cell "NEXUS RAG Roadmap.md" [ref=e138]
+              - cell "01 - Projects" [ref=e139]:
+                - generic [ref=e140]: 01 - Projects
+              - cell "Indexed" [ref=e141]:
+                - generic [ref=e142]: Indexed
+            - row "5/8/2026, 2:02:08 PM Anthropic.md 07 - Entities Indexed" [ref=e143]:
+              - cell "5/8/2026, 2:02:08 PM" [ref=e144]
+              - cell "Anthropic.md" [ref=e145]
+              - cell "07 - Entities" [ref=e146]:
+                - generic [ref=e147]: 07 - Entities
+              - cell "Indexed" [ref=e148]:
+                - generic [ref=e149]: Indexed

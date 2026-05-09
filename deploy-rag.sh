@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy NEXUS RAG to VPS — syncs vault + rag code, restarts Chainlit
+# Deploy NEXUS RAG to VPS — syncs vault + rag code, restarts FastAPI app
 set -e
 
 VAULT_ROOT="$(cd "$(dirname "$0")" && pwd)"
@@ -30,7 +30,11 @@ ssh "$VPS" "
   uv run python ingest.py
 "
 
-echo "→ Restarting Chainlit service..."
+echo "→ Restarting NEXUS app service..."
 ssh "$VPS" "systemctl restart nexus-chat && sleep 2 && systemctl is-active nexus-chat"
 
-echo "Done. Chat at https://chat.nexus.gayo-sphere.cloud (once DNS + SSL are set up)"
+echo "Done. App at https://chat.nexus.gayo-sphere.cloud (once DNS + SSL are set up)"
+echo ""
+echo "If deploying for the first time, update the systemd ExecStart on VPS to:"
+echo "  uv run uvicorn app:app --host 127.0.0.1 --port 8501"
+echo "And add NEXUS_PASSWORD + JWT_SECRET to /home/nexus-rag/.env"

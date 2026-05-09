@@ -1,0 +1,53 @@
+- generic [ref=e9]:
+  - complementary [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]: NEXUS
+      - generic [ref=e13]: Knowledge Base
+    - navigation [ref=e14]:
+      - link "Dashboard" [ref=e15] [cursor=pointer]:
+        - /url: "#dashboard"
+        - img [ref=e16]
+        - text: Dashboard
+      - link "Documents" [ref=e21] [cursor=pointer]:
+        - /url: "#documents"
+        - img [ref=e22]
+        - text: Documents
+      - link "Chat" [ref=e25] [cursor=pointer]:
+        - /url: "#chat"
+        - img [ref=e26]
+        - text: Chat
+      - link "Conversations" [ref=e28] [cursor=pointer]:
+        - /url: "#conversations"
+        - img [ref=e29]
+        - text: Conversations
+      - link "Logs" [ref=e31] [cursor=pointer]:
+        - /url: "#logs"
+        - img [ref=e32]
+        - text: Logs
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: C
+        - generic [ref=e36]:
+          - generic [ref=e37]: Clarence
+          - generic [ref=e38]: Admin
+      - button "Sign Out" [ref=e39] [cursor=pointer]
+  - main [ref=e40]:
+    - generic [ref=e41]:
+      - heading "Chat" [level=1] [ref=e42]
+      - generic [ref=e43]: System Degraded
+    - generic [ref=e46]:
+      - generic [ref=e47]:
+        - generic [ref=e48]: Ask questions about your knowledge base
+        - generic [ref=e49]:
+          - button "Get Widget Code" [ref=e50] [cursor=pointer]
+          - button "Clear conversation" [ref=e51] [cursor=pointer]
+      - generic [ref=e53]:
+        - generic [ref=e54]: 💬
+        - generic [ref=e55]: Ask your vault anything
+        - generic [ref=e56]: Your notes, concepts and projects are all searchable.
+      - generic [ref=e57]:
+        - generic [ref=e58]:
+          - textbox "Ask a question about your vault…" [active] [ref=e59]
+          - button [ref=e60] [cursor=pointer]:
+            - img [ref=e61]
+        - generic [ref=e64]: Enter to send · Shift+Enter for new line

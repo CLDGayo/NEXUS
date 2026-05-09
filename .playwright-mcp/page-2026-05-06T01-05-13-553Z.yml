@@ -1,0 +1,124 @@
+- generic [ref=e9]:
+  - complementary [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]: NEXUS
+      - generic [ref=e13]: Knowledge Base
+    - navigation [ref=e14]:
+      - link "Dashboard" [ref=e15] [cursor=pointer]:
+        - /url: "#dashboard"
+        - img [ref=e16]
+        - text: Dashboard
+      - link "Documents" [active] [ref=e21] [cursor=pointer]:
+        - /url: "#documents"
+        - img [ref=e22]
+        - text: Documents
+      - link "Chat" [ref=e25] [cursor=pointer]:
+        - /url: "#chat"
+        - img [ref=e26]
+        - text: Chat
+      - link "Conversations" [ref=e28] [cursor=pointer]:
+        - /url: "#conversations"
+        - img [ref=e29]
+        - text: Conversations
+      - link "Logs" [ref=e31] [cursor=pointer]:
+        - /url: "#logs"
+        - img [ref=e32]
+        - text: Logs
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: C
+        - generic [ref=e36]:
+          - generic [ref=e37]: Clarence
+          - generic [ref=e38]: Admin
+      - button "Sign Out" [ref=e39] [cursor=pointer]
+  - main [ref=e40]:
+    - generic [ref=e41]:
+      - heading "Documents" [level=1] [ref=e83]
+      - generic [ref=e43]: System Degraded
+    - generic [ref=e45]:
+      - generic [ref=e84]:
+        - generic [ref=e85]: Vault Documents
+        - textbox "Search by title, folder, tag…" [ref=e86]
+      - table [ref=e88]:
+        - rowgroup [ref=e89]:
+          - row "Title Folder Tags Modified" [ref=e90]:
+            - columnheader "Title" [ref=e91]
+            - columnheader "Folder" [ref=e92]
+            - columnheader "Tags" [ref=e93]
+            - columnheader "Modified" [ref=e94]
+        - rowgroup [ref=e95]:
+          - row "Clarence Portfolio Site 01 - Projects project web portfolio active 5/5/2026, 9:45:03 PM" [ref=e96]:
+            - cell "Clarence Portfolio Site" [ref=e97]
+            - cell "01 - Projects" [ref=e98]:
+              - generic [ref=e99]: 01 - Projects
+            - cell "project web portfolio active" [ref=e100]:
+              - generic [ref=e101]: project
+              - generic [ref=e102]: web
+              - generic [ref=e103]: portfolio
+              - generic [ref=e104]: active
+            - cell "5/5/2026, 9:45:03 PM" [ref=e105]
+          - row "2026-05-05 05 - Daily Notes daily-note 5/5/2026, 9:45:45 PM" [ref=e106]:
+            - cell "2026-05-05" [ref=e107]
+            - cell "05 - Daily Notes" [ref=e108]:
+              - generic [ref=e109]: 05 - Daily Notes
+            - cell "daily-note" [ref=e110]:
+              - generic [ref=e111]: daily-note
+            - cell "5/5/2026, 9:45:45 PM" [ref=e112]
+          - row "GSAP Puppeteer Verification Workaround 06 - Concepts concept gsap puppeteer testing 5/5/2026, 9:45:33 PM" [ref=e113]:
+            - cell "GSAP Puppeteer Verification Workaround" [ref=e114]
+            - cell "06 - Concepts" [ref=e115]:
+              - generic [ref=e116]: 06 - Concepts
+            - cell "concept gsap puppeteer testing" [ref=e117]:
+              - generic [ref=e118]: concept
+              - generic [ref=e119]: gsap
+              - generic [ref=e120]: puppeteer
+              - generic [ref=e121]: testing
+            - cell "5/5/2026, 9:45:33 PM" [ref=e122]
+          - row "Theme-Aware CSS Variables 06 - Concepts concept css dark-mode theming 5/5/2026, 9:45:27 PM" [ref=e123]:
+            - cell "Theme-Aware CSS Variables" [ref=e124]
+            - cell "06 - Concepts" [ref=e125]:
+              - generic [ref=e126]: 06 - Concepts
+            - cell "concept css dark-mode theming" [ref=e127]:
+              - generic [ref=e128]: concept
+              - generic [ref=e129]: css
+              - generic [ref=e130]: dark-mode
+              - generic [ref=e131]: theming
+            - cell "5/5/2026, 9:45:27 PM" [ref=e132]
+          - row "GayoWordpress-VPS 07 - Entities entity tool infrastructure vps 5/5/2026, 9:45:39 PM" [ref=e133]:
+            - cell "GayoWordpress-VPS" [ref=e134]
+            - cell "07 - Entities" [ref=e135]:
+              - generic [ref=e136]: 07 - Entities
+            - cell "entity tool infrastructure vps" [ref=e137]:
+              - generic [ref=e138]: entity
+              - generic [ref=e139]: tool
+              - generic [ref=e140]: infrastructure
+              - generic [ref=e141]: vps
+            - cell "5/5/2026, 9:45:39 PM" [ref=e142]
+          - row "CLAUDE / 5/6/2026, 12:13:10 AM" [ref=e143]:
+            - cell "CLAUDE" [ref=e144]
+            - cell / [ref=e145]:
+              - generic [ref=e146]: /
+            - cell [ref=e147]
+            - cell "5/6/2026, 12:13:10 AM" [ref=e148]
+          - 'row "Dev Log: Clarence Portfolio Site — 2026-05-05 Dev Logs dev-log portfolio css gsap 5/5/2026, 9:45:18 PM" [ref=e149]':
+            - 'cell "Dev Log: Clarence Portfolio Site — 2026-05-05" [ref=e150]'
+            - cell "Dev Logs" [ref=e151]:
+              - generic [ref=e152]: Dev Logs
+            - cell "dev-log portfolio css gsap" [ref=e153]:
+              - generic [ref=e154]: dev-log
+              - generic [ref=e155]: portfolio
+              - generic [ref=e156]: css
+              - generic [ref=e157]: gsap
+            - cell "5/5/2026, 9:45:18 PM" [ref=e158]
+          - row "README / 5/5/2026, 11:48:29 PM" [ref=e159]:
+            - cell "README" [ref=e160]
+            - cell / [ref=e161]:
+              - generic [ref=e162]: /
+            - cell [ref=e163]
+            - cell "5/5/2026, 11:48:29 PM" [ref=e164]
+          - row "NEXUS / 5/5/2026, 6:23:04 PM" [ref=e165]:
+            - cell "NEXUS" [ref=e166]
+            - cell / [ref=e167]:
+              - generic [ref=e168]: /
+            - cell [ref=e169]
+            - cell "5/5/2026, 6:23:04 PM" [ref=e170]

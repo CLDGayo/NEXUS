@@ -1,0 +1,6 @@
+- generic [ref=e2]:
+  - generic [ref=e3]: NEXUS
+  - generic [ref=e4]: Knowledge Base
+  - generic [ref=e5]:
+    - textbox "Enter password" [active] [ref=e6]: DineroDemetr
+    - button "Sign In" [ref=e7] [cursor=pointer]
