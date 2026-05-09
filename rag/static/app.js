@@ -34,6 +34,17 @@ const API = {
   get: (path) => apiFetch(path),
   post: (path, body) => apiFetch(path, { method: 'POST', body: JSON.stringify(body) }),
   del: (path) => apiFetch(path, { method: 'DELETE' }),
+  upload: async (path, formData) => {
+    const headers = { ...(Auth.token ? { Authorization: `Bearer ${Auth.token}` } : {}) };
+    const res = await fetch(`/api${path}`, { method: 'POST', headers, body: formData });
+    if (res.status === 401) { Auth.clear(); showLogin(); return null; }
+    if (!res.ok) {
+      let detail = res.statusText;
+      try { detail = (await res.json()).detail || detail; } catch (_) { /* ignore */ }
+      throw new Error(detail);
+    }
+    return res.json();
+  },
 };
 
 // ─────────────────────────────────────────────
@@ -409,6 +420,23 @@ async function renderDocuments(el) {
   `;
 
   el.innerHTML = `
+    <section class="docs-upload" data-open="false">
+      <button type="button" class="docs-upload-toggle" id="doc-upload-toggle" aria-expanded="false">
+        <span>📥 Upload New Document</span>
+        <span class="docs-upload-caret">▾</span>
+      </button>
+      <div class="docs-upload-body">
+        <label class="docs-dropzone" for="doc-upload-input" id="doc-dropzone">
+          Drag files here or click to browse — .md, .txt, .pdf (max 50 MB each)
+        </label>
+        <input type="file" id="doc-upload-input" accept=".md,.txt,.pdf" multiple hidden>
+        <div class="docs-upload-staged" id="doc-upload-staged" hidden></div>
+        <div class="docs-upload-actions">
+          <button type="button" class="docs-upload-submit" id="doc-upload-submit" disabled>Process & Index</button>
+        </div>
+        <div class="docs-upload-status" id="doc-upload-status" role="status" aria-live="polite"></div>
+      </div>
+    </section>
     <div class="docs-actionbar">
       <input class="search-input" id="doc-search" placeholder="Search by title, folder, tag…" value="">
       <div class="docs-filter-group">
@@ -422,6 +450,7 @@ async function renderDocuments(el) {
   `;
 
   await _loadDocs();
+  _setupUploadPanel();
 
   document.getElementById('doc-search').addEventListener('input',
     debounce(async e => {
@@ -442,6 +471,223 @@ async function renderDocuments(el) {
   });
 
   document.getElementById('doc-sync-btn').addEventListener('click', _forceVaultSync);
+}
+
+// Each item: { file, state: 'queued'|'running'|'created'|'updated'|'skipped'|'error', payload }
+let _stagedUploadItems = [];
+const UPLOAD_ALLOWED = ['.md', '.txt', '.pdf'];
+const UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
+
+function _formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function _setUploadStatus(text, kind) {
+  const status = document.getElementById('doc-upload-status');
+  if (!status) return;
+  status.textContent = text;
+  status.classList.remove('is-error', 'is-success');
+  if (kind) status.classList.add(kind);
+}
+
+function _validateUploadFile(file) {
+  const ext = (file.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
+  if (!UPLOAD_ALLOWED.includes(ext)) {
+    return `Unsupported file type "${ext || file.name}". Allowed: .md, .txt, .pdf`;
+  }
+  if (file.size > UPLOAD_MAX_BYTES) {
+    return `File exceeds 50 MB limit (${_formatFileSize(file.size)}).`;
+  }
+  return null;
+}
+
+const _UPLOAD_STATE_LABELS = {
+  queued: 'Queued',
+  running: 'Uploading…',
+  created: '✓ Indexed',
+  updated: '↻ Replaced',
+  skipped: '= Identical — skipped',
+  error: '✗ Error',
+};
+
+function _formatRowLabel(item) {
+  const base = _UPLOAD_STATE_LABELS[item.state] || item.state;
+  if ((item.state === 'created' || item.state === 'updated')
+      && item.payload && typeof item.payload.chunks_indexed === 'number') {
+    return `${base} (${item.payload.chunks_indexed} chunks)`;
+  }
+  if (item.state === 'error' && item.payload && item.payload.error) {
+    return `✗ ${item.payload.error}`;
+  }
+  return base;
+}
+
+function _renderStagedUpload() {
+  const staged = document.getElementById('doc-upload-staged');
+  const submit = document.getElementById('doc-upload-submit');
+  if (!staged || !submit) return;
+
+  if (_stagedUploadItems.length === 0) {
+    staged.hidden = true;
+    staged.innerHTML = '';
+    submit.disabled = true;
+    return;
+  }
+
+  const rows = _stagedUploadItems.map((item, i) => `
+    <div class="docs-upload-row" data-state="${esc(item.state)}" data-idx="${i}">
+      <span class="docs-upload-row-name"><strong>${esc(item.file.name)}</strong> <span class="docs-upload-row-size">${_formatFileSize(item.file.size)}</span></span>
+      <span class="docs-upload-row-status">${esc(_formatRowLabel(item))}</span>
+      <a href="#" class="docs-upload-row-remove" data-idx="${i}">Remove</a>
+    </div>
+  `).join('');
+  staged.innerHTML = rows;
+  staged.hidden = false;
+
+  // Submit only meaningful when something is still queued (or after retry of an error).
+  const hasActionable = _stagedUploadItems.some(it => it.state === 'queued' || it.state === 'error');
+  submit.disabled = !hasActionable;
+
+  staged.querySelectorAll('.docs-upload-row-remove').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const idx = Number(e.currentTarget.getAttribute('data-idx'));
+      _stagedUploadItems.splice(idx, 1);
+      _renderStagedUpload();
+    });
+  });
+}
+
+function _stageUploadFiles(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  const errors = [];
+  for (const f of fileList) {
+    const err = _validateUploadFile(f);
+    if (err) {
+      errors.push(`${f.name}: ${err}`);
+      continue;
+    }
+    _stagedUploadItems.push({ file: f, state: 'queued', payload: null });
+  }
+  _setUploadStatus(errors.length ? errors.join(' · ') : '', errors.length ? 'is-error' : null);
+  _renderStagedUpload();
+}
+
+function _clearStagedUpload() {
+  _stagedUploadItems = [];
+  const input = document.getElementById('doc-upload-input');
+  if (input) input.value = '';
+  _renderStagedUpload();
+  _setUploadStatus('', null);
+}
+
+function _setRowState(idx, state, payload) {
+  const item = _stagedUploadItems[idx];
+  if (!item) return;
+  item.state = state;
+  item.payload = payload || null;
+  const row = document.querySelector(`.docs-upload-row[data-idx="${idx}"]`);
+  if (row) {
+    row.setAttribute('data-state', state);
+    const status = row.querySelector('.docs-upload-row-status');
+    if (status) status.textContent = _formatRowLabel(item);
+  }
+}
+
+async function _submitUpload() {
+  // Process only items that haven't completed yet — queued, or errors being retried.
+  const pendingIdxs = _stagedUploadItems
+    .map((it, i) => (it.state === 'queued' || it.state === 'error') ? i : -1)
+    .filter(i => i >= 0);
+  if (pendingIdxs.length === 0) return;
+
+  const submit = document.getElementById('doc-upload-submit');
+  submit.disabled = true;
+  _setUploadStatus(`Processing ${pendingIdxs.length} file(s)…`, null);
+
+  // Disable per-row remove links during processing.
+  document.querySelectorAll('.docs-upload-row-remove').forEach(a => {
+    a.style.pointerEvents = 'none';
+    a.style.opacity = '0.4';
+  });
+
+  const summary = { created: 0, updated: 0, skipped: 0, error: 0 };
+
+  for (const i of pendingIdxs) {
+    const item = _stagedUploadItems[i];
+    if (!item) continue;
+    _setRowState(i, 'running');
+    try {
+      const fd = new FormData();
+      fd.append('file', item.file, item.file.name);
+      const result = await API.upload('/documents/upload', fd);
+      if (!result) return;  // 401 redirected to login
+      const state = result.status || 'created';
+      _setRowState(i, state, result);
+      if (summary[state] !== undefined) summary[state] += 1;
+    } catch (err) {
+      _setRowState(i, 'error', { error: err.message || 'Upload failed' });
+      summary.error += 1;
+    }
+  }
+
+  const parts = [];
+  if (summary.created) parts.push(`${summary.created} created`);
+  if (summary.updated) parts.push(`${summary.updated} updated`);
+  if (summary.skipped) parts.push(`${summary.skipped} skipped`);
+  if (summary.error) parts.push(`${summary.error} failed`);
+  const kind = summary.error ? 'is-error' : 'is-success';
+  _setUploadStatus(parts.join(' · ') || 'Done', kind);
+
+  // Re-render so the submit button + remove links reflect the new states.
+  _renderStagedUpload();
+  await _loadDocs();
+}
+
+function _setupUploadPanel() {
+  const panel = document.querySelector('.docs-upload');
+  const toggle = document.getElementById('doc-upload-toggle');
+  const dropzone = document.getElementById('doc-dropzone');
+  const input = document.getElementById('doc-upload-input');
+  const submit = document.getElementById('doc-upload-submit');
+  if (!panel || !toggle || !dropzone || !input || !submit) return;
+
+  _stagedUploadItems = [];
+
+  toggle.addEventListener('click', () => {
+    const open = panel.getAttribute('data-open') === 'true';
+    panel.setAttribute('data-open', open ? 'false' : 'true');
+    toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
+  });
+
+  input.addEventListener('change', e => {
+    if (e.target.files && e.target.files.length) _stageUploadFiles(e.target.files);
+    e.target.value = '';  // allow re-selecting the same file after a clear
+  });
+
+  ['dragenter', 'dragover'].forEach(ev => {
+    dropzone.addEventListener(ev, e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('is-dragover');
+    });
+  });
+  ['dragleave', 'dragend', 'drop'].forEach(ev => {
+    dropzone.addEventListener(ev, e => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('is-dragover');
+    });
+  });
+  dropzone.addEventListener('drop', e => {
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      _stageUploadFiles(e.dataTransfer.files);
+    }
+  });
+
+  submit.addEventListener('click', _submitUpload);
 }
 
 async function _loadDocs() {

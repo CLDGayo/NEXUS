@@ -178,6 +178,16 @@ def ensure_collection(client: QdrantClient) -> None:
     else:
         console.print(f"[dim]Collection exists:[/dim] {COLLECTION}")
 
+    # Idempotent payload index — required for fast filter-delete by `file`.
+    try:
+        client.create_payload_index(
+            collection_name=COLLECTION,
+            field_name="file",
+            field_schema="keyword",
+        )
+    except Exception:  # noqa: BLE001 — already exists is the common case
+        pass
+
 
 def load_state() -> dict:
     if STATE_FILE.exists():
@@ -240,7 +250,9 @@ def run(changed_only: bool = False, single_file: str | None = None) -> None:
 
     console.print(f"[cyan]Indexing {len(files)} file(s)…[/cyan]")
     console.print(f"[dim]Loading embedding model {EMBED_MODEL}…[/dim]")
-    embedder = TextEmbedding(model_name=EMBED_MODEL)
+    from inbox import FASTEMBED_CACHE_DIR
+    FASTEMBED_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    embedder = TextEmbedding(model_name=EMBED_MODEL, cache_dir=str(FASTEMBED_CACHE_DIR))
 
     state = load_state()
     total_chunks = 0

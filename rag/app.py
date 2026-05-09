@@ -12,7 +12,16 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv()
 
 from database import init_db  # noqa: E402 — must come after load_dotenv
-from routers import auth, chat, conversations, dashboard, documents, health, logs  # noqa: E402
+from routers import (  # noqa: E402
+    auth,
+    chat,
+    conversations,
+    dashboard,
+    documents,
+    health,
+    logs,
+    uploads,
+)
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -38,6 +47,7 @@ app.include_router(health.router,        prefix="/api")
 app.include_router(chat.router,          prefix="/api/chat")
 app.include_router(dashboard.router,     prefix="/api/dashboard")
 app.include_router(documents.router,     prefix="/api")
+app.include_router(uploads.router,       prefix="/api")
 app.include_router(conversations.router, prefix="/api")
 app.include_router(logs.router,          prefix="/api")
 

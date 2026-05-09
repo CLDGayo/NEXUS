@@ -5,77 +5,13 @@ Web-based chat interface for querying your Obsidian vault.
 Run with: chainlit run chat.py --port 8501
 """
 
-import os
-import re
-import unicodedata
-from datetime import datetime
-from pathlib import Path
-
 import chainlit as cl
 from dotenv import load_dotenv
-from fastembed import TextEmbedding
-from pypdf import PdfReader
 
-from ingest import chunks_from_file, ensure_collection, get_client, upsert_batch
+from inbox import VAULT_PATH, extract_pdf_text, index_note, safe_stem, save_to_inbox
 from query import Source, stream_answer
 
 load_dotenv()
-
-VAULT_PATH = Path(os.environ["VAULT_PATH"])
-INBOX = VAULT_PATH / "00 - Inbox"
-
-# Shared embedder — loaded once per process
-_embedder: TextEmbedding | None = None
-
-
-def get_embedder() -> TextEmbedding:
-    global _embedder
-    if _embedder is None:
-        _embedder = TextEmbedding(model_name=os.environ.get("EMBED_MODEL", "BAAI/bge-small-en-v1.5"))
-    return _embedder
-
-
-def safe_stem(name: str) -> str:
-    """Normalise a filename into a safe vault note name."""
-    stem = Path(name).stem
-    stem = unicodedata.normalize("NFKD", stem).encode("ascii", "ignore").decode()
-    stem = re.sub(r"[^\w\s-]", "", stem).strip()
-    return re.sub(r"[\s_]+", " ", stem)
-
-
-def extract_pdf_text(path: str) -> str:
-    reader = PdfReader(path)
-    pages = [page.extract_text() or "" for page in reader.pages]
-    return "\n\n".join(p.strip() for p in pages if p.strip())
-
-
-def save_to_inbox(title: str, content: str, source_filename: str) -> Path:
-    """Write extracted content as a markdown note into 00 - Inbox."""
-    INBOX.mkdir(exist_ok=True)
-    date = datetime.now().strftime("%Y-%m-%d")
-    note_name = f"{date} {title}.md"
-    note_path = INBOX / note_name
-
-    frontmatter = (
-        f"---\n"
-        f"title: {title}\n"
-        f"source: {source_filename}\n"
-        f"date: {date}\n"
-        f"tags: [inbox, pdf-import]\n"
-        f"---\n\n"
-    )
-    note_path.write_text(frontmatter + content, encoding="utf-8")
-    return note_path
-
-
-def index_note(note_path: Path) -> int:
-    """Chunk, embed, and upsert a single note into Qdrant. Returns chunk count."""
-    client = get_client()
-    ensure_collection(client)
-    chunks = chunks_from_file(note_path)
-    if chunks:
-        upsert_batch(client, get_embedder(), chunks)
-    return len(chunks)
 
 
 def format_sources(sources: list[Source]) -> str:
