@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--
+  Minimal Clickhouse user override for self-hosted Langfuse v3.
+  The default user's password is supplied via the CLICKHOUSE_PASSWORD env in
+  docker-compose.yml; this file is intentionally an empty override so the
+  image's default users.xml takes effect. Replace with explicit ACLs when
+  exposing Clickhouse to additional clients.
+-->
+<clickhouse>
+    <users>
+        <default>
+            <access_management>1</access_management>
+            <named_collection_control>1</named_collection_control>
+        </default>
+    </users>
+</clickhouse>

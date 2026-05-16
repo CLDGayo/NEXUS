@@ -12,14 +12,20 @@ from fastapi.staticfiles import StaticFiles
 load_dotenv()
 
 from database import init_db  # noqa: E402 — must come after load_dotenv
+from integrations import dispatcher as integrations_dispatcher  # noqa: E402
 from routers import (  # noqa: E402
+    api_tokens,
     auth,
+    changelog,
     chat,
     conversations,
     dashboard,
     documents,
     health,
+    integrations,
     logs,
+    resources,
+    settings,
     uploads,
 )
 
@@ -29,6 +35,7 @@ STATIC_DIR = Path(__file__).parent / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    integrations_dispatcher.register()
     yield
 
 
@@ -50,6 +57,11 @@ app.include_router(documents.router,     prefix="/api")
 app.include_router(uploads.router,       prefix="/api")
 app.include_router(conversations.router, prefix="/api")
 app.include_router(logs.router,          prefix="/api")
+app.include_router(settings.router,      prefix="/api/settings")
+app.include_router(changelog.router,     prefix="/api/changelog")
+app.include_router(integrations.router,  prefix="/api/integrations")
+app.include_router(api_tokens.router,    prefix="/api/tokens")
+app.include_router(resources.router,     prefix="/api/resources")
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 

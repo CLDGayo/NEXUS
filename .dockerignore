@@ -1,0 +1,80 @@
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Python build / cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.tox
+.venv
+venv
+env
+.python-version
+
+# Project-local virtualenv inside rag/
+rag/.venv
+rag/__pycache__
+rag/.pytest_cache
+rag/.ruff_cache
+
+# Vault content (NOT shipped in the API image — mounted at runtime)
+00 - Inbox
+01 - Projects
+02 - Areas
+03 - Resources
+04 - Archive
+05 - Daily Notes
+06 - Concepts
+07 - Entities
+Dev Logs
+_publish
+.obsidian
+
+# Tooling artifacts / screenshots / large media
+.playwright-mcp
+screenshots
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.mp4
+*.mov
+
+# Local databases / logs / state
+*.db
+*.sqlite*
+*.log
+rag/data/nexus.db
+rag/data/app.log
+rag/.ingest_state.json
+
+# Editor
+.vscode
+.idea
+.DS_Store
+
+# Secrets — NEVER bake into image
+.env
+.env.*
+!.env.example
+rag/.env
+
+# Build/CI
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+.dockerignore
+
+# Docs that don't belong in the runtime image
+README.md
+CHANGELOG.md
+CLAUDE.md
+docs

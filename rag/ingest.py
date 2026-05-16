@@ -27,6 +27,8 @@ from qdrant_client.models import Distance, PointStruct, VectorParams
 from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
+from events import publish_sync
+
 load_dotenv()
 
 console = Console()
@@ -38,11 +40,15 @@ COLLECTION = os.environ.get("QDRANT_COLLECTION", "nexus-vault")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
 VECTOR_SIZE = 384  # bge-small-en-v1.5 output dimension
 
-SKIP_FOLDERS = {"_publish", ".obsidian", ".git", "rag", "node_modules"}
+SKIP_FOLDERS = {"_publish", ".obsidian", ".git", "rag", "node_modules", "04 - Archive"}
 STATE_FILE = Path(__file__).parent / ".ingest_state.json"
 
 CHUNK_SIZE = 400
 CHUNK_OVERLAP = 50
+
+# qdrant-client defaults to a 5s HTTP read timeout — too tight for upserts that
+# travel over the public HTTPS endpoint. Raise it (env-overridable for ops).
+QDRANT_TIMEOUT = int(os.environ.get("QDRANT_TIMEOUT", "60"))
 
 
 # ── Markdown chunker ──────────────────────────────────────────────────────────
@@ -164,7 +170,7 @@ def chunks_from_file(file_path: Path) -> list[dict]:
 # ── Qdrant helpers ─────────────────────────────────────────────────────────────
 
 def get_client() -> QdrantClient:
-    return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=QDRANT_TIMEOUT)
 
 
 def ensure_collection(client: QdrantClient) -> None:
@@ -270,7 +276,17 @@ def run(changed_only: bool = False, single_file: str | None = None) -> None:
 
         for file_path in files:
             progress.update(task, description=f"[dim]{file_path.name}[/dim]")
-            chunks = chunks_from_file(file_path)
+            file_t0 = time.time()
+            try:
+                chunks = chunks_from_file(file_path)
+            except Exception as exc:  # noqa: BLE001
+                publish_sync(
+                    "ingest.failed",
+                    {"file": str(file_path), "error": str(exc)},
+                )
+                state[str(file_path)] = int(file_path.stat().st_mtime)
+                progress.advance(task)
+                continue
 
             if chunks:
                 batch.extend(chunks)
@@ -279,6 +295,16 @@ def run(changed_only: bool = False, single_file: str | None = None) -> None:
                 if len(batch) >= BATCH_SIZE:
                     upsert_batch(client, embedder, batch)
                     batch = []
+
+            publish_sync(
+                "ingest.complete",
+                {
+                    "file": str(file_path.relative_to(VAULT_PATH)),
+                    "chunks": len(chunks),
+                    "status": "indexed" if chunks else "empty",
+                    "duration_ms": int((time.time() - file_t0) * 1000),
+                },
+            )
 
             state[str(file_path)] = int(file_path.stat().st_mtime)
             progress.advance(task)

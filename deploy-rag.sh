@@ -21,6 +21,12 @@ rsync -avz --delete \
   --exclude='.venv/' \
   --exclude='__pycache__/' \
   --exclude='.ingest_state.json' \
+  --exclude='data/.password_override.json' \
+  --exclude='data/nexus.db' \
+  --exclude='data/traces/' \
+  --exclude='data/app.log' \
+  --exclude='.pytest_cache/' \
+  --exclude='auth/' \
   "$VAULT_ROOT/rag/" "$VPS:$VPS_RAG/"
 
 echo "→ Running ingestion pipeline on VPS..."

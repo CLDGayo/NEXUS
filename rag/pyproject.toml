@@ -21,3 +21,10 @@ dependencies = [
 
 [tool.uv]
 package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "unit: fast, isolated unit tests",
+    "integration: tests that exercise multiple modules or mock external services",
+]

@@ -20,3 +20,4 @@ def pytest_configure(config):
     os.environ.setdefault("VAULT_PATH", "/tmp/nexus-test-vault")
     os.environ.setdefault("QDRANT_URL", "http://localhost:6333")
     os.environ.setdefault("QDRANT_COLLECTION", "nexus-vault-test")
+    os.environ.setdefault("GROQ_API_KEY", "test-key")

@@ -8,6 +8,7 @@ VPS_DEST="/home/gayo-sphere-nexus/htdocs/nexus.gayo-sphere.cloud"
 
 echo "Building NEXUS..."
 source ~/.nvm/nvm.sh 2>/dev/null || true
+nvm use 22 >/dev/null 2>&1 || true   # Quartz 4.5+ needs Node >=22
 cd "$VAULT_ROOT/_publish"
 npx quartz build -d ../ --output public
 

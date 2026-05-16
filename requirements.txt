@@ -1,0 +1,37 @@
+# Nexus v2 — Phase 1 chassis dependencies
+# Phases 2+ will incrementally add ML libs (chonkie, docling, transformers,
+# sentence-transformers, rank-bm25, llama-index*, guardrails-ai, uqlm,
+# presidio-analyzer, arize-phoenix, ragas, py-obsidianmd).
+
+# ---- Web framework ----
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-multipart==0.0.18
+
+# ---- Storage clients ----
+qdrant-client[fastembed]==1.12.1
+redis==5.2.0
+asyncpg==0.30.0
+psycopg[binary]==3.2.3
+
+# ---- Orchestration scaffolding (Phase 5+) ----
+langgraph==0.2.59
+langgraph-checkpoint-postgres==2.0.7
+
+# ---- Observability ----
+langfuse==2.55.0
+opentelemetry-api==1.28.2
+opentelemetry-sdk==1.28.2
+opentelemetry-exporter-otlp==1.28.2
+opentelemetry-instrumentation-fastapi==0.49b2
+
+# ---- LLM gateway client (proxy itself runs in its own container) ----
+litellm==1.55.3
+httpx==0.28.0
+
+# ---- Ops ----
+python-dotenv==1.0.1
+structlog==24.4.0
+tenacity==9.0.0

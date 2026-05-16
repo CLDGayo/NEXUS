@@ -1,0 +1,9 @@
+[  100783ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8765/api/health:0
+[  130781ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8765/api/health:0
+[  160780ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8765/api/health:0
+[  176649ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:8765/api/conversations:0
+[  176683ms] TypeError: Failed to fetch
+    at apiFetch (http://127.0.0.1:8765/static/app.js:24:21)
+    at Object.get (http://127.0.0.1:8765/static/app.js:34:18)
+    at Object.renderConversations [as render] (http://127.0.0.1:8765/static/app.js:1442:26)
+    at renderPage (http://127.0.0.1:8765/static/app.js:113:14)

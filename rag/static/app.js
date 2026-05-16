@@ -86,6 +86,10 @@ const PAGES = {
   chat:          { title: 'Chat',          render: renderChat },
   conversations: { title: 'Conversations', render: renderConversations },
   logs:          { title: 'Logs',          render: renderLogs },
+  integrations:  { title: 'Integrations',  render: renderIntegrations },
+  resources:     { title: 'Resources',     render: renderResources },
+  settings:      { title: 'Settings',      render: renderSettings },
+  changelog:     { title: "What's New",    render: renderChangelog },
 };
 
 function currentPage() {
@@ -367,6 +371,10 @@ let _docsLastItems = [];
 let _docsLastTotal = 0;
 let _docsLastPages = 1;
 let _lastSyncedAt = Date.now();
+let _selectedPaths = new Set();
+let _indexSummary = {};       // { "<rel_path>": { chunks, est_tokens } }
+let _indexTotalChunks = 0;
+let _indexAvailable = false;  // false when Qdrant unreachable — show "Unknown" pills
 
 function _hash(str) {
   let h = 2166136261;
@@ -377,29 +385,24 @@ function _hash(str) {
   return h;
 }
 
-function _mockStatus(path) {
-  const r = _hash(path) % 100;
-  if (r < 85) return 'indexed';
-  if (r < 95) return 'pending';
-  return 'failed';
+function _docStatus(path) {
+  if (!_indexAvailable) return 'unknown';
+  const entry = _indexSummary[path];
+  return entry && entry.chunks > 0 ? 'indexed' : 'pending';
 }
 
-function _mockChunkCount(path) {
-  const status = _mockStatus(path);
-  if (status === 'failed') return 0;
-  return (_hash(path + ':chunks') % 24) + 1;
+function _docChunkCount(path) {
+  return _indexSummary[path]?.chunks ?? 0;
 }
 
-function _mockTokens(path) {
-  const chunks = _mockChunkCount(path);
-  const jitter = (_hash(path + ':tok') % 120) - 60;
-  return chunks * 340 + jitter;
+function _docTokens(path) {
+  return _indexSummary[path]?.est_tokens ?? 0;
 }
 
 const STATUS_LABELS = {
   indexed: '✅ Indexed',
-  pending: '⏳ Pending',
-  failed: '❌ Failed',
+  pending: '⏳ Not indexed',
+  unknown: '— Unknown',
 };
 
 async function renderDocuments(el) {
@@ -408,6 +411,7 @@ async function renderDocuments(el) {
   _docsSearch = '';
   _docsFolderFilter = '';
   _docsStatusFilter = '';
+  _selectedPaths = new Set();
 
   const folderOptions = ['<option value="">All folders</option>']
     .concat(PARA_FOLDERS.map(f => `<option value="${esc(f)}">${esc(f)}</option>`))
@@ -415,8 +419,7 @@ async function renderDocuments(el) {
   const statusOptions = `
     <option value="">All statuses</option>
     <option value="indexed">✅ Indexed</option>
-    <option value="pending">⏳ Pending</option>
-    <option value="failed">❌ Failed</option>
+    <option value="pending">⏳ Not indexed</option>
   `;
 
   el.innerHTML = `
@@ -445,6 +448,12 @@ async function renderDocuments(el) {
       </div>
       <button class="docs-sync-btn" id="doc-sync-btn">🔄 Force Vault Sync</button>
     </div>
+    <div class="docs-bulkbar">
+      <span class="docs-bulk-count" id="docs-bulk-count">0 selected</span>
+      <button class="btn-danger" id="doc-bulk-delete" disabled>🗑️ Delete Selected</button>
+      <button class="docs-sync-btn" id="doc-reconcile-btn">🧹 Run Vault Cleanup (Find Orphans)</button>
+    </div>
+    <div class="docs-banner" id="docs-banner" hidden></div>
     <div class="docs-summary" id="docs-summary"></div>
     <div id="docs-body"><div class="loading"><div class="spinner"></div>Loading…</div></div>
   `;
@@ -471,6 +480,8 @@ async function renderDocuments(el) {
   });
 
   document.getElementById('doc-sync-btn').addEventListener('click', _forceVaultSync);
+  document.getElementById('doc-bulk-delete').addEventListener('click', _bulkArchiveSelected);
+  document.getElementById('doc-reconcile-btn').addEventListener('click', _runVaultReconcile);
 }
 
 // Each item: { file, state: 'queued'|'running'|'created'|'updated'|'skipped'|'error', payload }
@@ -695,12 +706,24 @@ async function _loadDocs() {
   if (!body) return;
 
   const params = new URLSearchParams({ page: _docsPage, limit: 50, search: _docsSearch });
-  const data = await API.get(`/documents?${params}`);
+  const [data, summary] = await Promise.all([
+    API.get(`/documents?${params}`),
+    API.get('/documents/index_summary').catch(() => null),
+  ]);
   if (!data) return;
 
   _docsLastItems = data.items || [];
   _docsLastTotal = data.total || 0;
   _docsLastPages = data.pages || 1;
+  if (summary) {
+    _indexSummary = summary.summary || {};
+    _indexTotalChunks = summary.total_chunks || 0;
+    _indexAvailable = !!summary.available;
+  } else {
+    _indexSummary = {};
+    _indexTotalChunks = 0;
+    _indexAvailable = false;
+  }
   _renderSummary();
   _renderDocsTable();
 }
@@ -710,7 +733,7 @@ function _renderSummary() {
   if (!summary) return;
 
   const totalNotes = _docsLastTotal;
-  const totalChunks = Math.round(totalNotes * 6.2);
+  const totalChunks = _indexAvailable ? _indexTotalChunks : null;
   const lastSync = new Date(_lastSyncedAt).toLocaleString();
 
   summary.innerHTML = `
@@ -720,7 +743,7 @@ function _renderSummary() {
     </div>
     <div class="metric-card">
       <div class="metric-label">Total Vector Chunks</div>
-      <div class="metric-value">${totalChunks.toLocaleString()}</div>
+      <div class="metric-value">${totalChunks === null ? '—' : totalChunks.toLocaleString()}</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Last Sync Time</div>
@@ -735,17 +758,24 @@ function _renderDocsTable() {
 
   const filtered = _docsLastItems.filter(d => {
     if (_docsFolderFilter && d.folder !== _docsFolderFilter) return false;
-    if (_docsStatusFilter && _mockStatus(d.path) !== _docsStatusFilter) return false;
+    if (_docsStatusFilter && _docStatus(d.path) !== _docsStatusFilter) return false;
     return true;
   });
 
+  const allFilteredSelected = filtered.length > 0 && filtered.every(d => _selectedPaths.has(d.path));
+
   const rows = filtered.length
     ? filtered.map(d => {
-        const status = _mockStatus(d.path);
-        const chunks = _mockChunkCount(d.path);
-        const tokens = _mockTokens(d.path);
+        const status = _docStatus(d.path);
+        const chunks = _docChunkCount(d.path);
+        const tokens = _docTokens(d.path);
+        const checked = _selectedPaths.has(d.path) ? 'checked' : '';
+        const safePath = esc(d.path).replace(/'/g, "\\'");
         return `
-          <tr data-path="${esc(d.path)}" onclick="_openDocDrawer('${esc(d.path).replace(/'/g, "\\'")}')">
+          <tr data-path="${esc(d.path)}" onclick="_openDocDrawer('${safePath}')">
+            <td class="docs-check-cell" onclick="event.stopPropagation()">
+              <input type="checkbox" class="docs-row-check" data-path="${esc(d.path)}" ${checked}>
+            </td>
             <td>${esc(d.title)}</td>
             <td><span class="folder-badge">${esc(d.folder)}</span></td>
             <td><span class="status-pill ${status}">${STATUS_LABELS[status]}</span></td>
@@ -756,7 +786,7 @@ function _renderDocsTable() {
           </tr>
         `;
       }).join('')
-    : '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:28px">No documents match the current filters</td></tr>';
+    : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:28px">No documents match the current filters</td></tr>';
 
   let pagination = '';
   if (_docsLastPages > 1) {
@@ -771,6 +801,9 @@ function _renderDocsTable() {
   body.innerHTML = `
     <table class="docs-table">
       <thead><tr>
+        <th class="docs-check-cell">
+          <input type="checkbox" id="docs-select-all" ${allFilteredSelected ? 'checked' : ''} aria-label="Select all">
+        </th>
         <th>Title</th><th>Folder</th><th>Vector Status</th>
         <th style="text-align:right">Chunks</th><th style="text-align:right">Est. Tokens</th>
         <th>Tags</th><th>Modified</th>
@@ -779,6 +812,102 @@ function _renderDocsTable() {
     </table>
     ${pagination}
   `;
+
+  body.querySelectorAll('.docs-row-check').forEach(cb => {
+    cb.addEventListener('click', e => e.stopPropagation());
+    cb.addEventListener('change', e => {
+      const path = e.target.dataset.path;
+      if (e.target.checked) _selectedPaths.add(path);
+      else _selectedPaths.delete(path);
+      _updateBulkBar();
+    });
+  });
+
+  const selectAll = document.getElementById('docs-select-all');
+  if (selectAll) {
+    selectAll.addEventListener('click', e => e.stopPropagation());
+    selectAll.addEventListener('change', e => {
+      if (e.target.checked) filtered.forEach(d => _selectedPaths.add(d.path));
+      else filtered.forEach(d => _selectedPaths.delete(d.path));
+      _renderDocsTable();
+      _updateBulkBar();
+    });
+  }
+
+  _updateBulkBar();
+}
+
+function _updateBulkBar() {
+  const count = document.getElementById('docs-bulk-count');
+  const btn = document.getElementById('doc-bulk-delete');
+  if (!count || !btn) return;
+  const n = _selectedPaths.size;
+  count.textContent = `${n} selected`;
+  btn.disabled = n === 0;
+}
+
+function _showDocsBanner(message, kind) {
+  const banner = document.getElementById('docs-banner');
+  if (!banner) return;
+  banner.hidden = false;
+  banner.dataset.kind = kind || 'info';
+  banner.textContent = message;
+  if (banner._dismissTimer) clearTimeout(banner._dismissTimer);
+  banner._dismissTimer = setTimeout(() => {
+    banner.hidden = true;
+    banner.textContent = '';
+  }, 6000);
+}
+
+async function _archivePaths(paths) {
+  return API.post('/documents/archive', { paths });
+}
+
+async function _bulkArchiveSelected() {
+  const paths = [..._selectedPaths];
+  if (paths.length === 0) return;
+  if (!confirm(`Archive ${paths.length} note(s) and purge their vectors? Files move to "04 - Archive/".`)) return;
+
+  const btn = document.getElementById('doc-bulk-delete');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Archiving…'; }
+
+  try {
+    const res = await _archivePaths(paths);
+    if (!res) return;  // 401 already handled
+    const okCount = (res.archived || []).length;
+    const failCount = (res.failed || []).length;
+    const purged = res.vectors_purged ?? 0;
+    const msg = failCount === 0
+      ? `Archived ${okCount} note(s) and purged ${purged} vector group(s).`
+      : `Archived ${okCount}, failed ${failCount}. Purged ${purged} vector group(s).`;
+    _showDocsBanner(msg, failCount === 0 ? 'success' : 'warn');
+    _selectedPaths.clear();
+    await _loadDocs();
+  } catch (err) {
+    _showDocsBanner(`Archive failed: ${err.message || err}`, 'error');
+  } finally {
+    if (btn) { btn.textContent = '🗑️ Delete Selected'; }
+    _updateBulkBar();
+  }
+}
+
+async function _runVaultReconcile() {
+  if (!confirm('Scan Qdrant for orphaned vectors (vectors whose source file no longer exists in the active vault) and purge them?')) return;
+
+  const btn = document.getElementById('doc-reconcile-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Scanning…'; }
+
+  try {
+    const res = await API.post('/documents/reconcile', {});
+    if (!res) return;
+    const msg = `Scanned ${res.qdrant_files} indexed file(s) vs ${res.active_files} active file(s). Found ${res.orphans.length} orphan(s); purged ${res.purged}.`;
+    _showDocsBanner(msg, res.orphans.length === res.purged ? 'success' : 'warn');
+    await _loadDocs();
+  } catch (err) {
+    _showDocsBanner(`Reconcile failed: ${err.message || err}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🧹 Run Vault Cleanup (Find Orphans)'; }
+  }
 }
 
 function _forceVaultSync() {
@@ -799,19 +928,21 @@ function _openDocDrawer(path) {
   const doc = _docsLastItems.find(d => d.path === path);
   if (!doc) return;
 
-  const status = _mockStatus(path);
-  const chunkCount = _mockChunkCount(path);
-  const tokens = _mockTokens(path);
+  const status = _docStatus(path);
+  const chunkCount = _docChunkCount(path);
+  const tokens = _docTokens(path);
 
   const chunkRows = chunkCount === 0
-    ? '<tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:14px">No chunks (status: failed)</td></tr>'
+    ? `<tr><td colspan="3" style="color:var(--text-muted);text-align:center;padding:14px">${
+        _indexAvailable ? 'No chunks — file is not yet indexed.' : 'Index summary unavailable (Qdrant unreachable).'
+      }</td></tr>`
     : Array.from({ length: chunkCount }, (_, i) => {
-        const chunkTokens = Math.round(tokens / chunkCount) + ((_hash(path + ':' + i) % 40) - 20);
+        const avgTokens = chunkCount > 0 ? Math.round(tokens / chunkCount) : 0;
         return `
           <tr>
             <td class="num">${i + 1}</td>
-            <td class="num">${chunkTokens}</td>
-            <td style="color:var(--text-muted)">Lorem ipsum chunk preview placeholder…</td>
+            <td class="num">~${avgTokens}</td>
+            <td style="color:var(--text-muted)">Chunk preview not loaded — open the source note for full content.</td>
           </tr>
         `;
       }).join('');
@@ -883,10 +1014,24 @@ function _closeDocDrawer() {
   if (host) host.innerHTML = '';
 }
 
-function _deleteFromVectorDb(path) {
-  if (!confirm(`Delete "${path}" from the vector DB? (mock — no action taken)`)) return;
+async function _deleteFromVectorDb(path) {
+  if (!confirm(`Archive "${path}" and purge its vectors? The file will move to "04 - Archive/".`)) return;
   _closeDocDrawer();
-  alert('Mock delete — real Qdrant wiring is a follow-up.');
+  try {
+    const res = await _archivePaths([path]);
+    if (!res) return;
+    const okCount = (res.archived || []).length;
+    const failCount = (res.failed || []).length;
+    if (failCount > 0 && res.failed[0]?.error) {
+      _showDocsBanner(`Archive failed: ${res.failed[0].error}`, 'error');
+    } else {
+      _showDocsBanner(`Archived 1 note and purged ${res.vectors_purged ?? 0} vector group(s).`, 'success');
+    }
+    _selectedPaths.delete(path);
+    await _loadDocs();
+  } catch (err) {
+    _showDocsBanner(`Archive failed: ${err.message || err}`, 'error');
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -973,35 +1118,222 @@ function _addMsg(role, html, isBubble = true) {
   return wrap;
 }
 
-function _typing() {
-  const msgs = document.getElementById('chat-msgs');
-  if (!msgs) return null;
-  msgs.querySelector('.chat-empty')?.remove();
-  const el = document.createElement('div');
-  el.id = 'typing';
-  el.className = 'message assistant';
-  el.innerHTML = `<div class="bubble"><div class="typing-indicator">
-    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-  </div></div>`;
-  msgs.appendChild(el);
-  _scrollMsgs();
-  return el;
+// ─────────────────────────────────────────────
+// Chat — thinking panel
+// ─────────────────────────────────────────────
+const _THINKING_STEPS = [
+  { key: 'searching',  icon: '🔍', label: 'Searching Nexus Vault…' },
+  { key: 'retrieved',  icon: '📚', label: 'Retrieved relevant notes' },
+  { key: 'generating', icon: '🤖', label: 'Generating answer…' },
+];
+
+function _thinkingPanel(msgWrap) {
+  const t0 = performance.now();
+  const panel = document.createElement('details');
+  panel.className = 'thinking-panel';
+  panel.open = true;
+  panel.innerHTML = `
+    <summary class="thinking-summary">
+      <span class="thinking-spinner"></span>
+      <span class="thinking-status">Thinking…</span>
+    </summary>
+    <div class="thinking-steps">
+      ${_THINKING_STEPS.map(s => `
+        <div class="thinking-step" data-key="${s.key}">
+          <span class="step-icon">${s.icon}</span>
+          <span class="step-label">${s.label}</span>
+          <span class="step-state"></span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  msgWrap.appendChild(panel);
+
+  return {
+    update(stage, extras = {}) {
+      const step = panel.querySelector(`.thinking-step[data-key="${stage}"]`);
+      if (!step) return;
+      step.classList.add('done');
+      if (stage === 'retrieved' && typeof extras.count === 'number') {
+        step.querySelector('.step-label').textContent =
+          `Retrieved ${extras.count} relevant note${extras.count === 1 ? '' : 's'}`;
+      }
+    },
+    finish() {
+      const ms = Math.round(performance.now() - t0);
+      panel.querySelector('.thinking-summary').innerHTML =
+        `<span class="thinking-check">✓</span>
+         <span class="thinking-status">Done in ${ms} ms</span>`;
+      panel.open = false;
+    },
+  };
 }
 
-async function sendMsg() {
+// ─────────────────────────────────────────────
+// Chat — numbered source pills + deep-dive modal
+// ─────────────────────────────────────────────
+function _renderSources(msgWrap, sources) {
+  if (!sources || !sources.length) return;
+  const row = document.createElement('div');
+  row.className = 'sources-row';
+  for (const src of sources) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'source-chip';
+    const display = src.display || (src.file || '').split('/').pop().replace(/\.md$/i, '');
+    const topScore = Math.max(...(src.chunks || []).map(c => c.score || 0), 0);
+    const tip = topScore ? `${Math.round(topScore * 100)}% match` : '';
+    btn.title = tip;
+    btn.innerHTML =
+      `<span class="src-num">[${src.index ?? '?'}]</span>` +
+      `<span class="src-icon">📄</span>` +
+      `<span class="src-label">${esc(display)}</span>`;
+    btn.addEventListener('click', () => _openDocInspect(src));
+    row.appendChild(btn);
+  }
+  msgWrap.appendChild(row);
+}
+
+function _openDocInspect(src) {
+  const display = src.display || (src.file || '').split('/').pop().replace(/\.md$/i, '');
+  const folder = (src.file || '').includes('/')
+    ? src.file.split('/').slice(0, -1).join('/')
+    : '';
+
+  const chunksHtml = (src.chunks || []).map(c => `
+    <div class="doc-inspect-chunk">
+      <div class="chunk-header">
+        <span class="chunk-heading">${esc(c.heading || '(no heading)')}</span>
+        <span class="chunk-score">${Math.round((c.score || 0) * 100)}% match</span>
+      </div>
+      <div class="chunk-body">${md(c.text || '')}</div>
+    </div>
+  `).join('') || '<p style="color:var(--text-muted)">No chunk text stored.</p>';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal doc-inspect-modal">
+      <h3>Document Inspection — [${src.index ?? '?'}] ${esc(display)}</h3>
+      <div class="doc-inspect-meta">
+        ${folder ? `<span class="meta-pill">📁 ${esc(folder)}</span>` : ''}
+        <span class="meta-pill">📄 ${esc(src.file || '')}</span>
+        <span class="meta-pill">${(src.chunks || []).length} chunk${(src.chunks || []).length === 1 ? '' : 's'}</span>
+      </div>
+      <div class="doc-inspect-body">${chunksHtml}</div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" data-close>Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('[data-close]').addEventListener('click', close);
+}
+
+// ─────────────────────────────────────────────
+// Chat — utility bar (copy / regenerate / feedback)
+// ─────────────────────────────────────────────
+function _renderUtilityBar(msgWrap, fullText, question) {
+  const bar = document.createElement('div');
+  bar.className = 'utility-bar';
+  bar.innerHTML = `
+    <button type="button" class="util-btn" data-act="copy"   title="Copy answer">📋</button>
+    <button type="button" class="util-btn" data-act="regen"  title="Regenerate">🔄</button>
+    <button type="button" class="util-btn" data-act="up"     title="Helpful">👍</button>
+    <button type="button" class="util-btn" data-act="down"   title="Not helpful">👎</button>
+  `;
+  msgWrap.appendChild(bar);
+
+  bar.querySelector('[data-act="copy"]').addEventListener('click', function () {
+    navigator.clipboard.writeText(fullText).then(() => {
+      const orig = this.textContent;
+      this.textContent = '✓';
+      setTimeout(() => { this.textContent = orig; }, 1200);
+    });
+  });
+
+  bar.querySelector('[data-act="regen"]').addEventListener('click', () => {
+    if (_streaming) return;
+    msgWrap.remove();
+    if (_history.length >= 2) _history = _history.slice(0, -2);
+    sendMsg(question);
+  });
+
+  for (const act of ['up', 'down']) {
+    bar.querySelector(`[data-act="${act}"]`).addEventListener('click', function () {
+      this.classList.add('active');
+      fetch('/api/chat/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: _sessionId,
+          question,
+          answer: fullText,
+          rating: act,
+        }),
+      }).catch(err => console.error('feedback error', err));
+    });
+  }
+}
+
+// ─────────────────────────────────────────────
+// Chat — follow-up suggestion chips
+// ─────────────────────────────────────────────
+function _renderFollowups(msgWrap, items) {
+  if (!items || !items.length) return;
+  const row = document.createElement('div');
+  row.className = 'followup-chips';
+  for (const q of items) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'followup-chip';
+    btn.textContent = q;
+    btn.addEventListener('click', () => {
+      if (_streaming) return;
+      const ta = document.getElementById('chat-input');
+      if (ta) ta.value = q;
+      sendMsg();
+    });
+    row.appendChild(btn);
+  }
+  msgWrap.appendChild(row);
+}
+
+async function sendMsg(prefill) {
   if (_streaming) return;
   const ta = document.getElementById('chat-input');
   const sendBtn = document.getElementById('send-btn');
-  const question = ta.value.trim();
+  const question = (typeof prefill === 'string' && prefill.trim())
+    ? prefill.trim()
+    : (ta?.value || '').trim();
   if (!question) return;
 
-  ta.value = '';
-  ta.style.height = 'auto';
-  sendBtn.disabled = true;
+  if (ta && !prefill) {
+    ta.value = '';
+    ta.style.height = 'auto';
+  }
+  if (sendBtn) sendBtn.disabled = true;
   _streaming = true;
 
   _addMsg('user', esc(question));
-  const typingEl = _typing();
+
+  const msgWrap = document.createElement('div');
+  msgWrap.className = 'message assistant';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  msgWrap.appendChild(bubble);
+  document.getElementById('chat-msgs').appendChild(msgWrap);
+
+  const thinking = _thinkingPanel(msgWrap);
+  // Move thinking panel above the bubble so steps render first
+  msgWrap.insertBefore(msgWrap.lastChild, bubble);
+
+  let fullText = '';
+  let sources = [];
+  let followups = [];
+  let firstToken = true;
 
   try {
     const res = await fetch('/api/chat/stream', {
@@ -1012,17 +1344,6 @@ async function sendMsg() {
 
     if (!res.ok) throw new Error('Request failed');
 
-    typingEl?.remove();
-
-    const msgWrap = document.createElement('div');
-    msgWrap.className = 'message assistant';
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    msgWrap.appendChild(bubble);
-    document.getElementById('chat-msgs').appendChild(msgWrap);
-
-    let fullText = '';
-    let sources = [];
     const reader = res.body.getReader();
     const dec = new TextDecoder();
     let buf = '';
@@ -1040,12 +1361,18 @@ async function sendMsg() {
         if (payload === '[DONE]') continue;
         try {
           const ev = JSON.parse(payload);
-          if (ev.type === 'token') {
+          if (ev.type === 'status') {
+            thinking.update(ev.stage, { count: ev.count });
+          } else if (ev.type === 'sources') {
+            sources = ev.items || [];
+            _renderSources(msgWrap, sources);
+          } else if (ev.type === 'token') {
+            if (firstToken) { thinking.finish(); firstToken = false; }
             fullText += ev.content;
             bubble.innerHTML = md(fullText);
             _scrollMsgs();
-          } else if (ev.type === 'sources') {
-            sources = ev.items;
+          } else if (ev.type === 'followups') {
+            followups = ev.items || [];
           } else if (ev.type === 'error') {
             bubble.textContent = 'Error: ' + ev.message;
           }
@@ -1053,13 +1380,11 @@ async function sendMsg() {
       }
     }
 
-    if (sources.length) {
-      const srcRow = document.createElement('div');
-      srcRow.className = 'sources-row';
-      srcRow.innerHTML = sources
-        .map(s => `<span class="source-chip" title="${esc(s.heading)} (${Math.round(s.score * 100)}% match)">${esc(s.file.split('/').pop().replace(/\.md$/, ''))}</span>`)
-        .join('');
-      msgWrap.appendChild(srcRow);
+    if (firstToken) thinking.finish();
+
+    if (fullText) {
+      _renderUtilityBar(msgWrap, fullText, question);
+      _renderFollowups(msgWrap, followups);
     }
 
     _history.push({ role: 'user', content: question });
@@ -1068,12 +1393,12 @@ async function sendMsg() {
     _scrollMsgs();
 
   } catch (err) {
-    typingEl?.remove();
-    _addMsg('assistant', 'Something went wrong. Please try again.');
+    thinking.finish();
+    bubble.textContent = 'Something went wrong. Please try again.';
     console.error(err);
   }
 
-  sendBtn.disabled = false;
+  if (sendBtn) sendBtn.disabled = false;
   _streaming = false;
   document.getElementById('chat-input')?.focus();
 }
@@ -1150,33 +1475,59 @@ async function renderConversations(el) {
   });
 }
 
+function _normalizeSavedSources(parsed) {
+  // New shape: [{index, file, display, chunks: [{heading, score, text}]}]
+  // Old shape: [{file, heading, score}] — one entry per chunk.
+  if (!Array.isArray(parsed) || !parsed.length) return [];
+  if (parsed[0] && Array.isArray(parsed[0].chunks)) return parsed;
+
+  const byFile = new Map();
+  const order = [];
+  for (const s of parsed) {
+    const f = s.file || 'unknown';
+    if (!byFile.has(f)) { byFile.set(f, []); order.push(f); }
+    byFile.get(f).push({ heading: s.heading || '', score: s.score || 0, text: s.text || '' });
+  }
+  return order.map((f, i) => ({
+    index: i + 1,
+    file: f,
+    display: f.split('/').pop().replace(/\.md$/i, ''),
+    chunks: byFile.get(f).sort((a, b) => b.score - a.score),
+  }));
+}
+
 async function loadConvDetail(el, id, title) {
   el.innerHTML = '<div class="loading"><div class="spinner"></div>Loading…</div>';
   const data = await API.get(`/conversations/${id}`);
   if (!data) return;
-
-  const msgs = data.messages.map(m => {
-    let srcs = '';
-    try {
-      const parsed = JSON.parse(m.sources || '[]');
-      if (parsed.length) {
-        srcs = `<div class="sources-row">${parsed.map(s =>
-          `<span class="source-chip">${esc(s.file.split('/').pop().replace(/\.md$/, ''))}</span>`
-        ).join('')}</div>`;
-      }
-    } catch {}
-    return `<div class="message ${m.role}" style="margin-bottom:12px">
-      <div class="bubble">${md(m.content)}</div>${srcs}
-    </div>`;
-  }).join('');
 
   el.innerHTML = `
     <div class="conv-detail-header">
       <button class="back-btn" id="conv-back">← Back</button>
       <span style="font-size:15px;font-weight:600">${esc(title)}</span>
     </div>
-    <div style="max-width:680px">${msgs || '<p style="color:var(--text-muted)">No messages.</p>'}</div>
+    <div id="conv-msg-list" style="max-width:680px"></div>
   `;
+
+  const list = el.querySelector('#conv-msg-list');
+  if (!data.messages?.length) {
+    list.innerHTML = '<p style="color:var(--text-muted)">No messages.</p>';
+  } else {
+    for (const m of data.messages) {
+      const wrap = document.createElement('div');
+      wrap.className = `message ${m.role}`;
+      wrap.style.marginBottom = '12px';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = md(m.content || '');
+      wrap.appendChild(bubble);
+      try {
+        const sources = _normalizeSavedSources(JSON.parse(m.sources || '[]'));
+        _renderSources(wrap, sources);
+      } catch { /* ignore malformed sources */ }
+      list.appendChild(wrap);
+    }
+  }
 
   el.querySelector('#conv-back').addEventListener('click', () => renderConversations(el));
 }
@@ -1202,6 +1553,389 @@ async function renderLogs(el) {
   `).join('');
 
   el.innerHTML = `<div class="log-list">${rows}</div>`;
+}
+
+// ─────────────────────────────────────────────
+// Settings page
+// ─────────────────────────────────────────────
+async function renderSettings(el) {
+  const data = await API.get('/settings');
+  if (!data) return;
+
+  const fields = data.schema.map(s => {
+    const val = data.values[s.key];
+    const desc = esc(s.description || '');
+    let input;
+    if (s.type === 'int' || s.type === 'float') {
+      input = `<input type="number" data-key="${esc(s.key)}" data-type="${esc(s.type)}" value="${esc(val)}" step="${s.type === 'float' ? '0.01' : '1'}">`;
+    } else if (s.key === 'THEME') {
+      const opts = ['light','dark'].map(o => `<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('');
+      input = `<select data-key="${esc(s.key)}" data-type="str">${opts}</select>`;
+    } else {
+      input = `<input type="text" data-key="${esc(s.key)}" data-type="${esc(s.type)}" value="${esc(val)}">`;
+    }
+    return `<label class="kv-field"><div class="kv-key">${esc(s.key)}</div><div class="kv-desc">${desc}</div>${input}</label>`;
+  }).join('');
+
+  const envRows = Object.entries(data.env_readonly).map(
+    ([k,v]) => `<div class="kv-row"><span>${esc(k)}</span><code>${esc(v || '—')}</code></div>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">Tunable Settings</div>
+      <form id="settings-form" class="kv-form">${fields}
+        <button type="submit" class="btn-primary">Save</button>
+        <span id="settings-status" class="muted"></span>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-title">Read-only Environment</div>
+      <div class="kv-list">${envRows}</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Change Password</div>
+      <form id="pw-form" class="kv-form">
+        <label class="kv-field"><div class="kv-key">Current</div><input type="password" id="pw-old" required></label>
+        <label class="kv-field"><div class="kv-key">New (min 8 chars)</div><input type="password" id="pw-new" required minlength="8"></label>
+        <button type="submit" class="btn-primary">Update password</button>
+        <span id="pw-status" class="muted"></span>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-title">Rotate JWT secret</div>
+      <p class="muted">All current sessions will be invalidated. You'll need to log in again.</p>
+      <button id="rotate-jwt-btn" class="btn-secondary">Rotate JWT</button>
+    </div>`;
+
+  el.querySelector('#settings-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const status = el.querySelector('#settings-status');
+    const payload = {};
+    el.querySelectorAll('#settings-form [data-key]').forEach(node => {
+      const key = node.dataset.key;
+      const type = node.dataset.type;
+      let v = node.value;
+      if (type === 'int') v = parseInt(v, 10);
+      else if (type === 'float') v = parseFloat(v);
+      payload[key] = v;
+    });
+    try {
+      await apiFetch('/settings', { method: 'PATCH', body: JSON.stringify(payload) });
+      status.textContent = 'Saved.';
+      setTimeout(() => status.textContent = '', 2000);
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    }
+  });
+
+  el.querySelector('#pw-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const status = el.querySelector('#pw-status');
+    const old = el.querySelector('#pw-old').value;
+    const nw = el.querySelector('#pw-new').value;
+    try {
+      await apiFetch('/settings/password', { method: 'POST', body: JSON.stringify({ old, new: nw }) });
+      status.textContent = 'Password updated.';
+      el.querySelector('#pw-old').value = '';
+      el.querySelector('#pw-new').value = '';
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    }
+  });
+
+  el.querySelector('#rotate-jwt-btn').addEventListener('click', async () => {
+    if (!confirm('Rotate JWT secret? You will be logged out.')) return;
+    try {
+      await API.post('/settings/rotate-jwt', {});
+      Auth.clear();
+      showLogin();
+    } catch (err) {
+      alert(`Rotate failed: ${err.message}`);
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+// Changelog page
+// ─────────────────────────────────────────────
+async function renderChangelog(el) {
+  const data = await API.get('/changelog');
+  if (!data) return;
+  const entries = data.entries || [];
+
+  const cards = entries.length === 0
+    ? '<div class="loading">No changelog entries.</div>'
+    : entries.map(e => `
+        <div class="changelog-entry">
+          <div class="cl-head">
+            <span class="cl-version">v${esc(e.version)}</span>
+            <span class="cl-date">${esc(e.date)}</span>
+            ${(e.type_tags || []).map(t => `<span class="cl-tag">${esc(t)}</span>`).join('')}
+          </div>
+          <div class="cl-body">${md(e.body_md || '')}</div>
+        </div>
+      `).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title-row">
+        <div class="card-title">What's New</div>
+        <button id="mark-read-btn" class="btn-secondary">Mark all read</button>
+      </div>
+      <div class="changelog-list">${cards}</div>
+    </div>`;
+
+  el.querySelector('#mark-read-btn').addEventListener('click', async () => {
+    await API.post('/changelog/mark-read', {});
+    document.getElementById('changelog-dot')?.classList.add('hidden');
+  });
+}
+
+async function pollChangelogUnread() {
+  try {
+    const d = await fetch('/api/changelog/unread', { headers: Auth.headers() }).then(r => r.json());
+    const dot = document.getElementById('changelog-dot');
+    if (!dot) return;
+    if (d.unread_count > 0) dot.classList.remove('hidden');
+    else dot.classList.add('hidden');
+  } catch { /* ignore */ }
+}
+
+// ─────────────────────────────────────────────
+// Integrations page
+// ─────────────────────────────────────────────
+async function renderIntegrations(el) {
+  const [list, meta] = await Promise.all([
+    API.get('/integrations'),
+    API.get('/integrations/events'),
+  ]);
+  if (!list || !meta) return;
+
+  const tokensList = await API.get('/tokens');
+
+  const intRows = (list || []).map(i => `
+    <div class="integration-card">
+      <div class="ic-head">
+        <span class="ic-type">${esc(i.type)}</span>
+        <span class="ic-name">${esc(i.name)}</span>
+        <span class="status-pill ${i.enabled ? 'ok' : 'bad'}">${i.enabled ? 'enabled' : 'disabled'}</span>
+        <button class="btn-secondary" data-test="${i.id}">Test</button>
+        <button class="btn-secondary" data-toggle="${i.id}" data-enabled="${i.enabled ? 1 : 0}">${i.enabled ? 'Disable' : 'Enable'}</button>
+        <button class="btn-secondary danger" data-del="${i.id}">Delete</button>
+      </div>
+      <div class="ic-body">
+        <div><strong>events:</strong> ${(i.events || []).map(e => `<code>${esc(e)}</code>`).join(' ') || '—'}</div>
+        <div><strong>config:</strong> <code>${esc(JSON.stringify(i.config))}</code></div>
+        <div class="muted"><strong>last:</strong> ${esc(i.last_fired_at || '—')} · ${esc(i.last_status || '')}</div>
+      </div>
+    </div>
+  `).join('') || '<div class="loading">No integrations yet.</div>';
+
+  const tokenRows = (tokensList || []).map(t => `
+    <div class="token-row">
+      <div><strong>${esc(t.name)}</strong> <code>${esc(t.prefix)}…</code></div>
+      <div class="muted">scopes: ${(t.scopes || []).map(s => `<code>${esc(s)}</code>`).join(' ')}</div>
+      <div class="muted">created ${esc(t.created_at)} · last used ${esc(t.last_used_at || '—')}</div>
+      ${t.active ? `<button class="btn-secondary danger" data-revoke="${t.id}">Revoke</button>` : '<span class="status-pill bad">revoked</span>'}
+    </div>
+  `).join('') || '<div class="loading">No API tokens yet.</div>';
+
+  const eventOpts = (meta.events || []).map(e => `<label><input type="checkbox" value="${esc(e)}"> ${esc(e)}</label>`).join('');
+  const typeOpts = (meta.types || []).map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">Connected integrations</div>
+      ${intRows}
+    </div>
+    <div class="card">
+      <div class="card-title">Add integration</div>
+      <form id="int-form" class="kv-form">
+        <label class="kv-field"><div class="kv-key">Type</div><select id="int-type">${typeOpts}</select></label>
+        <label class="kv-field"><div class="kv-key">Name</div><input id="int-name" required></label>
+        <label class="kv-field"><div class="kv-key">Config (JSON)</div><textarea id="int-config" rows="4" placeholder='{"url":"https://..."}'></textarea></label>
+        <div class="kv-field"><div class="kv-key">Subscribe events</div><div class="event-grid">${eventOpts}</div></div>
+        <button type="submit" class="btn-primary">Add</button>
+        <span id="int-status" class="muted"></span>
+      </form>
+    </div>
+    <div class="card">
+      <div class="card-title-row">
+        <div class="card-title">API tokens</div>
+        <button id="token-new-btn" class="btn-primary">+ New token</button>
+      </div>
+      ${tokenRows}
+    </div>`;
+
+  el.querySelectorAll('[data-test]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.test;
+    const r = await API.post(`/integrations/${id}/test`, {});
+    alert(`Test status ${r.status}\n\n${r.body || ''}`);
+    renderIntegrations(el);
+  }));
+  el.querySelectorAll('[data-toggle]').forEach(b => b.addEventListener('click', async () => {
+    const id = b.dataset.toggle;
+    const enabled = b.dataset.enabled === '1';
+    await apiFetch(`/integrations/${id}`, { method: 'PATCH', body: JSON.stringify({ enabled: !enabled }) });
+    renderIntegrations(el);
+  }));
+  el.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Delete this integration?')) return;
+    await apiFetch(`/integrations/${b.dataset.del}`, { method: 'DELETE' });
+    renderIntegrations(el);
+  }));
+
+  el.querySelector('#int-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const status = el.querySelector('#int-status');
+    let config;
+    try { config = JSON.parse(el.querySelector('#int-config').value || '{}'); }
+    catch { status.textContent = 'Config must be valid JSON.'; return; }
+    const events = Array.from(el.querySelectorAll('.event-grid input:checked')).map(i => i.value);
+    try {
+      await API.post('/integrations', {
+        type: el.querySelector('#int-type').value,
+        name: el.querySelector('#int-name').value,
+        config,
+        events,
+      });
+      renderIntegrations(el);
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    }
+  });
+
+  el.querySelector('#token-new-btn').addEventListener('click', async () => {
+    const name = prompt('Token name (e.g. ci-smoke):');
+    if (!name) return;
+    const scopes = prompt('Scopes (comma-separated):\nchat:read, chat:write, documents:read, documents:write, dashboard:read', 'chat:read');
+    if (!scopes) return;
+    try {
+      const r = await API.post('/tokens', { name, scopes: scopes.split(',').map(s => s.trim()).filter(Boolean) });
+      alert(`Token created. Save NOW — won't be shown again:\n\n${r.token}`);
+      renderIntegrations(el);
+    } catch (err) {
+      alert(`Create failed: ${err.message}`);
+    }
+  });
+  el.querySelectorAll('[data-revoke]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Revoke this token?')) return;
+    await apiFetch(`/tokens/${b.dataset.revoke}`, { method: 'DELETE' });
+    renderIntegrations(el);
+  }));
+}
+
+// ─────────────────────────────────────────────
+// Resources (prompt library)
+// ─────────────────────────────────────────────
+async function renderResources(el) {
+  const data = await API.get('/resources/prompts');
+  if (!data) return;
+  const items = data.items || [];
+  const active = data.active || '';
+
+  const rows = items.length === 0
+    ? '<div class="loading">No prompts yet. Click <em>Seed defaults</em> to start.</div>'
+    : items.map(p => `
+        <div class="prompt-card ${p.slug === active ? 'active' : ''}">
+          <div class="pc-head">
+            <span class="pc-name">${esc(p.name)}</span>
+            <code class="pc-slug">${esc(p.slug)}</code>
+            ${p.slug === active ? '<span class="status-pill ok">active</span>' : ''}
+          </div>
+          <div class="pc-preview">${esc(p.preview)}…</div>
+          <div class="pc-actions">
+            <button class="btn-secondary" data-edit="${esc(p.slug)}">Edit</button>
+            ${p.slug === active
+              ? `<button class="btn-secondary" data-deact="1">Deactivate</button>`
+              : `<button class="btn-primary" data-activate="${esc(p.slug)}">Activate</button>`}
+            <button class="btn-secondary danger" data-del="${esc(p.slug)}">Delete</button>
+          </div>
+        </div>
+      `).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title-row">
+        <div class="card-title">Prompt library</div>
+        <div>
+          <button id="seed-btn" class="btn-secondary">Seed defaults</button>
+          <button id="new-prompt-btn" class="btn-primary">+ New prompt</button>
+        </div>
+      </div>
+      <div class="prompt-list">${rows}</div>
+    </div>
+    <div id="prompt-editor" class="card hidden">
+      <div class="card-title">Edit prompt</div>
+      <form id="prompt-form" class="kv-form">
+        <input type="hidden" id="p-slug">
+        <label class="kv-field"><div class="kv-key">Name</div><input id="p-name" required></label>
+        <label class="kv-field"><div class="kv-key">Body</div><textarea id="p-body" rows="14" required></textarea></label>
+        <button type="submit" class="btn-primary">Save</button>
+        <button type="button" id="p-cancel" class="btn-secondary">Cancel</button>
+        <span id="p-status" class="muted"></span>
+      </form>
+    </div>`;
+
+  el.querySelector('#seed-btn').addEventListener('click', async () => {
+    const r = await API.post('/resources/prompts/seed', {});
+    alert(`Seeded ${r.count} default prompt(s).`);
+    renderResources(el);
+  });
+
+  const editor = el.querySelector('#prompt-editor');
+  function openEditor(slug, name, body) {
+    editor.classList.remove('hidden');
+    el.querySelector('#p-slug').value = slug || '';
+    el.querySelector('#p-name').value = name || '';
+    el.querySelector('#p-body').value = body || '';
+    el.querySelector('#p-name').focus();
+  }
+  function closeEditor() { editor.classList.add('hidden'); }
+
+  el.querySelector('#new-prompt-btn').addEventListener('click', () => openEditor('', '', ''));
+  el.querySelector('#p-cancel').addEventListener('click', closeEditor);
+
+  el.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', async () => {
+    const slug = b.dataset.edit;
+    const p = await API.get(`/resources/prompts/${encodeURIComponent(slug)}`);
+    if (!p) return;
+    openEditor(p.slug, p.name, p.body);
+  }));
+  el.querySelectorAll('[data-activate]').forEach(b => b.addEventListener('click', async () => {
+    await API.post(`/resources/prompts/${encodeURIComponent(b.dataset.activate)}/activate`, {});
+    renderResources(el);
+  }));
+  el.querySelectorAll('[data-deact]').forEach(b => b.addEventListener('click', async () => {
+    await API.post('/resources/prompts/deactivate', {});
+    renderResources(el);
+  }));
+  el.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('Archive this prompt?')) return;
+    await apiFetch(`/resources/prompts/${encodeURIComponent(b.dataset.del)}`, { method: 'DELETE' });
+    renderResources(el);
+  }));
+
+  el.querySelector('#prompt-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const status = el.querySelector('#p-status');
+    const slug = el.querySelector('#p-slug').value || el.querySelector('#p-name').value
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'prompt';
+    try {
+      await apiFetch(`/resources/prompts/${encodeURIComponent(slug)}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: el.querySelector('#p-name').value,
+          body: el.querySelector('#p-body').value,
+        }),
+      });
+      closeEditor();
+      renderResources(el);
+    } catch (err) {
+      status.textContent = `Error: ${err.message}`;
+    }
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -1236,6 +1970,7 @@ document.getElementById('login-form').addEventListener('submit', async e => {
     showApp();
     renderPage();
     pollHealth();
+    pollChangelogUnread();
     _healthTimer = setInterval(pollHealth, 30_000);
   } catch {
     errEl.textContent = 'Connection error. Is the server running?';
@@ -1258,6 +1993,7 @@ if (Auth.ok()) {
   showApp();
   renderPage();
   pollHealth();
+  pollChangelogUnread();
   _healthTimer = setInterval(pollHealth, 30_000);
 } else {
   showLogin();

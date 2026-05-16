@@ -22,7 +22,11 @@ RAG_DIR = Path(__file__).parent.parent
 _SKIP = {".obsidian", "_publish", "rag", ".git", "node_modules"}
 INBOX_FOLDER = "00 - Inbox"
 
-TUNNEL_HINT = "ssh -L 6333:127.0.0.1:6333 root@72.62.196.231 -N -f"
+QDRANT_DOWN_HINT = (
+    "Cannot reach Qdrant. Check internet, "
+    "https://qdrant.nexus.gayo-sphere.cloud/healthz, "
+    "and that the VPS container `qdrant-nexus` is running."
+)
 GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
@@ -119,7 +123,7 @@ async def stats() -> dict:
         "health": {
             "qdrant": {
                 "ok": qdrant_ok,
-                "hint": None if qdrant_ok else TUNNEL_HINT,
+                "hint": None if qdrant_ok else QDRANT_DOWN_HINT,
             },
             "groq": {"ok": groq_ok},
             "watcher": {"ok": True},

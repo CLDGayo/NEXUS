@@ -1,0 +1,265 @@
+name: nexus-v2
+
+# Phase 1 chassis. Runs alongside the existing v1 systemd uvicorn on prod;
+# v1 cutover is Phase 9. Externally exposed: api (8000), langfuse-web (3000),
+# minio console (9001, dev only).
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  # -----------------------------------------------------------------------
+  # Application
+  # -----------------------------------------------------------------------
+  api:
+    <<: [*restart, *logging]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus-v2-api:latest
+    container_name: nexus-api
+    env_file: .env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      POSTGRES_DSN: postgresql+asyncpg://${POSTGRES_USER:-nexus}:${POSTGRES_PASSWORD:-nexus}@postgres:5432/${POSTGRES_DB:-nexus}
+      REDIS_URL: redis://redis:6379/0
+      LITELLM_BASE_URL: http://litellm:4000
+      LANGFUSE_HOST: http://langfuse-web:3000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      litellm:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=2).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks: [nexus_net]
+
+  # -----------------------------------------------------------------------
+  # Vector store
+  # -----------------------------------------------------------------------
+  qdrant:
+    <<: [*restart, *logging]
+    image: qdrant/qdrant:v1.13.4
+    container_name: nexus-qdrant
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY:-}
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks: [nexus_net]
+
+  # -----------------------------------------------------------------------
+  # Relational store (Nexus + LangGraph state + Langfuse transactional DB)
+  # -----------------------------------------------------------------------
+  postgres:
+    <<: [*restart, *logging]
+    image: postgres:16-alpine
+    container_name: nexus-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nexus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus}
+      POSTGRES_DB: ${POSTGRES_DB:-nexus}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nexus} -d ${POSTGRES_DB:-nexus}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks: [nexus_net]
+
+  # -----------------------------------------------------------------------
+  # Cache + queue
+  # -----------------------------------------------------------------------
+  redis:
+    <<: [*restart, *logging]
+    image: redis:7-alpine
+    container_name: nexus-redis
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "${REDIS_MAXMEMORY:-512mb}", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [nexus_net]
+
+  # -----------------------------------------------------------------------
+  # LLM gateway
+  # -----------------------------------------------------------------------
+  litellm:
+    <<: [*restart, *logging]
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: nexus-litellm
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "2"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-litellm-change-me}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:-sk-salt-change-me}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nexus}:${POSTGRES_PASSWORD:-nexus}@postgres:5432/litellm
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [nexus_net]
+
+  # -----------------------------------------------------------------------
+  # Langfuse v3 stack: clickhouse + minio + web + worker
+  # -----------------------------------------------------------------------
+  clickhouse:
+    <<: [*restart, *logging]
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: nexus-clickhouse
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+    networks: [nexus_net]
+
+  minio:
+    <<: [*restart, *logging]
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: nexus-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks: [nexus_net]
+
+  langfuse-worker:
+    <<: [*restart, *logging]
+    image: langfuse/langfuse-worker:3
+    container_name: nexus-langfuse-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment: &langfuse-env
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nexus}:${POSTGRES_PASSWORD:-nexus}@postgres:5432/langfuse
+      SALT: ${LANGFUSE_SALT:-change-me-please}
+      ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+      CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-miniosecret}
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-miniosecret}
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+    networks: [nexus_net]
+
+  langfuse-web:
+    <<: [*restart, *logging]
+    image: langfuse/langfuse:3
+    container_name: nexus-langfuse-web
+    depends_on:
+      langfuse-worker:
+        condition: service_started
+    environment:
+      <<: *langfuse-env
+      NEXTAUTH_URL: ${LANGFUSE_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-change-me-please}
+      LANGFUSE_INIT_ORG_ID: ${LANGFUSE_INIT_ORG_ID:-nexus}
+      LANGFUSE_INIT_ORG_NAME: ${LANGFUSE_INIT_ORG_NAME:-Nexus}
+      LANGFUSE_INIT_PROJECT_ID: ${LANGFUSE_INIT_PROJECT_ID:-nexus-rag}
+      LANGFUSE_INIT_PROJECT_NAME: ${LANGFUSE_INIT_PROJECT_NAME:-Nexus RAG}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-admin@nexus.local}
+      LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-Admin}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-changeme123!}
+    ports:
+      - "${LANGFUSE_PORT:-3000}:3000"
+    networks: [nexus_net]
+
+networks:
+  nexus_net:
+    name: nexus_net
+    driver: bridge
+
+volumes:
+  qdrant_storage:
+    name: nexus_qdrant_storage
+  postgres_data:
+    name: nexus_postgres_data
+  redis_data:
+    name: nexus_redis_data
+  clickhouse_data:
+    name: nexus_clickhouse_data
+  clickhouse_logs:
+    name: nexus_clickhouse_logs
+  minio_data:
+    name: nexus_minio_data
