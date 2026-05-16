@@ -1,4 +1,4 @@
-markdown_content = """<div align="center">
+<div align="center">
   <h1>🌌 Nexus RAG</h1>
   <p><strong>Enterprise-Grade, Stateful Retrieval-Augmented Generation for Automated Customer Engagement</strong></p>
 
