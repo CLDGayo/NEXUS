@@ -40,10 +40,10 @@ WORKDIR /app
 COPY --chown=nexus:nexus rag /app/rag
 
 USER nexus
-WORKDIR /app/rag
 
 EXPOSE 8000
 
-# Existing v1 modules use flat imports (`from database import init_db`),
-# so we run with WORKDIR=/app/rag and target `app:app` rather than `rag.app:app`.
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# Phase 2 entry: the v2 Messenger webhook surface. v1 (`rag/app.py`) keeps
+# running on the VPS systemd unit until the Phase 9 cutover; it is not
+# imported by this container, so its flat imports are irrelevant here.
+CMD ["uvicorn", "rag.messenger.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

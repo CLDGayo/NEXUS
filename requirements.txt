@@ -16,9 +16,14 @@ redis==5.2.0
 asyncpg==0.30.0
 psycopg[binary]==3.2.3
 
-# ---- Orchestration scaffolding (Phase 5+) ----
+# ---- Orchestration (Phase 3+) ----
+# langchain-core is pulled transitively by langgraph; do not pin separately
+# (langgraph's lower bound + our requested version often conflict).
 langgraph==0.2.59
 langgraph-checkpoint-postgres==2.0.7
+
+# ---- Retrieval (Phase 3) ----
+rank-bm25==0.2.2
 
 # ---- Observability ----
 langfuse==2.55.0
