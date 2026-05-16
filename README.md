@@ -25,3 +25,34 @@ Nexus is a sovereign, high-fidelity RAG architecture designed to bridge the gap 
 - **Complete Observability**: Integrated with `Langfuse` and OpenTelemetry for deep granular tracing of LLM logic, latency, and costs.
 
 ## 🏗 Architecture
+
+Code output
+File generated successfully.
+
+```mermaid
+graph TD
+    A[Facebook Messenger] -->|Webhook| B(n8n / Make)
+    B -->|POST Payload| C[FastAPI Routing Layer]
+    
+    subgraph Nexus Backend Engine
+        C --> D{LangGraph Agent Orchestrator}
+        D <--> E[(Redis Semantic Cache)]
+        D --> F[Retrieval Engine]
+        
+        subgraph Hybrid Search
+            F --> G[(Qdrant Dense Vectors)]
+            F --> H[(BM25 Lexical)]
+            G --> I[Reciprocal Rank Fusion RRF]
+            H --> I
+            I --> J[Cross-Encoder Reranker]
+        end
+        
+        J --> K[LLM Generation Provider via LiteLLM]
+        K --> L[Guardrails Output Validation]
+    end
+    
+    L -->|Verified Response| C
+    C -->|Response| B
+    B -->|API Delivery| A
+    
+    D -.-> Z[Langfuse Observability]
