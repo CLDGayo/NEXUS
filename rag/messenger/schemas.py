@@ -37,6 +37,14 @@ class InboundMessage(BaseModel):
         max_length=128,
         description="Idempotency key supplied by the orchestrator. Echoed back in the ack.",
     )
+    outbound_url: str | None = Field(
+        default=None,
+        max_length=2048,
+        description=(
+            "Per-request override for the n8n / Make webhook the reply should be "
+            "POSTed to. Falls back to MAKE_WEBHOOK_URL env when omitted."
+        ),
+    )
 
 
 class InboundAck(BaseModel):

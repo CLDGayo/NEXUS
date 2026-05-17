@@ -1,0 +1,32 @@
+# Phase 4 ingest pipeline runtime.
+# Heavy ML deps (torch, transformers, docling) are NOT in requirements.txt
+# so the FastAPI image stays lean. Install this only on the ingest worker
+# host (CLI runner, ingest container, or your local dev box):
+#
+#     pip install -r requirements-ingest.txt
+#     python -m rag.ingest_v2 init-collection
+#     python -m rag.ingest_v2 ingest --vault
+#
+-r requirements.txt
+
+# Multimodal document parsing (PDF / DOCX / PPTX / HTML / images → Markdown).
+docling>=2.5.0
+
+# Semantic boundary detection.
+chonkie>=0.4.0
+
+# Late-chunking encoder: jina-embeddings-v2-base-en runs through HF transformers.
+transformers>=4.45.0
+torch>=2.4.0
+einops>=0.8.0
+
+# YAML for frontmatter parsing (Obsidian / Jekyll style).
+pyyaml>=6.0.2
+
+# Sentence-transformers backs chonkie's semantic chunker when configured
+# with a HF model. potion-base-8M is < 30MB and fast on CPU.
+sentence-transformers>=3.0.0
+
+# numpy is a transitive but version-sensitive dep; pinning the floor avoids
+# surprise breakage from torch/transformers.
+numpy>=1.26.0,<3.0

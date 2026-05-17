@@ -32,8 +32,9 @@ opentelemetry-sdk==1.28.2
 opentelemetry-exporter-otlp==1.28.2
 opentelemetry-instrumentation-fastapi==0.49b2
 
-# ---- LLM gateway client (proxy itself runs in its own container) ----
-litellm==1.55.3
+# ---- LLM gateway client ----
+# We talk to the LiteLLM proxy via plain httpx; the litellm SDK is NOT
+# needed in the api image (it pulls a large dep tree + pins httpx<0.28).
 httpx==0.28.0
 
 # ---- Ops ----

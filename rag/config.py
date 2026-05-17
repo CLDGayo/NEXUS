@@ -78,6 +78,18 @@ class Settings(BaseSettings):
     # ``postgres`` in production (requires `await saver.setup()` once).
     langgraph_checkpoint: str = Field(default="memory")
 
+    # ---- Phase 4 ingest pipeline ----
+    # Late-chunker model. 768-dim, 8192-token context, supports ALiBi.
+    ingest_embed_model: str = Field(default="jinaai/jina-embeddings-v2-base-en")
+    ingest_embed_dim: int = Field(default=768, ge=1)
+    ingest_max_tokens: int = Field(default=8192, ge=64, le=32768)
+    ingest_qdrant_collection: str = Field(default="nexus-vault-v2")
+
+    # Semantic chunker (chonkie SemanticChunker).
+    semantic_chunker_model: str = Field(default="minishlab/potion-base-8M")
+    semantic_break_threshold: float = Field(default=0.55, ge=0.0, le=1.0)
+    ingest_chunk_size: int = Field(default=400, ge=32, le=2048)
+
     # ---- Webhook surface (Phase 2) ----
     webhook_api_key: str | None = Field(
         default=None,
@@ -90,8 +102,31 @@ class Settings(BaseSettings):
     messenger_verify_token: str | None = None
     messenger_page_access_token: str | None = None
 
-    # ---- Outbound automation webhook (Phase 8) ----
+    # ---- Outbound automation webhook (Phase 6 — n8n / Make delivery) ----
     make_webhook_url: str | None = None
+    outbound_dispatch_enabled: bool = Field(default=False)
+    outbound_send_timeout_seconds: float = Field(default=5.0, gt=0.0, le=60.0)
+    outbound_max_attempts: int = Field(default=4, ge=1, le=10)
+    # Comma-separated seconds for retry delays: e.g. "30,120,600,3600"
+    outbound_backoff_seconds_csv: str = Field(default="30,120,600,3600")
+    outbound_queue_key: str = Field(default="nexus:outbound:scheduled")
+    outbound_dlq_key: str = Field(default="nexus:outbound:dead")
+    outbound_worker_poll_seconds: float = Field(default=2.0, gt=0.0, le=60.0)
+    outbound_worker_batch_size: int = Field(default=16, ge=1, le=256)
+
+    def outbound_backoff_seconds(self) -> list[int]:
+        """Parse the CSV into ordered backoff intervals."""
+
+        parts = [p.strip() for p in self.outbound_backoff_seconds_csv.split(",") if p.strip()]
+        out: list[int] = []
+        for part in parts:
+            try:
+                value = int(part)
+            except ValueError:
+                continue
+            if value > 0:
+                out.append(value)
+        return out or [30, 120, 600, 3600]
 
 
 @lru_cache(maxsize=1)

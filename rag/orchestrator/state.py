@@ -35,3 +35,16 @@ class NexusState(TypedDict, total=False):
 
     # Bookkeeping
     abstained: bool
+
+    # Phase 5 — guardrails + observability
+    requires_human_handover: bool
+    handover_reason: str | None
+    uncertainty_score: float
+    validator_failures: tuple[str, ...]
+
+    # Phase 5 — LLM usage capture
+    llm_model: str
+    llm_prompt_tokens: int
+    llm_completion_tokens: int
+    llm_total_tokens: int
+    llm_latency_ms: int

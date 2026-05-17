@@ -1,0 +1,26 @@
+# LiteLLM proxy config for the lite VPS deploy.
+# No Postgres, no Redis cache, no Langfuse callback — single-tenant proxy
+# in front of Groq. The full-stack config.yaml stays for the production
+# docker-compose stack when it lands.
+
+model_list:
+  - model_name: groq-llama-3.3-70b
+    litellm_params:
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
+      temperature: 0.3
+      max_tokens: 1024
+
+  - model_name: groq-llama-3.1-8b
+    litellm_params:
+      model: groq/llama-3.1-8b-instant
+      api_key: os.environ/GROQ_API_KEY
+      temperature: 0.5
+      max_tokens: 512
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY

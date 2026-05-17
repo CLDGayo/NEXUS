@@ -1,0 +1,65 @@
+name: nexus-v2-lite
+
+# Lite VPS deploy: only the v2 API + LiteLLM proxy. Reuses the existing
+# standalone Qdrant container (qdrant-nexus, 127.0.0.1:6333). No Postgres /
+# Redis / Langfuse / Clickhouse / MinIO — those land with the full stack
+# in docker-compose.yml when ready.
+#
+# Both services run with --network host so they can:
+#   * reach the existing qdrant-nexus container at 127.0.0.1:6333
+#   * be reverse-proxied by the host's nginx at 127.0.0.1:<port>
+#
+# Outbound dispatch is OFF by default; sync InboundAck contains the reply.
+
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  api:
+    <<: [*restart, *logging]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nexus-v2-api:lite
+    container_name: nexus-v2-api
+    env_file: .env
+    network_mode: host
+    command:
+      - uvicorn
+      - rag.messenger.main:app
+      - --host
+      - 127.0.0.1
+      - --port
+      - "8500"
+      - --proxy-headers
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8500/api/health', timeout=2).status==200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  litellm:
+    <<: [*restart, *logging]
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: nexus-v2-litellm
+    env_file: .env
+    network_mode: host
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml:ro
+    command:
+      - --config
+      - /app/config.yaml
+      - --host
+      - 127.0.0.1
+      - --port
+      - "4000"
+      - --num_workers
+      - "2"
