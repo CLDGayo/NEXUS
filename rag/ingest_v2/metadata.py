@@ -18,6 +18,11 @@ from typing import Any
 
 # Match `[[Target]]`, `[[Target|alias]]`, and `[[Target#heading]]`.
 _WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]+)?\]\]")
+# Same target shape, but with explicit groups for the anchor and the alias.
+# Phase 7 graph builder uses this to persist link anchors + aliases.
+_WIKILINK_DETAIL_RE = re.compile(
+    r"\[\[([^\]|#]+)(?:#([^\]|]*))?(?:\|([^\]]+))?\]\]"
+)
 # Inline tags `#tag-name` not inside code spans.
 _INLINE_TAG_RE = re.compile(r"(?<![\w/])#([A-Za-z][\w/-]*)")
 # Frontmatter delimiter (Obsidian/Jekyll style: --- at line start).
@@ -79,6 +84,26 @@ def extract_wikilinks(body: str) -> tuple[str, ...]:
         if target:
             seen.setdefault(target, None)
     return tuple(seen)
+
+
+def extract_wikilinks_detailed(
+    body: str,
+) -> tuple[tuple[str, str | None, str | None], ...]:
+    """Order-preserving ``(target, anchor, alias)`` triples.
+
+    Unlike :func:`extract_wikilinks`, duplicates (same target but different
+    anchor/alias) are preserved so the graph builder can store every edge.
+    """
+
+    out: list[tuple[str, str | None, str | None]] = []
+    for match in _WIKILINK_DETAIL_RE.finditer(body):
+        target = match.group(1).strip()
+        if not target:
+            continue
+        anchor = (match.group(2) or "").strip() or None
+        alias = (match.group(3) or "").strip() or None
+        out.append((target, anchor, alias))
+    return tuple(out)
 
 
 def extract_tags(frontmatter: dict[str, Any], body: str) -> tuple[str, ...]:

@@ -53,6 +53,34 @@ services:
     networks: [nexus_net]
 
   # -----------------------------------------------------------------------
+  # Outbound delivery worker (Phase 6 → 7)
+  # Reuses the api image; consumes the Redis-backed retry queue produced
+  # by ``OutboundSender`` and POSTs replies to n8n/Make targets with
+  # exponential backoff.
+  # -----------------------------------------------------------------------
+  outbound_worker:
+    <<: [*restart, *logging]
+    image: nexus-v2-api:latest
+    container_name: nexus-outbound-worker
+    command: ["python", "-m", "rag.messenger.worker"]
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'rag.messenger.worker' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks: [nexus_net]
+
+  # -----------------------------------------------------------------------
   # Vector store
   # -----------------------------------------------------------------------
   qdrant:
@@ -136,6 +164,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4000/health/liveliness || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
     networks: [nexus_net]
 
   # -----------------------------------------------------------------------
@@ -221,6 +255,15 @@ services:
       LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
       LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
       LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+    healthcheck:
+      # langfuse-worker exposes no HTTP surface; the simplest honest check
+      # is that the node process is alive. Replace with an HTTP probe once
+      # the upstream image starts a /health server.
+      test: ["CMD-SHELL", "pgrep -f langfuse-worker >/dev/null || pgrep -f 'node.*worker' >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks: [nexus_net]
 
   langfuse-web:
@@ -243,6 +286,12 @@ services:
       LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-changeme123!}
     ports:
       - "${LANGFUSE_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/public/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
     networks: [nexus_net]
 
 networks:

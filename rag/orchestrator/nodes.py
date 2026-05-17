@@ -27,6 +27,7 @@ from rag.orchestrator.llm import LLMError, LLMResult, chat_complete
 from rag.orchestrator.state import NexusState
 from rag.observability.decorators import traced
 from rag.retrieval.dense import dense_search
+from rag.retrieval.graph import graph_search
 from rag.retrieval.rerank import rerank
 from rag.retrieval.rrf import reciprocal_rank_fusion
 from rag.retrieval.sparse import sparse_search
@@ -75,11 +76,22 @@ async def retrieve_sparse_node(state: NexusState) -> dict:
     return {"sparse_hits": hits}
 
 
+@traced("graph.node.retrieve_graph", kind="retrieval")
+async def retrieve_graph_node(state: NexusState) -> dict:
+    # The graph arm is more expensive on cold queries than dense/sparse
+    # because it touches both SQLite and Qdrant. Still safe to fan out
+    # in parallel — langgraph awaits all three at the fuse barrier.
+    hits = await graph_search(state["query"], k=settings.retrieval_k_per_arm)
+    return {"graph_hits": hits}
+
+
 @traced("graph.node.fuse", kind="retrieval")
 async def fuse_node(state: NexusState) -> dict:
     dense = state.get("dense_hits", [])
     sparse = state.get("sparse_hits", [])
-    fused = reciprocal_rank_fusion([dense, sparse])
+    graph = state.get("graph_hits", [])
+    # Three-arm reciprocal-rank fusion. Empty arms contribute nothing.
+    fused = reciprocal_rank_fusion([dense, sparse, graph])
     return {"fused": fused[: settings.retrieval_k_per_arm]}
 
 

@@ -21,6 +21,9 @@ from pathlib import Path
 from typing import Any
 
 from rag.config import settings
+from rag.ingest_v2.graph_db import connect as graph_connect
+from rag.ingest_v2.graph_db import resolve_link_targets
+from rag.ingest_v2.graph_index import index_file_links
 from rag.ingest_v2.late_chunker import late_chunk
 from rag.ingest_v2.metadata import (
     extract_file_metadata,
@@ -179,6 +182,17 @@ async def ingest_file(
             error=f"upsert failed: {exc}",
         )
 
+    # 7. Wikilink graph — Phase 7. Failure here must not lose the chunks
+    # we just upserted, so any exception is logged and swallowed.
+    try:
+        frontmatter, body = split_frontmatter(markdown)
+        async with graph_connect() as conn:
+            await index_file_links(
+                conn, path=path, body=body, frontmatter=frontmatter
+            )
+    except Exception as exc:  # pragma: no cover - defensive
+        _log.warning("graph link index failed for %s: %s", path, exc)
+
     return IngestResult(
         source=path, chunks_emitted=len(ingest_chunks), chunks_upserted=written,
     )
@@ -208,6 +222,18 @@ async def ingest_paths(
                 dry_run=dry_run,
             )
         )
+
+    # After every file in the batch has registered its title + outbound
+    # links, resolve target text → file paths in a single pass. This is
+    # the bit that makes the graph "complete" — earlier files can now see
+    # later files as resolved neighbors.
+    if not dry_run:
+        try:
+            async with graph_connect() as conn:
+                await resolve_link_targets(conn)
+        except Exception as exc:  # pragma: no cover - defensive
+            _log.warning("graph link resolution failed: %s", exc)
+
     return results
 
 

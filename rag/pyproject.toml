@@ -24,7 +24,16 @@ package = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Repo root on sys.path so `from rag.X import Y` resolves the same way
+# the container does (`PYTHONPATH=/app`). pyproject.toml lives at
+# rag/pyproject.toml so ".." is the repo root.
+pythonpath = [".."]
 markers = [
     "unit: fast, isolated unit tests",
     "integration: tests that exercise multiple modules or mock external services",
+]
+
+[dependency-groups]
+dev = [
+    "fakeredis>=2.35.1",
 ]

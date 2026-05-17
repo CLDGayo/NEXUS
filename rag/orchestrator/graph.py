@@ -24,6 +24,7 @@ from rag.orchestrator.nodes import (
     rerank_node,
     respond_node,
     retrieve_dense_node,
+    retrieve_graph_node,
     retrieve_sparse_node,
 )
 from rag.orchestrator.state import NexusState
@@ -53,6 +54,7 @@ def build_graph() -> Any:
 
     graph.add_node("retrieve_dense", retrieve_dense_node)
     graph.add_node("retrieve_sparse", retrieve_sparse_node)
+    graph.add_node("retrieve_graph", retrieve_graph_node)
     graph.add_node("fuse", fuse_node)
     graph.add_node("rerank", rerank_node)
     graph.add_node("generate", generate_node)
@@ -60,12 +62,16 @@ def build_graph() -> Any:
     graph.add_node("respond", respond_node)
     graph.add_node("abstain", abstain_node)
 
-    # Fan out to retrieval arms in parallel; both edges into `fuse` make
-    # `fuse` wait for both to complete (langgraph default barrier).
+    # Fan out to retrieval arms in parallel; the three edges into `fuse`
+    # make `fuse` wait for all three to complete (langgraph default
+    # barrier). The graph arm degrades gracefully (empty list) when the
+    # wikilink DB is missing, so it never blocks the pipeline.
     graph.add_edge(START, "retrieve_dense")
     graph.add_edge(START, "retrieve_sparse")
+    graph.add_edge(START, "retrieve_graph")
     graph.add_edge("retrieve_dense", "fuse")
     graph.add_edge("retrieve_sparse", "fuse")
+    graph.add_edge("retrieve_graph", "fuse")
     graph.add_edge("fuse", "rerank")
     graph.add_edge("rerank", "generate")
     graph.add_edge("generate", "guardrails")

@@ -24,6 +24,8 @@ class NexusState(TypedDict, total=False):
     # Retrieval pipeline outputs
     dense_hits: list[ScoredChunk]
     sparse_hits: list[ScoredChunk]
+    # Phase 7 — third parallel arm: wikilink graph expansion.
+    graph_hits: list[ScoredChunk]
     fused: list[ScoredChunk]
     reranked: list[ScoredChunk]
 

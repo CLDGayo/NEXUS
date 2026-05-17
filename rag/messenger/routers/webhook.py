@@ -25,10 +25,14 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, status
+from opentelemetry import trace
 
 from rag.config import settings
 from rag.guardrails.groundedness import abstention_text
+from rag.messenger.idempotency import check_idempotency
 from rag.messenger.payloads import build_outbound_payload
+from rag.messenger.pii import scrub
+from rag.messenger.ratelimit import enforce_rate_limit
 from rag.messenger.schemas import (
     InboundAck,
     InboundMessage,
@@ -37,7 +41,6 @@ from rag.messenger.schemas import (
 )
 from rag.messenger.security import require_webhook_api_key
 from rag.messenger.sender import OutboundSender, SendResult, get_sender
-from rag.observability.decorators import traced
 
 _log = logging.getLogger(__name__)
 
@@ -127,6 +130,37 @@ async def messenger_inbound(
     # broke Pydantic body extraction in FastAPI's signature inspector.
     started = time.perf_counter()
     correlation_id = _correlation_id(payload.correlation_id)
+
+    # Phase 7 — order matters. Rate-limit BEFORE idempotency so a flood of
+    # duplicate retries still counts against the spammer's budget. PII
+    # scrub BEFORE the runner so nested spans + Langfuse only see the
+    # redacted text.
+    await enforce_rate_limit(payload)
+
+    verdict = await check_idempotency(payload)
+    if verdict.duplicate:
+        return InboundAck(
+            status="duplicate",
+            correlation_id=correlation_id,
+            reply_text=None,
+            latency_ms=int((time.perf_counter() - started) * 1000),
+            received_at=_now_epoch(),
+        )
+
+    scrub_result = scrub(payload.message_text)
+    if scrub_result.redactions:
+        current_span = trace.get_current_span()
+        if current_span is not None and current_span.is_recording():
+            current_span.add_event(
+                "pii.scrubbed",
+                attributes={
+                    f"pii.count.{kind.lower()}": count
+                    for kind, count in scrub_result.counts_by_kind.items()
+                },
+            )
+        payload = payload.model_copy(
+            update={"message_text": scrub_result.scrubbed_text}
+        )
 
     graph_result: dict = {}
     try:

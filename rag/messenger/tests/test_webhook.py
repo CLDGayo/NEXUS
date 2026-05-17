@@ -296,3 +296,83 @@ class TestOptOut:
         assert r.status_code == 200
         body = r.json()
         assert body["status"] == "accepted"
+
+
+# ---------------------------------------------------------------------------
+# Phase 7 — PII scrubbing, idempotency, rate limit
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+class TestPiiScrub:
+    def test_runner_receives_scrubbed_text(
+        self, client: TestClient, stub_runner: _StubRunner
+    ) -> None:
+        r = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Webhook-Api-Key": "test-key"},
+            json=_payload(
+                message_text="call me at 555-867-5309 or jane@example.com please",
+                correlation_id="scrub-1",
+            ),
+        )
+        assert r.status_code == 200
+        # Exactly one runner call; the message it received must be scrubbed.
+        assert len(stub_runner.calls) == 1
+        forwarded_payload, _ = stub_runner.calls[0]
+        assert "555-867-5309" not in forwarded_payload.message_text
+        assert "jane@example.com" not in forwarded_payload.message_text
+        assert "[PHONE_REDACTED]" in forwarded_payload.message_text
+        assert "[EMAIL_REDACTED]" in forwarded_payload.message_text
+
+
+@pytest.mark.unit
+class TestIdempotencyAck:
+    def test_replay_returns_duplicate_without_re_running_graph(
+        self, client: TestClient, stub_runner: _StubRunner
+    ) -> None:
+        body = _payload(correlation_id="dedup-xyz")
+        first = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Webhook-Api-Key": "test-key"},
+            json=body,
+        )
+        second = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Webhook-Api-Key": "test-key"},
+            json=body,
+        )
+        assert first.status_code == 200
+        assert first.json()["status"] == "accepted"
+        assert second.status_code == 200
+        assert second.json()["status"] == "duplicate"
+        # Runner ran only once.
+        assert len(stub_runner.calls) == 1
+
+
+@pytest.mark.unit
+class TestRateLimitAck:
+    def test_429_after_cap(
+        self, client: TestClient, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from rag.config import settings as cfg
+
+        monkeypatch.setattr(cfg, "messenger_rate_limit_per_min", 2, raising=False)
+
+        # Two distinct payloads under the cap — both 200.
+        for i in range(2):
+            r = client.post(
+                "/webhook/messenger/inbound",
+                headers={"X-Webhook-Api-Key": "test-key"},
+                json=_payload(correlation_id=f"rl-{i}"),
+            )
+            assert r.status_code == 200, r.text
+
+        # Third hits the wall.
+        third = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Webhook-Api-Key": "test-key"},
+            json=_payload(correlation_id="rl-3"),
+        )
+        assert third.status_code == 429
+        assert third.json()["detail"] == "rate_limited"
+        assert third.headers.get("Retry-After") == "60"

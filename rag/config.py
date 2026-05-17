@@ -96,6 +96,20 @@ class Settings(BaseSettings):
         description="Shared secret n8n/Make must send as X-Webhook-Api-Key.",
     )
 
+    # ---- Webhook hardening (Phase 7) ----
+    messenger_rate_limit_per_min: int = Field(
+        default=20,
+        ge=0,
+        le=10_000,
+        description="Max inbound messages per rolling 60s window per user_id. 0 disables.",
+    )
+    messenger_idempotency_ttl_s: int = Field(
+        default=86_400,
+        ge=60,
+        le=604_800,
+        description="TTL for the SET-NX idempotency key (seconds).",
+    )
+
     # ---- Facebook Messenger surface (Phase 8) ----
     messenger_public_enabled: bool = Field(default=False)
     messenger_app_secret: str | None = None

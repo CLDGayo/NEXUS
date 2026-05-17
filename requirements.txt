@@ -41,3 +41,9 @@ httpx==0.28.0
 python-dotenv==1.0.1
 structlog==24.4.0
 tenacity==9.0.0
+
+# ---- Dev / test ----
+# fakeredis lets the webhook security tests (idempotency, rate limit)
+# exercise the real redis.asyncio code paths without a running broker.
+# Pure-Python, ~200 KB, no native build.
+fakeredis==2.26.1
