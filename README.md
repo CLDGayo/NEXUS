@@ -1,58 +1,43 @@
 <div align="center">
-  <h1>🌌 Nexus RAG</h1>
-  <p><strong>Enterprise-Grade, Stateful Retrieval-Augmented Generation for Automated Customer Engagement</strong></p>
+  
+# 🌌 NEXUS
 
-  <p>
-    <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python Version" />
-    <img src="https://img.shields.io/badge/Docker-Enabled-2496ED.svg?logo=docker" alt="Docker" />
-    <img src="https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi" alt="FastAPI" />
-    <img src="https://img.shields.io/badge/LangGraph-Stateful-FF4F00.svg" alt="LangGraph" />
-    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License" />
-  </p>
+**Enterprise-Grade, Stateful RAG System for Automated Customer Engagement**
+
+[![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+
+NEXUS acts as an intelligent bridge between internal, structured knowledge bases (Obsidian PARA method) and public-facing client interactions. Engineered to handle high-volume webhook traffic from orchestrators like **n8n** and **Make**, it delivers zero-hallucination, context-aware responses directly to platforms like Facebook Messenger.
+
+[Features](#-key-features) • [Architecture](#-architecture) • [Getting Started](#-getting-started) • [Knowledge Vault](#-the-para-knowledge-vault) • [Observability](#-observability) 
+
 </div>
 
 ---
 
-Nexus is a sovereign, high-fidelity RAG architecture designed to bridge the gap between internal knowledge bases (like an Obsidian PARA vault) and fully automated, public-facing client interactions. Engineered for strict reliability and latency reduction, Nexus is webhook-ready to handle high-volume traffic from platforms like Facebook Messenger via automation orchestration tools like n8n and Make.
+## ✨ Key Features
 
-## ✨ Core Features
-
-- **Hybrid Retrieval Engine**: Combines dense vector search (Qdrant) and sparse lexical search (BM25) merged with Reciprocal Rank Fusion (RRF) for unparalleled exact-match accuracy.
-- **Stateful Conversational Memory**: Utilizes `LangGraph` to maintain multi-turn session states, ensuring the agent remembers context throughout complex customer inquiries.
-- **B.R.I.X. Optimized Prompting**: Built-in system architecture tailored to the BRIX framework—dynamically generating responses that **B**uild attention, **R**elate to the problem, **I**nspire action, and e**X**ecute conversion natively within the chat UI.
-- **Zero-Hallucination Guardrails**: Implements strict programmatic boundary detection to halt uncertainty streams and gracefully hand over to human agents when confidence thresholds drop.
-- **Advanced Ingestion Pipeline**: Features semantic boundary chunking, "Late Chunking" paradigms via Jina Embeddings, and cross-encoder reranking (`bge-reranker-v2-m3`).
-- **Complete Observability**: Integrated with `Langfuse` and OpenTelemetry for deep granular tracing of LLM logic, latency, and costs.
+* 🧠 **Stateful Conversational Memory:** Powered by `LangGraph`, NEXUS maintains deep context across multi-turn conversations, seamlessly handling complex, non-linear customer queries.
+* 🔍 **Hybrid Retrieval Engine:** Combines dense vector search (Qdrant) and sparse lexical search (BM25), merged with Reciprocal Rank Fusion (RRF) and a cross-encoder reranker for pinpoint exact-match accuracy.
+* 🛡️ **Zero-Hallucination Guardrails:** Strict programmatic boundaries measure confidence levels. If uncertainty is detected, NEXUS gracefully hands the conversation over to a human agent.
+* 🎯 **B.R.I.X. Optimized Prompting:** Architected around the B.R.I.X framework (Build attention, Relate, Inspire, eXecute) to drive conversions natively within the chat interface.
+* 📊 **Deep Observability:** Native integration with `Langfuse` and OpenTelemetry for real-time tracking of LLM costs, latency, and logical tracing.
 
 ## 🏗 Architecture
 
-Code output
-File generated successfully.
+NEXUS is built to sit securely behind your automation layer, receiving standardized payloads and returning validated responses.
 
 ```mermaid
 graph TD
-    A[Facebook Messenger] -->|Webhook| B(n8n / Make)
+    A[Customer/FB Messenger] -->|Message| B(n8n / Make.com Webhook)
     B -->|POST Payload| C[FastAPI Routing Layer]
-    
-    subgraph Nexus Backend Engine
-        C --> D{LangGraph Agent Orchestrator}
-        D <--> E[(Redis Semantic Cache)]
-        D --> F[Retrieval Engine]
-        
-        subgraph Hybrid Search
-            F --> G[(Qdrant Dense Vectors)]
-            F --> H[(BM25 Lexical)]
-            G --> I[Reciprocal Rank Fusion RRF]
-            H --> I
-            I --> J[Cross-Encoder Reranker]
-        end
-        
-        J --> K[LLM Generation Provider via LiteLLM]
-        K --> L[Guardrails Output Validation]
-    end
-    
-    L -->|Verified Response| C
-    C -->|Response| B
-    B -->|API Delivery| A
-    
-    D -.-> Z[Langfuse Observability]
+    C --> D{LangGraph Agent Orchestrator}
+    D -->|Check Memory| E[(Redis Semantic Cache)]
+    D -->|Query| F[Hybrid Search Engine]
+    F --> G[(Qdrant / BM25)]
+    D -->|Generate| H[LiteLLM Routing]
+    H --> I[Guardrail Validation]
+    I -->|Verified Response| B
+    B -->|Send Message| A
