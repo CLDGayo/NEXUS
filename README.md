@@ -1,14 +1,3 @@
-{
-  "session_id": "fb_msg_987654321",
-  "user_id": "client_abc123",
-  "message": "Can I get a pricing breakdown for the AI automation setup?",
-  "metadata": {
-    "source": "facebook_messenger",
-    "urgency": "normal"
-  }
-}
-Here is a comprehensive, polished README structure designed to match the standards of top-tier open-source GitHub repositories. You can copy and paste this directly into your `README.md` file.
-```markdown
 <div align="center">
   
 # 🌌 NEXUS
