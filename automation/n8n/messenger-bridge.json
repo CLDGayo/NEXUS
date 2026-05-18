@@ -1,0 +1,117 @@
+{
+  "name": "Nexus — Facebook Messenger Bridge",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nexus-fb-inbound",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "fb-webhook-trigger",
+      "name": "FB Webhook (Inbound)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 300],
+      "webhookId": "nexus-fb-inbound",
+      "notes": "Subscribe this URL in Meta Developer Console → Messenger → Webhooks. Verify token = MESSENGER_VERIFY_TOKEN env."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate Facebook X-Hub-Signature-256 HMAC.\n// Reject the request immediately if the signature is missing or mismatched —\n// this prevents anyone spoofing Facebook from triggering our pipeline.\nconst crypto = require('crypto');\n\nconst appSecret = $env.MESSENGER_APP_SECRET;\nif (!appSecret) {\n  throw new Error('MESSENGER_APP_SECRET env var is not configured in n8n.');\n}\n\nconst sig = $input.first().json.headers['x-hub-signature-256'] || '';\nconst rawBody = $input.first().json.body || '';\nconst expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex');\n\nif (sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {\n  throw new Error('Invalid X-Hub-Signature-256');\n}\n\n// Parse the FB envelope and emit one item per message event.\nconst parsed = JSON.parse(rawBody);\nconst out = [];\nfor (const entry of (parsed.entry || [])) {\n  for (const ev of (entry.messaging || [])) {\n    if (!ev.message || !ev.message.text) continue;\n    out.push({\n      json: {\n        user_id: ev.sender.id,\n        page_id: entry.id,\n        message_text: ev.message.text,\n        timestamp: Math.floor((ev.timestamp || Date.now()) / 1000),\n        correlation_id: `fb_${ev.message.mid || crypto.randomUUID()}`\n      }\n    });\n  }\n}\nreturn out;\n"
+      },
+      "id": "validate-hmac",
+      "name": "Validate HMAC + Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.NEXUS_WEBHOOK_URL}}/webhook/messenger/inbound",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "X-Webhook-Api-Key", "value": "={{$env.WEBHOOK_API_KEY}}"}
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={ \"user_id\": $json.user_id, \"message_text\": $json.message_text, \"timestamp\": $json.timestamp, \"channel\": \"messenger\", \"page_id\": $json.page_id, \"correlation_id\": $json.correlation_id, \"outbound_url\": $env.N8N_OUTBOUND_LISTENER_URL }",
+        "options": {
+          "timeout": 10000,
+          "response": {"response": {"fullResponse": false}}
+        }
+      },
+      "id": "post-to-nexus",
+      "name": "POST to Nexus Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300],
+      "notes": "NEXUS_WEBHOOK_URL = https://messenger.nexus.gayo-sphere.cloud  /  N8N_OUTBOUND_LISTENER_URL = this workflow's 'Outbound Listener' webhook URL."
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nexus-fb-outbound",
+        "options": {}
+      },
+      "id": "outbound-listener",
+      "name": "Outbound Listener (from worker)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [200, 600],
+      "webhookId": "nexus-fb-outbound",
+      "notes": "Receives the worker's POST. Set MAKE_WEBHOOK_URL (or per-request outbound_url) to this webhook's URL."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/me/messages?access_token={{$env.MESSENGER_PAGE_ACCESS_TOKEN}}",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={ \"recipient\": { \"id\": $json.body.user_id }, \"message\": { \"text\": $json.body.reply_text }, \"messaging_type\": \"RESPONSE\" }",
+        "options": {"timeout": 8000}
+      },
+      "id": "send-to-fb",
+      "name": "Send to Messenger",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 600]
+    }
+  ],
+  "connections": {
+    "FB Webhook (Inbound)": {
+      "main": [[{"node": "Validate HMAC + Normalize", "type": "main", "index": 0}]]
+    },
+    "Validate HMAC + Normalize": {
+      "main": [[{"node": "POST to Nexus Webhook", "type": "main", "index": 0}]]
+    },
+    "Outbound Listener (from worker)": {
+      "main": [[{"node": "Send to Messenger", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true
+  },
+  "tags": [
+    {"name": "nexus"},
+    {"name": "messenger"},
+    {"name": "phase-8"}
+  ],
+  "_meta": {
+    "description": "Phase 8 bridge: Facebook → n8n (HMAC validated) → Nexus FastAPI (X-Webhook-Api-Key) → worker → n8n outbound → Facebook Send API.",
+    "required_n8n_env_vars": [
+      "MESSENGER_APP_SECRET",
+      "MESSENGER_PAGE_ACCESS_TOKEN",
+      "NEXUS_WEBHOOK_URL",
+      "WEBHOOK_API_KEY",
+      "N8N_OUTBOUND_LISTENER_URL"
+    ]
+  }
+}

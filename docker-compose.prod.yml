@@ -1,0 +1,179 @@
+# Phase 8 — production overlay for docker-compose.yml.
+#
+# Apply with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#                  --env-file .env.prod up -d --build
+#
+# Differences from the base compose:
+#   * api + outbound_worker get the host vault bind-mounted read-only at /vault
+#     so `docker compose exec api python -m rag.ingest_v2 ingest --vault`
+#     reads exactly what `deploy-rag.sh` rsynced to /home/nexus-vault.
+#   * Public-facing ports are bound to 127.0.0.1 only — nginx terminates TLS
+#     on messenger.nexus.gayo-sphere.cloud and proxies to the loopback.
+#   * api binds host :8200 (host :8000 is already occupied by code-server →
+#     code.gayo-sphere.cloud). nginx vhost messenger.* proxies to :8200.
+#   * qdrant runs as an external container (qdrant-nexus, attached to
+#     nexus_net with network alias 'qdrant'). The compose-managed qdrant
+#     service is disabled via the "external-qdrant" profile so it never starts.
+#   * Conservative resource caps so a runaway request cannot starve the host.
+#   * env_file repointed to .env.prod (kept out of git, on-host only).
+
+services:
+  api:
+    env_file: .env.prod
+    # !override prevents compose from merging base's `${API_PORT:-8000}:8000`
+    # (which would publicly bind 0.0.0.0:8200). Loopback-only.
+    ports: !override
+      - "127.0.0.1:8210:8000"
+    # Drop qdrant from depends_on — it runs as an external standalone
+    # container (qdrant-nexus). !reset replaces (not merges) the base map.
+    depends_on: !reset
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      litellm:
+        condition: service_started
+    volumes:
+      - /home/nexus-vault:/vault:ro
+      - api_data:/app/rag/data
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2g
+
+  outbound_worker:
+    env_file: .env.prod
+    # Base healthcheck uses `pgrep` which the slim runtime image doesn't ship.
+    # PID 1 IS the worker process (python -m rag.messenger.worker) — if the
+    # process dies the container exits, so a trivial "still running" check
+    # is honest. Confirm PID 1 is python rather than a noop.
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q python /proc/1/comm || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+    volumes:
+      - /home/nexus-vault:/vault:ro
+      - api_data:/app/rag/data
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+
+  # Disabled — qdrant-nexus standalone container serves :6333.
+  # Attach it to nexus_net manually:
+  #   docker network connect nexus_net qdrant-nexus --alias qdrant
+  qdrant:
+    profiles: ["external-qdrant"]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4g
+
+  postgres:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 2g
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768m
+
+  litellm:
+    # Base healthcheck uses `curl` which the litellm image doesn't ship.
+    # Use python instead.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://127.0.0.1:4000/health/liveliness\", timeout=3).status==200 else 1)' || exit 1"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    # Single uvicorn worker (2 workers OOM'd inside 1G limit). 1.5G headroom.
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1536m
+
+  clickhouse:
+    # Base healthcheck uses `localhost` which resolves to ::1 in this image;
+    # clickhouse binds IPv4 only → connection refused. Force 127.0.0.1.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8123/ping || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 3g
+
+  minio:
+    # Console only reachable from the host — no public S3 surface needed.
+    # !override prevents merging base's `${MINIO_CONSOLE_PORT:-9001}:9001`.
+    ports: !override
+      - "127.0.0.1:9101:9001"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512m
+
+  langfuse-worker:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+
+  langfuse-web:
+    # Bound to loopback; expose externally only if you stand up a separate
+    # nginx vhost for traces.nexus.gayo-sphere.cloud later.
+    # !override prevents merging base's `${LANGFUSE_PORT:-3000}:3000`.
+    # Host port 3100 (3000 has a phantom reservation; 3100 is free).
+    ports: !override
+      - "127.0.0.1:3100:3000"
+    # Next.js standalone binds to the container hostname by default → only
+    # listens on the container's bridge IP. Force bind on all interfaces.
+    environment:
+      HOSTNAME: "0.0.0.0"
+    # Base healthcheck hits `localhost:3000` which resolves to ::1; Next.js
+    # listens IPv4 only → ECONNREFUSED. Force 127.0.0.1.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/public/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+
+volumes:
+  api_data:
+    name: nexus_api_data
+
+# Treat nexus_net as a pre-existing external network. We attach the
+# standalone qdrant-nexus container to it (with alias 'qdrant') before
+# `compose up`, so compose must NOT try to recreate or relabel the net.
+networks:
+  nexus_net:
+    external: true
+    name: nexus_net

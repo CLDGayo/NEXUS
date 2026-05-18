@@ -1,0 +1,61 @@
+# OpenTelemetry Collector config — Phase 8 STUB.
+#
+# The api + outbound_worker export OTLP/gRPC to otel-collector:4317 via
+# OTEL_EXPORTER_OTLP_ENDPOINT. This stub keeps the collector cheap: receives
+# OTLP, batches, and writes to stdout (visible via `docker compose logs -f
+# otel-collector`). Phase 9 swaps the `logging` exporter for Tempo / Jaeger /
+# Langfuse OTel ingest.
+#
+# To enable: add an `otel-collector` service to docker-compose.yml that
+# mounts this file at /etc/otel-collector-config.yaml and uses the
+# otel/opentelemetry-collector-contrib image. Until that service is added
+# the api still runs — `init_tracing()` no-ops when the endpoint is
+# unreachable.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+  memory_limiter:
+    check_interval: 2s
+    limit_percentage: 75
+    spike_limit_percentage: 25
+
+exporters:
+  # Phase 8: stdout only. Cheap, observable via `docker logs`. Replace in
+  # Phase 9 with Tempo / Jaeger / OTLP-HTTP to Langfuse cloud.
+  debug:
+    verbosity: basic
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+  telemetry:
+    logs:
+      level: info
