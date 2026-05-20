@@ -1,14 +1,16 @@
-"""Integrations router — CRUD + test-fire."""
+"""Integrations router — CRUD + test-fire + Messenger token management."""
 
 from __future__ import annotations
 
 import json
+import os
 from typing import Any
 
 import aiosqlite
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
+import messenger_overlay
 from database import DB_PATH, now_iso
 from events import EVENT_NAMES
 from integrations.dispatcher import fire_test
@@ -98,6 +100,78 @@ async def list_integrations() -> list[dict]:
 @router.get("/events")
 async def list_events() -> dict:
     return {"events": list(EVENT_NAMES), "types": sorted(VALID_TYPES)}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Messenger token management (Phase 11)
+#
+# Declared BEFORE the parametric `/{integration_id}` routes below so the
+# literal `/messenger` path wins the match.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class MessengerPatch(BaseModel):
+    verify_token: str | None = Field(default=None, min_length=16, max_length=512)
+    page_access_token: str | None = Field(default=None, min_length=16, max_length=512)
+    app_secret: str | None = Field(default=None, min_length=16, max_length=512)
+
+
+def _public_base_url(request: Request) -> str:
+    """Return the user-facing base URL for webhook display.
+
+    Honors ``PUBLIC_BASE_URL`` env override (set in prod to the HTTPS host)
+    and falls back to the request's scheme + host when running locally.
+    """
+    override = os.environ.get("PUBLIC_BASE_URL")
+    if override:
+        return override.rstrip("/")
+    return f"{request.url.scheme}://{request.url.netloc}"
+
+
+def _messenger_payload(request: Request) -> dict[str, Any]:
+    verify = messenger_overlay.current_verify_token()
+    pat = messenger_overlay.current_page_access_token()
+    app_secret = messenger_overlay.current_app_secret()
+    return {
+        "webhook_url": f"{_public_base_url(request)}/webhook/messenger/inbound",
+        "verify_token": verify,
+        "verify_token_present": verify is not None,
+        "page_access_token_masked": messenger_overlay.mask_page_access_token(pat),
+        "page_access_token_present": pat is not None,
+        "app_secret_masked": messenger_overlay.mask_app_secret(app_secret),
+        "app_secret_present": app_secret is not None,
+    }
+
+
+@router.get("/messenger")
+async def get_messenger(request: Request) -> dict[str, Any]:
+    return _messenger_payload(request)
+
+
+@router.post("/messenger/rotate-verify-token")
+async def rotate_messenger_verify_token(request: Request) -> dict[str, Any]:
+    messenger_overlay.rotate_verify_token()
+    return _messenger_payload(request)
+
+
+@router.patch("/messenger")
+async def patch_messenger(body: MessengerPatch, request: Request) -> dict[str, Any]:
+    if (
+        body.verify_token is None
+        and body.page_access_token is None
+        and body.app_secret is None
+    ):
+        raise HTTPException(status_code=422, detail="No fields to update")
+    try:
+        if body.verify_token is not None:
+            messenger_overlay.set_verify_token(body.verify_token)
+        if body.page_access_token is not None:
+            messenger_overlay.set_page_access_token(body.page_access_token)
+        if body.app_secret is not None:
+            messenger_overlay.set_app_secret(body.app_secret)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _messenger_payload(request)
 
 
 @router.post("", status_code=201)
