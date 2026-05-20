@@ -3,10 +3,34 @@ import { RefreshCw } from 'lucide-react';
 import { api } from '../lib/api.js';
 import KpiCards from '../components/dashboard/KpiCards.jsx';
 import HealthPanel from '../components/dashboard/HealthPanel.jsx';
-import GroqUsagePanel from '../components/dashboard/GroqUsagePanel.jsx';
+import ActivityPanel from '../components/dashboard/ActivityPanel.jsx';
 import QueryVolumeChart from '../components/dashboard/QueryVolumeChart.jsx';
 import IngestionChart from '../components/dashboard/IngestionChart.jsx';
 import RecentActivityTable from '../components/dashboard/RecentActivityTable.jsx';
+
+function SkeletonGrid() {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-7">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-[68px] animate-pulse rounded-xl border border-nexus-border bg-slate-100"
+          />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="h-40 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
+        <div className="h-40 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
+      </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="h-48 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
+        <div className="h-48 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
+      </div>
+      <div className="h-56 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState(null);
@@ -30,9 +54,20 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-6xl space-y-4 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700">Observability</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-slate-700">Live Telemetry</h2>
+              {!loading && !error && stats && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  </span>
+                  Live
+                </span>
+              )}
+            </div>
             <p className="text-xs text-nexus-muted">
-              Vault, retrieval, and service health at a glance.
+              Real-time vault, retrieval, and Messenger health.
             </p>
           </div>
           <button
@@ -46,11 +81,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {loading && (
-          <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
-            Loading dashboard…
-          </div>
-        )}
+        {loading && <SkeletonGrid />}
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
         )}
@@ -61,7 +92,7 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               <HealthPanel health={stats.health} />
-              <GroqUsagePanel usage={stats.groq_usage} />
+              <ActivityPanel activity={stats.activity} />
             </div>
 
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

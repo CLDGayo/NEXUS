@@ -22,13 +22,15 @@ export default function HealthPanel({ health }) {
   const h = health || {};
   const qdrant = h.qdrant || {};
   const groq = h.groq || {};
+  const messenger = h.messenger || {};
   const watcher = h.watcher || {};
   return (
     <section className="rounded-xl border border-nexus-border bg-white p-4 shadow-sm">
       <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">System Health</div>
       <div className="divide-y divide-nexus-border">
         <Row label="Qdrant" ok={!!qdrant.ok} hint={qdrant.ok ? null : qdrant.hint} />
-        <Row label="Groq API" ok={!!groq.ok} hint={groq.ok ? null : 'GROQ_API_KEY not set'} />
+        <Row label="Groq API" ok={!!groq.ok} hint={groq.ok ? null : (groq.hint || 'GROQ_API_KEY not set')} />
+        <Row label="Messenger" ok={!!messenger.ok} hint={messenger.ok ? null : messenger.hint} />
         <Row label="File Watcher" ok={!!watcher.ok} hint={null} />
       </div>
     </section>

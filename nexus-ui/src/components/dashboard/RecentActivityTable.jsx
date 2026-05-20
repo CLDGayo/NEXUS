@@ -13,7 +13,8 @@ function relativeTime(iso) {
 }
 
 function StatusBadge({ status }) {
-  const ok = (status || '').toLowerCase() === 'indexed';
+  const s = (status || '').toLowerCase();
+  const ok = s === 'indexed' || s === 'answered';
   const cls = ok
     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
     : 'bg-amber-50 text-amber-700 border-amber-200';
