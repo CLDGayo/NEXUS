@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
 import resources_store
@@ -46,10 +46,11 @@ async def upsert_prompt(slug: str, body: PromptUpsert) -> dict:
     return {"slug": safe_slug, "ok": True}
 
 
-@router.delete("/prompts/{slug}", status_code=204)
-async def delete_prompt(slug: str) -> None:
+@router.delete("/prompts/{slug}", status_code=204, response_class=Response)
+async def delete_prompt(slug: str) -> Response:
     if not resources_store.delete_prompt(slug):
         raise HTTPException(status_code=404, detail="Prompt not found")
+    return Response(status_code=204)
 
 
 @router.post("/prompts/{slug}/activate")

@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
 import settings_service
@@ -62,14 +62,15 @@ async def patch_settings(payload: dict[str, Any]) -> dict:
     return {"updated": updated}
 
 
-@router.post("/password", status_code=204)
-async def change_password(body: PasswordChange) -> None:
+@router.post("/password", status_code=204, response_class=Response)
+async def change_password(body: PasswordChange) -> Response:
     if not verify_password(body.old):
         raise HTTPException(status_code=401, detail="Current password is incorrect")
     try:
         set_password(body.new)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return Response(status_code=204)
 
 
 @router.post("/rotate-jwt")

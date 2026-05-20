@@ -1338,9 +1338,17 @@ async function sendMsg(prefill) {
   try {
     const res = await fetch('/api/chat/stream', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Auth.headers(),
       body: JSON.stringify({ question, session_id: _sessionId, history: _history }),
     });
+
+    if (res.status === 401) {
+      Auth.clear();
+      thinking.finish();
+      bubble.textContent = 'Session expired — please log in again.';
+      showLogin();
+      return;
+    }
 
     if (!res.ok) throw new Error('Request failed');
 

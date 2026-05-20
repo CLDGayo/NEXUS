@@ -6,7 +6,7 @@ import hashlib
 import secrets
 
 import aiosqlite
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from database import DB_PATH, now_iso
@@ -81,8 +81,8 @@ async def create_token(body: TokenCreate) -> dict:
     }
 
 
-@router.delete("/{token_id}", status_code=204)
-async def revoke_token(token_id: int) -> None:
+@router.delete("/{token_id}", status_code=204, response_class=Response)
+async def revoke_token(token_id: int) -> Response:
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute(
             "UPDATE api_tokens SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL",
@@ -91,3 +91,4 @@ async def revoke_token(token_id: int) -> None:
         await db.commit()
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Token not found or already revoked")
+    return Response(status_code=204)

@@ -32,12 +32,35 @@ from rag.orchestrator.state import NexusState
 _log = logging.getLogger(__name__)
 
 _graph: Any | None = None
+_checkpointer_override: Any | None = None
+
+
+def set_checkpointer(saver: Any) -> None:
+    """Inject an externally-managed checkpointer (e.g. ``AsyncPostgresSaver``
+    whose async context the FastAPI lifespan owns). Forces the cached graph
+    to rebuild so subsequent ``get_graph()`` calls pick up the new saver.
+
+    Pass ``None`` to revert to the env-driven default (used by tests).
+    """
+
+    global _checkpointer_override
+    _checkpointer_override = saver
+    reset_graph()
 
 
 def _build_checkpointer() -> Any:
-    """Pick a checkpointer based on configuration. ``memory`` default is
-    safe for tests; ``postgres`` requires ``await saver.setup()`` once
-    against the configured DSN before first use (Phase 9 wiring)."""
+    """Pick a checkpointer. Priority:
+
+    1. ``set_checkpointer(...)`` override — used by ``rag.main`` lifespan to
+       hand in an ``AsyncPostgresSaver`` it already called ``setup()`` on.
+    2. ``LANGGRAPH_CHECKPOINT=postgres`` — best-effort sync construction
+       (kept for back-compat; the lifespan path is preferred because
+       ``AsyncPostgresSaver.from_conn_string`` is an async context manager).
+    3. ``MemorySaver()`` — default, safe for tests.
+    """
+
+    if _checkpointer_override is not None:
+        return _checkpointer_override
 
     backend = settings.langgraph_checkpoint.lower()
     if backend == "postgres":  # pragma: no cover - exercised in deploy

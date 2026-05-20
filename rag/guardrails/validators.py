@@ -95,7 +95,8 @@ _SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 
 # Words that look "proper" syntactically but aren't claims worth verifying.
 _PROPER_NOUN_ALLOWLIST: frozenset[str] = frozenset(
-    {
+    word.lower()
+    for word in (
         "I", "We", "Our", "Your", "Their", "His", "Her", "My", "You",
         "The", "This", "That", "These", "Those", "There", "Here", "When",
         "Where", "Why", "How", "What", "Who", "Which", "Hi", "Hey", "Hello",
@@ -105,7 +106,7 @@ _PROPER_NOUN_ALLOWLIST: frozenset[str] = frozenset(
         "Sunday", "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December",
         "AM", "PM", "USD", "EUR", "GBP", "PHP",
-    }
+    )
 )
 
 
@@ -170,15 +171,20 @@ class ExactMatchValidator:
             if not stripped:
                 continue
             words = stripped.split()
+            # Split each token on non-word chars so "Retrieval-Augmented"
+            # becomes ["Retrieval","Augmented"] and "I'll" becomes ["I","ll"].
+            # Otherwise hyphenated compounds and contractions get falsely
+            # flagged because their concatenated form ("RetrievalAugmented",
+            # "Ill") never appears in retrieved context.
             for word in words[1:]:  # skip sentence-initial cap (always cap)
-                bare = re.sub(r"[^\w]", "", word)
-                if not bare or not _PROPER_RE.fullmatch(bare):
-                    continue
-                if bare in _PROPER_NOUN_ALLOWLIST:
-                    continue
-                if bare.lower() in joined_lower:
-                    continue
-                suspicious.append({"kind": "proper_noun", "token": bare})
+                for bare in re.split(r"\W+", word):
+                    if not bare or not _PROPER_RE.fullmatch(bare):
+                        continue
+                    if bare.lower() in _PROPER_NOUN_ALLOWLIST:
+                        continue
+                    if bare.lower() in joined_lower:
+                        continue
+                    suspicious.append({"kind": "proper_noun", "token": bare})
 
         if len(suspicious) > self.max_suspicious:
             tokens_summary = ", ".join(s["token"] for s in suspicious[:6])

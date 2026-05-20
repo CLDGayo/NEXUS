@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 import aiosqlite
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from database import DB_PATH, now_iso
@@ -184,13 +184,14 @@ async def update_integration(integration_id: int, body: IntegrationPatch) -> dic
     return _row_to_dict(row)
 
 
-@router.delete("/{integration_id}", status_code=204)
-async def delete_integration(integration_id: int) -> None:
+@router.delete("/{integration_id}", status_code=204, response_class=Response)
+async def delete_integration(integration_id: int) -> Response:
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute("DELETE FROM integrations WHERE id = ?", (integration_id,))
         await db.commit()
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Integration not found")
+    return Response(status_code=204)
 
 
 @router.post("/{integration_id}/test")

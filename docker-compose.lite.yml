@@ -33,7 +33,7 @@ services:
     network_mode: host
     command:
       - uvicorn
-      - rag.messenger.main:app
+      - rag.main:app
       - --host
       - 127.0.0.1
       - --port

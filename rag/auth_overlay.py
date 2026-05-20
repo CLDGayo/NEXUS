@@ -82,7 +82,16 @@ def current_jwt_secret() -> str:
     overlay = _read_overlay()
     if "jwt_secret" in overlay and overlay["jwt_secret"]:
         return overlay["jwt_secret"]
-    return os.environ.get("JWT_SECRET", "dev-secret-change-this")
+    # Treat an empty env value as missing — `.env.prod` lines like
+    # `JWT_SECRET=` would otherwise return "" (not the fallback), causing
+    # both encode and decode to use an empty secret. That's still
+    # internally consistent, but it makes any forged token trivially
+    # valid — fail safe to the well-known dev value so misconfiguration
+    # is loud rather than silent.
+    env_secret = os.environ.get("JWT_SECRET")
+    if env_secret:
+        return env_secret
+    return "dev-secret-change-this"
 
 
 def rotate_jwt_secret() -> str:

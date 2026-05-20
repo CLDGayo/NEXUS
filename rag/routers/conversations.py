@@ -1,7 +1,7 @@
 """Conversation history CRUD."""
 
 import aiosqlite
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 
 from database import DB_PATH, new_id, now_iso
@@ -68,8 +68,9 @@ async def get_conversation(conversation_id: str) -> dict:
     return {**dict(conv), "messages": [dict(m) for m in messages]}
 
 
-@router.delete("/conversations/{conversation_id}", status_code=204)
-async def delete_conversation(conversation_id: str) -> None:
+@router.delete("/conversations/{conversation_id}", status_code=204, response_class=Response)
+async def delete_conversation(conversation_id: str) -> Response:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DELETE FROM conversations WHERE id = ?", (conversation_id,))
         await db.commit()
+    return Response(status_code=204)

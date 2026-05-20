@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-from rag.messenger.main import app
+from rag.main import app
 from rag.messenger.routers.webhook import (
     get_graph_runner,
     get_outbound_sender,

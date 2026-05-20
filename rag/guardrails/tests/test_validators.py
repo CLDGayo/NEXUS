@@ -104,6 +104,31 @@ class TestExactMatchValidator:
         r = v.validate("We ship orders. Our team handles it.", retrieved=retrieved)
         assert r.passed, f"unexpected fail: {r.reason}"
 
+    def test_allowlist_matches_case_insensitively(self) -> None:
+        v = ExactMatchValidator()
+        retrieved = [chunk("we ship orders")]
+        r = v.validate(
+            "We ship orders. YES we deliver. OK to proceed.", retrieved=retrieved
+        )
+        assert r.passed, f"unexpected fail: {r.reason}"
+
+    def test_hyphenated_compound_split_for_match(self) -> None:
+        v = ExactMatchValidator()
+        retrieved = [chunk("retrieval augmented generation is the core pattern")]
+        r = v.validate(
+            "Our system uses Retrieval-Augmented Generation [1].",
+            retrieved=retrieved,
+        )
+        assert r.passed, f"unexpected fail: {r.reason}"
+
+    def test_apostrophe_contraction_does_not_create_proper_noun(self) -> None:
+        v = ExactMatchValidator()
+        retrieved = [chunk("we route to a human agent")]
+        r = v.validate(
+            "I'll route you to a human agent.", retrieved=retrieved
+        )
+        assert r.passed, f"unexpected fail: {r.reason}"
+
     def test_passes_when_proper_noun_in_context(self) -> None:
         v = ExactMatchValidator()
         retrieved = [chunk("acme industries is a partner")]
