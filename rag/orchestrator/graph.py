@@ -1,9 +1,11 @@
 """StateGraph wiring + checkpointer factory + public runner.
 
-The graph fans out to the two retrieval arms, fuses with RRF, reranks,
-generates with BRIX, validates, and either responds or abstains. State is
-persisted via a checkpointer keyed on ``thread_key`` so multi-turn
-conversations within the same Messenger thread carry memory.
+The graph fans out to the retrieval arms, fuses with RRF, reranks,
+generates with the surface-appropriate system prompt
+(``system_brix.md`` for Messenger, ``system_internal.md`` for the SPA),
+validates, and either responds or abstains. State is persisted via a
+checkpointer keyed on ``thread_key`` so multi-turn conversations within
+the same thread carry memory.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """Structural groundedness validator.
 
 Phase 3 ships an in-house validator that enforces the citation discipline
-the BRIX system prompt mandates:
+the surface system prompts mandate:
 
     1. Every factual claim carries a ``[n]`` citation marker.
     2. Every ``[n]`` resolves to a chunk in the retrieved context.
