@@ -1,5 +1,12 @@
-"""Phase 6 webhook tests — schema validation, auth, graph dispatch, AND
-outbound sender wiring (covers skipped, delivered, queued outcomes)."""
+"""Phase 6 broker webhook tests — schema validation, auth, graph
+dispatch, AND outbound sender wiring (covers skipped, delivered, queued
+outcomes).
+
+After Phase 12, the n8n-broker entrypoint moved from
+``/webhook/messenger/inbound`` to ``/webhook/messenger/orchestrator``.
+The Meta-direct ``/webhook/messenger/inbound`` route is covered in
+``test_webhook_direct.py``.
+"""
 
 from __future__ import annotations
 
@@ -116,7 +123,7 @@ class TestInboundSyncAck:
         self, client: TestClient, stub_runner: _StubRunner
     ) -> None:
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(),
         )
@@ -138,7 +145,7 @@ class TestInboundSyncAck:
         app.dependency_overrides[get_graph_runner] = _override
         try:
             r = client.post(
-                "/webhook/messenger/inbound",
+                "/webhook/messenger/orchestrator",
                 headers={"X-Webhook-Api-Key": "test-key"},
                 json=_payload(),
             )
@@ -165,7 +172,7 @@ class TestOutboundDispatch:
         monkeypatch.setattr(cfg, "make_webhook_url", None, raising=False)
 
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(),
         )
@@ -176,7 +183,7 @@ class TestOutboundDispatch:
         self, client: TestClient, stub_sender: _StubSender
     ) -> None:
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(outbound_url="https://make.com/hook/abc"),
         )
@@ -200,7 +207,7 @@ class TestOutboundDispatch:
         )
 
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(),
         )
@@ -220,7 +227,7 @@ class TestOutboundDispatch:
         app.dependency_overrides[get_outbound_sender] = _override
         try:
             r = client.post(
-                "/webhook/messenger/inbound",
+                "/webhook/messenger/orchestrator",
                 headers={"X-Webhook-Api-Key": "test-key"},
                 json=_payload(outbound_url="https://make.com/hook"),
             )
@@ -239,7 +246,7 @@ class TestOutboundDispatch:
 class TestValidation:
     def test_rejects_empty_text(self, client: TestClient) -> None:
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(message_text=""),
         )
@@ -247,7 +254,7 @@ class TestValidation:
 
     def test_rejects_extra_fields(self, client: TestClient) -> None:
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(unexpected="injection"),
         )
@@ -255,7 +262,7 @@ class TestValidation:
 
     def test_accepts_outbound_url_field(self, client: TestClient) -> None:
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(outbound_url="https://hook.x/abc"),
         )
@@ -269,12 +276,12 @@ class TestValidation:
 @pytest.mark.unit
 class TestAuth:
     def test_rejects_missing_api_key(self, client: TestClient) -> None:
-        r = client.post("/webhook/messenger/inbound", json=_payload())
+        r = client.post("/webhook/messenger/orchestrator", json=_payload())
         assert r.status_code == 401
 
     def test_rejects_wrong_api_key(self, client: TestClient) -> None:
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "wrong"},
             json=_payload(),
         )
@@ -308,7 +315,7 @@ class TestPiiScrub:
         self, client: TestClient, stub_runner: _StubRunner
     ) -> None:
         r = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(
                 message_text="call me at 555-867-5309 or jane@example.com please",
@@ -332,12 +339,12 @@ class TestIdempotencyAck:
     ) -> None:
         body = _payload(correlation_id="dedup-xyz")
         first = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=body,
         )
         second = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=body,
         )
@@ -361,7 +368,7 @@ class TestRateLimitAck:
         # Two distinct payloads under the cap — both 200.
         for i in range(2):
             r = client.post(
-                "/webhook/messenger/inbound",
+                "/webhook/messenger/orchestrator",
                 headers={"X-Webhook-Api-Key": "test-key"},
                 json=_payload(correlation_id=f"rl-{i}"),
             )
@@ -369,7 +376,7 @@ class TestRateLimitAck:
 
         # Third hits the wall.
         third = client.post(
-            "/webhook/messenger/inbound",
+            "/webhook/messenger/orchestrator",
             headers={"X-Webhook-Api-Key": "test-key"},
             json=_payload(correlation_id="rl-3"),
         )

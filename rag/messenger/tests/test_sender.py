@@ -157,3 +157,180 @@ async def test_4xx_goes_straight_to_dlq() -> None:
     assert result.status_code == 404
     queue.dead_letter.assert_awaited_once()
     queue.enqueue.assert_not_awaited()
+
+
+# ---------------------------------------------------------------------------
+# Phase 12 — Graph API target
+# ---------------------------------------------------------------------------
+
+
+class _JsonResponseStub:
+    """Like ``_ResponseStub`` but also exposes ``.json()`` for Graph API
+    error bodies."""
+
+    def __init__(self, status_code: int, body: dict | str = "") -> None:
+        self.status_code = status_code
+        if isinstance(body, dict):
+            self._json = body
+            self.text = ""
+        else:
+            self._json = None
+            self.text = body
+
+    def json(self) -> dict:
+        if self._json is None:
+            raise ValueError("no json")
+        return self._json
+
+
+@pytest.mark.unit
+async def test_graph_api_send_uses_current_page_access_token(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """The Graph API target reads the page access token from the overlay
+    on every call — proves UI rotations take effect without restart."""
+
+    from rag import messenger_overlay
+
+    overlay_file = tmp_path / ".messenger_override.json"
+    monkeypatch.delenv("MESSENGER_PAGE_ACCESS_TOKEN", raising=False)
+    monkeypatch.setattr(messenger_overlay, "_OVERLAY_PATH", overlay_file)
+    messenger_overlay.set_page_access_token("first-token-abc-12345")
+
+    queue = _MockQueue()
+    client = _ClientStub(_ResponseStub(200))
+    sender = OutboundSender(queue=queue, client_factory=_factory(client))  # type: ignore[arg-type]
+
+    result = await sender.dispatch(_payload(), target="graph_api")
+    assert result.outcome == "delivered"
+    assert client.last_url is not None
+    assert "access_token=first-token-abc-12345" in client.last_url
+    assert client.last_url.startswith(
+        "https://graph.facebook.com/v21.0/me/messages"
+    )
+    assert client.last_body == {
+        "recipient": {"id": "psid_99"},
+        "messaging_type": "RESPONSE",
+        "message": {"text": "Plan [1]. Reply YES to book."},
+    }
+
+    # Rotate the token. The next send must use the NEW value.
+    messenger_overlay.set_page_access_token("second-token-xyz-99999")
+    client2 = _ClientStub(_ResponseStub(200))
+    sender2 = OutboundSender(queue=queue, client_factory=_factory(client2))  # type: ignore[arg-type]
+    await sender2.dispatch(_payload(), target="graph_api")
+    assert client2.last_url is not None
+    assert "access_token=second-token-xyz-99999" in client2.last_url
+
+
+@pytest.mark.unit
+async def test_graph_api_token_missing_goes_to_dlq(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    from rag import messenger_overlay
+
+    monkeypatch.setattr(
+        messenger_overlay, "_OVERLAY_PATH", tmp_path / ".messenger_override.json"
+    )
+    monkeypatch.delenv("MESSENGER_PAGE_ACCESS_TOKEN", raising=False)
+
+    queue = _MockQueue()
+    sender = OutboundSender(
+        queue=queue, client_factory=_factory(_ClientStub(_ResponseStub(200)))  # type: ignore[arg-type]
+    )
+    result = await sender.dispatch(_payload(), target="graph_api")
+    assert result.outcome == "dead_letter"
+    assert result.error and "missing" in result.error.lower()
+
+
+@pytest.mark.unit
+async def test_graph_api_token_expired_code_190_dlq(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """FB error code 190 = OAuthException (token expired/invalid). Not
+    retryable — sending the same token again will keep failing."""
+
+    from rag import messenger_overlay
+
+    monkeypatch.setattr(
+        messenger_overlay, "_OVERLAY_PATH", tmp_path / ".messenger_override.json"
+    )
+    monkeypatch.delenv("MESSENGER_PAGE_ACCESS_TOKEN", raising=False)
+    messenger_overlay.set_page_access_token("expired-token-1234567890")
+
+    queue = _MockQueue()
+    client = _ClientStub(
+        _JsonResponseStub(  # type: ignore[arg-type]
+            401,
+            body={
+                "error": {
+                    "code": 190,
+                    "error_subcode": 463,
+                    "message": "Error validating access token: Session has expired.",
+                    "type": "OAuthException",
+                }
+            },
+        )
+    )
+    sender = OutboundSender(queue=queue, client_factory=_factory(client))  # type: ignore[arg-type]
+    result = await sender.dispatch(_payload(), target="graph_api")
+    assert result.outcome == "dead_letter"
+    assert result.status_code == 401
+    queue.dead_letter.assert_awaited_once()
+    queue.enqueue.assert_not_awaited()
+
+
+@pytest.mark.unit
+async def test_graph_api_rate_limit_subcode_613_enqueues_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """FB error subcode 613 = rate limit. Retryable."""
+
+    from rag import messenger_overlay
+
+    monkeypatch.setattr(
+        messenger_overlay, "_OVERLAY_PATH", tmp_path / ".messenger_override.json"
+    )
+    monkeypatch.delenv("MESSENGER_PAGE_ACCESS_TOKEN", raising=False)
+    messenger_overlay.set_page_access_token("valid-token-but-throttled1")
+
+    queue = _MockQueue()
+    client = _ClientStub(
+        _JsonResponseStub(  # type: ignore[arg-type]
+            400,
+            body={
+                "error": {
+                    "code": 100,
+                    "error_subcode": 613,
+                    "message": "Calls to this api have exceeded the rate limit.",
+                }
+            },
+        )
+    )
+    sender = OutboundSender(queue=queue, client_factory=_factory(client))  # type: ignore[arg-type]
+    result = await sender.dispatch(_payload(), target="graph_api")
+    assert result.outcome == "queued"
+    queue.enqueue.assert_awaited_once()
+    queue.dead_letter.assert_not_awaited()
+    enqueued = queue.enqueue.await_args.args[0]
+    assert enqueued.target == "graph_api"
+
+
+@pytest.mark.unit
+async def test_graph_api_5xx_enqueues_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    from rag import messenger_overlay
+
+    monkeypatch.setattr(
+        messenger_overlay, "_OVERLAY_PATH", tmp_path / ".messenger_override.json"
+    )
+    monkeypatch.delenv("MESSENGER_PAGE_ACCESS_TOKEN", raising=False)
+    messenger_overlay.set_page_access_token("page-token-graph-5xx-9999")
+
+    queue = _MockQueue()
+    client = _ClientStub(_JsonResponseStub(503, body={"error": {"code": 1}}))  # type: ignore[arg-type]
+    sender = OutboundSender(queue=queue, client_factory=_factory(client))  # type: ignore[arg-type]
+    result = await sender.dispatch(_payload(), target="graph_api")
+    assert result.outcome == "queued"
+    queue.enqueue.assert_awaited_once()

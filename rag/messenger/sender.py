@@ -1,19 +1,23 @@
-"""Phase 6 outbound dispatcher.
+"""Outbound dispatcher — broker (n8n / Make) OR direct Graph API.
 
-Tries to POST the reply to the n8n / Make webhook immediately with a short
-timeout. On any retryable failure (5xx / transport error / timeout), the
-payload is enqueued to ``RedisOutboundQueue`` so the worker picks it up
-later. On a 4xx (client error) the item moves straight to the DLQ — a
-malformed body or wrong URL will not succeed on retry.
+Phase 6 introduced this module as a thin wrapper around the n8n / Make
+broker webhook with Redis-backed retry. Phase 12 extends it with a
+second target — Facebook Graph API ``/v21.0/me/messages`` — so the
+backend can ship LangGraph replies directly to Messenger users without
+the broker hop. The page access token is read live from
+:mod:`rag.messenger_overlay` on every send, so a token rotated in the
+admin UI is picked up on the next call (no restart, no cache).
 
-The webhook handler awaits ``dispatch(...)`` directly. Because the optimistic
-POST has a hard 5s ceiling and the queue enqueue is sub-millisecond, this
-stays within a typical Messenger ack budget.
+The retry queue is shared: failed sends to either target land in the
+same Redis sorted set and are drained by the same worker process. The
+``target`` field on :class:`QueuedItem` tells the worker which transport
+to drive on retry.
 """
 
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from typing import Literal
 
@@ -22,15 +26,29 @@ import httpx
 from rag.config import settings
 from rag.messenger.payloads import OutboundPayload
 from rag.messenger.queue import QueuedItem, RedisOutboundQueue, get_queue
+from rag.messenger_overlay import current_page_access_token
 from rag.observability.decorators import traced
 
 _log = logging.getLogger(__name__)
+
+
+_GRAPH_API_BASE = "https://graph.facebook.com/v21.0/me/messages"
+# Facebook error codes that mean "the token is gone / page is gone".
+# Source: Meta error reference.
+_FB_AUTH_ERROR_CODES: frozenset[int] = frozenset({190, 100, 200, 10})
+# Rate-limit subcodes — retryable.
+_FB_RATE_LIMIT_CODES: frozenset[int] = frozenset({4, 17, 613})
 
 
 class OutboundError(RuntimeError):
     """Raised when the outbound POST cannot succeed under retry rules."""
 
 
+class MessengerTokenMissing(RuntimeError):
+    """No page access token is configured (overlay + env both empty)."""
+
+
+OutboundTarget = Literal["broker", "graph_api"]
 SendOutcome = Literal["delivered", "queued", "dead_letter", "skipped"]
 
 
@@ -40,12 +58,39 @@ class SendResult:
     status_code: int | None
     attempts: int
     error: str | None = None
+    target: OutboundTarget = "broker"
 
 
 def _retryable_status(status_code: int) -> bool:
     """5xx are retryable; 4xx are client errors and shouldn't retry."""
 
     return status_code >= 500
+
+
+def _classify_graph_error(status_code: int, body: dict | None) -> tuple[bool, str]:
+    """Return ``(retryable, error_summary)`` for a Graph API failure.
+
+    Token / permission errors are *not* retryable — the same token will
+    keep failing until rotated in the admin UI. Rate-limit errors are
+    retryable. 5xx is retryable. Everything else 4xx is non-retryable.
+    """
+
+    err = (body or {}).get("error") if isinstance(body, dict) else None
+    code = int((err or {}).get("code", 0) or 0)
+    subcode = int((err or {}).get("error_subcode", 0) or 0)
+    msg = str((err or {}).get("message") or "")[:200]
+    summary = f"http {status_code} code={code} subcode={subcode}: {msg}".strip()
+
+    # Rate-limit precedence over auth: FB uses code=100 with subcode=613
+    # for "Calls to this api have exceeded the rate limit", which would
+    # otherwise be misread as auth (code 100 is also "Invalid parameter").
+    if code in _FB_RATE_LIMIT_CODES or subcode in _FB_RATE_LIMIT_CODES:
+        return True, summary
+    if code in _FB_AUTH_ERROR_CODES or subcode in _FB_AUTH_ERROR_CODES:
+        return False, summary
+    if status_code >= 500:
+        return True, summary
+    return False, summary
 
 
 class OutboundSender:
@@ -76,17 +121,38 @@ class OutboundSender:
         payload: OutboundPayload,
         *,
         target_url: str | None = None,
+        target: OutboundTarget = "broker",
     ) -> SendResult:
         """Send the payload now or schedule retries.
 
-        ``target_url`` overrides ``settings.make_webhook_url``. If neither
-        is set, ``SendResult(outcome="skipped")`` is returned — outbound
-        dispatch is opt-in.
+        ``target="broker"`` (default) → POST to ``target_url`` or
+        ``settings.make_webhook_url``. Returns ``skipped`` when neither
+        is set.
+
+        ``target="graph_api"`` → call Facebook Graph API
+        ``/v21.0/me/messages``. ``target_url`` is ignored; the URL is
+        built from ``current_page_access_token()`` at send time.
         """
 
+        if target == "graph_api":
+            return await self._dispatch_graph_api(payload)
+        return await self._dispatch_broker(payload, target_url=target_url)
+
+    # ------------------------------------------------------------------
+    # Broker target (n8n / Make webhook)
+    # ------------------------------------------------------------------
+
+    async def _dispatch_broker(
+        self,
+        payload: OutboundPayload,
+        *,
+        target_url: str | None,
+    ) -> SendResult:
         url = target_url or settings.make_webhook_url
         if not url:
-            return SendResult(outcome="skipped", status_code=None, attempts=0)
+            return SendResult(
+                outcome="skipped", status_code=None, attempts=0, target="broker"
+            )
 
         body = payload.model_dump(mode="json")
 
@@ -100,20 +166,22 @@ class OutboundSender:
                 attempts_so_far=0,
                 error=f"transport: {exc.__class__.__name__}: {exc}",
                 retryable=True,
+                target="broker",
             )
 
         if response.status_code < 400:
             _log.info(
-                "outbound delivered correlation_id=%s status=%d",
-                payload.correlation_id, response.status_code,
+                "outbound.broker delivered correlation_id=%s status=%d",
+                payload.correlation_id,
+                response.status_code,
             )
             return SendResult(
                 outcome="delivered",
                 status_code=response.status_code,
                 attempts=1,
+                target="broker",
             )
 
-        # Non-2xx
         body_snippet = (response.text or "")[:200]
         retryable = _retryable_status(response.status_code)
         return await self._on_failure(
@@ -123,7 +191,91 @@ class OutboundSender:
             error=f"http {response.status_code}: {body_snippet}",
             retryable=retryable,
             status_code=response.status_code,
+            target="broker",
         )
+
+    # ------------------------------------------------------------------
+    # Graph API target (direct to Meta)
+    # ------------------------------------------------------------------
+
+    async def _dispatch_graph_api(
+        self,
+        payload: OutboundPayload,
+    ) -> SendResult:
+        token = current_page_access_token()
+        if not token:
+            _log.error(
+                "outbound.graph_api: page access token missing correlation_id=%s",
+                payload.correlation_id,
+            )
+            return SendResult(
+                outcome="dead_letter",
+                status_code=None,
+                attempts=1,
+                error="page access token missing",
+                target="graph_api",
+            )
+
+        url = f"{_GRAPH_API_BASE}?access_token={token}"
+        graph_body = {
+            "recipient": {"id": payload.user_id},
+            "messaging_type": "RESPONSE",
+            "message": {"text": payload.reply.text},
+        }
+
+        try:
+            async with self._client_factory() as client:
+                response = await client.post(url, json=graph_body)
+        except httpx.HTTPError as exc:
+            return await self._on_failure(
+                payload=payload,
+                target_url=_GRAPH_API_BASE,
+                attempts_so_far=0,
+                error=f"transport: {exc.__class__.__name__}: {exc}",
+                retryable=True,
+                target="graph_api",
+            )
+
+        if response.status_code < 400:
+            # Log only the last 4 chars of the token for verification.
+            _log.info(
+                "outbound.graph_api delivered correlation_id=%s status=%d token_tail=%s",
+                payload.correlation_id,
+                response.status_code,
+                token[-4:] if len(token) >= 4 else "????",
+            )
+            return SendResult(
+                outcome="delivered",
+                status_code=response.status_code,
+                attempts=1,
+                target="graph_api",
+            )
+
+        # Parse FB error body for code / subcode classification.
+        try:
+            err_body = response.json()
+        except ValueError:
+            err_body = None
+        retryable, summary = _classify_graph_error(response.status_code, err_body)
+        _log.warning(
+            "outbound.graph_api error correlation_id=%s retryable=%s %s",
+            payload.correlation_id,
+            retryable,
+            summary,
+        )
+        return await self._on_failure(
+            payload=payload,
+            target_url=_GRAPH_API_BASE,
+            attempts_so_far=0,
+            error=summary,
+            retryable=retryable,
+            status_code=response.status_code,
+            target="graph_api",
+        )
+
+    # ------------------------------------------------------------------
+    # Failure path (shared)
+    # ------------------------------------------------------------------
 
     async def _on_failure(
         self,
@@ -134,6 +286,7 @@ class OutboundSender:
         error: str,
         retryable: bool,
         status_code: int | None = None,
+        target: OutboundTarget = "broker",
     ) -> SendResult:
         """Enqueue for retry OR dead-letter. ``attempts_so_far`` is the
         count BEFORE this failure (0 for the optimistic synchronous send).
@@ -145,22 +298,26 @@ class OutboundSender:
             payload=payload.model_dump(mode="json"),
             attempts=attempts_so_far + 1,
             last_error=error,
+            target=target,
         )
 
         if not retryable:
             await self.queue.dead_letter(item)
             _log.warning(
-                "outbound client error → DLQ correlation_id=%s status=%s err=%s",
-                payload.correlation_id, status_code, error,
+                "outbound client error → DLQ correlation_id=%s target=%s status=%s err=%s",
+                payload.correlation_id,
+                target,
+                status_code,
+                error,
             )
             return SendResult(
                 outcome="dead_letter",
                 status_code=status_code,
                 attempts=item.attempts,
                 error=error,
+                target=target,
             )
 
-        # Retryable — pick first backoff interval.
         backoff_intervals = settings.outbound_backoff_seconds()
         max_attempts = settings.outbound_max_attempts
 
@@ -171,33 +328,35 @@ class OutboundSender:
                 status_code=status_code,
                 attempts=item.attempts,
                 error=error,
+                target=target,
             )
 
         backoff = backoff_intervals[min(item.attempts - 1, len(backoff_intervals) - 1)]
-        import time
-
-        item = item.with_attempt(error=error, now=int(time.time()), backoff_seconds=backoff)
-        # NOTE: ``with_attempt`` re-increments .attempts — undo the optimistic
-        # bump so we don't double-count when the worker drives the loop.
-        item = QueuedItem(
+        scheduled = QueuedItem(
             correlation_id=item.correlation_id,
             target_url=item.target_url,
             payload=item.payload,
-            attempts=item.attempts - 1,
-            next_attempt_ts=item.next_attempt_ts,
-            first_failed_at=item.first_failed_at,
-            last_error=item.last_error,
+            attempts=item.attempts,
+            next_attempt_ts=int(time.time()) + backoff,
+            first_failed_at=item.first_failed_at or int(time.time()),
+            last_error=error,
+            target=item.target,
         )
-        await self.queue.enqueue(item)
+        await self.queue.enqueue(scheduled)
         _log.warning(
-            "outbound queued for retry correlation_id=%s attempts=%d next_in=%ds err=%s",
-            payload.correlation_id, item.attempts, backoff, error,
+            "outbound queued for retry correlation_id=%s target=%s attempts=%d next_in=%ds err=%s",
+            payload.correlation_id,
+            target,
+            scheduled.attempts,
+            backoff,
+            error,
         )
         return SendResult(
             outcome="queued",
             status_code=status_code,
-            attempts=item.attempts,
+            attempts=scheduled.attempts,
             error=error,
+            target=target,
         )
 
 

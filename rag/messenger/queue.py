@@ -31,7 +31,17 @@ _log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class QueuedItem:
-    """One outbound delivery awaiting (or scheduled for) retry."""
+    """One outbound delivery awaiting (or scheduled for) retry.
+
+    ``target`` selects the transport the worker should retry against:
+
+    * ``"broker"`` — POST to the n8n / Make webhook at ``target_url``.
+      Original Phase 6 behavior; kept as the default for backward
+      compatibility with items already in Redis from older releases.
+    * ``"graph_api"`` — call Facebook Graph API ``/me/messages``.
+      ``target_url`` is unused in this mode; the URL is built at send
+      time from ``current_page_access_token()``.
+    """
 
     correlation_id: str
     target_url: str
@@ -40,6 +50,7 @@ class QueuedItem:
     next_attempt_ts: int = 0
     first_failed_at: int | None = None
     last_error: str | None = None
+    target: str = "broker"
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), separators=(",", ":"), ensure_ascii=False)
@@ -57,6 +68,7 @@ class QueuedItem:
             next_attempt_ts=int(data.get("next_attempt_ts", 0)),
             first_failed_at=data.get("first_failed_at"),
             last_error=data.get("last_error"),
+            target=str(data.get("target") or "broker"),
         )
 
     def with_attempt(self, *, error: str, now: int, backoff_seconds: int) -> "QueuedItem":
@@ -68,6 +80,7 @@ class QueuedItem:
             next_attempt_ts=now + backoff_seconds,
             first_failed_at=self.first_failed_at or now,
             last_error=error,
+            target=self.target,
         )
 
 

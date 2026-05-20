@@ -29,13 +29,16 @@ from typing import Any
 import httpx
 
 from rag.config import settings
-from rag.messenger.payloads import OutboundPayload
 from rag.messenger.queue import (
     QueuedItem,
     RedisOutboundQueue,
     get_queue,
 )
-from rag.messenger.sender import OutboundSender
+from rag.messenger_overlay import current_page_access_token
+
+_GRAPH_API_BASE = "https://graph.facebook.com/v21.0/me/messages"
+_FB_AUTH_ERROR_CODES: frozenset[int] = frozenset({190, 100, 200, 10})
+_FB_RATE_LIMIT_CODES: frozenset[int] = frozenset({4, 17, 613})
 
 _log = logging.getLogger(__name__)
 
@@ -44,9 +47,57 @@ def _now_epoch() -> int:
     return int(time.time())
 
 
+def _classify_graph_error(status_code: int, body: Any) -> tuple[bool, str]:
+    err = (body or {}).get("error") if isinstance(body, dict) else None
+    code = int((err or {}).get("code", 0) or 0)
+    subcode = int((err or {}).get("error_subcode", 0) or 0)
+    msg = str((err or {}).get("message") or "")[:200]
+    summary = f"http {status_code} code={code} subcode={subcode}: {msg}".strip()
+
+    if code in _FB_RATE_LIMIT_CODES or subcode in _FB_RATE_LIMIT_CODES:
+        return True, summary
+    if code in _FB_AUTH_ERROR_CODES or subcode in _FB_AUTH_ERROR_CODES:
+        return False, summary
+    if status_code >= 500:
+        return True, summary
+    return False, summary
+
+
 async def _send_once(client: httpx.AsyncClient, item: QueuedItem) -> tuple[bool, int | None, str | None, bool]:
     """Return (delivered, status_code, error, retryable)."""
 
+    target = getattr(item, "target", "broker") or "broker"
+
+    if target == "graph_api":
+        token = current_page_access_token()
+        if not token:
+            return False, None, "page access token missing", False
+        url = f"{_GRAPH_API_BASE}?access_token={token}"
+        reply_text = (
+            item.payload.get("reply", {}).get("text") if isinstance(item.payload, dict) else None
+        )
+        recipient_id = item.payload.get("user_id") if isinstance(item.payload, dict) else None
+        if not reply_text or not recipient_id:
+            return False, None, "queued graph_api item missing reply.text or user_id", False
+        body = {
+            "recipient": {"id": recipient_id},
+            "messaging_type": "RESPONSE",
+            "message": {"text": reply_text},
+        }
+        try:
+            response = await client.post(url, json=body)
+        except httpx.HTTPError as exc:
+            return False, None, f"transport: {exc.__class__.__name__}: {exc}", True
+        if response.status_code < 400:
+            return True, response.status_code, None, False
+        try:
+            err_body = response.json()
+        except ValueError:
+            err_body = None
+        retryable, summary = _classify_graph_error(response.status_code, err_body)
+        return False, response.status_code, summary, retryable
+
+    # broker target
     try:
         response = await client.post(item.target_url, json=item.payload)
     except httpx.HTTPError as exc:
@@ -92,6 +143,7 @@ async def _process_batch(
                 attempts=item.attempts + 1,
                 first_failed_at=item.first_failed_at or _now_epoch(),
                 last_error=error,
+                target=getattr(item, "target", "broker") or "broker",
             )
 
             if not retryable or attempted.attempts >= max_attempts:
@@ -110,6 +162,7 @@ async def _process_batch(
                 next_attempt_ts=_now_epoch() + backoff,
                 first_failed_at=attempted.first_failed_at,
                 last_error=attempted.last_error,
+                target=attempted.target,
             )
             await queue.requeue(scheduled)
             counters["requeued"] += 1
