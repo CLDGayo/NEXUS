@@ -43,6 +43,18 @@ python-dotenv==1.0.1
 structlog==24.4.0
 tenacity==9.0.0
 
+# ---- v1 SPA + admin (Phase 9 cutover) ----
+# Pulled in when the unified ``rag.main:app`` entrypoint imports the legacy
+# routers (auth, chat, documents, uploads, prompts, …). Versions track
+# rag/pyproject.toml so dev and prod resolve the same wheels.
+python-jose[cryptography]==3.3.0
+python-frontmatter==1.1.0
+groq==0.13.0
+watchdog==6.0.0
+tiktoken==0.8.0
+rich==13.9.4
+pypdf==5.1.0
+
 # ---- Dev / test ----
 # fakeredis lets the webhook security tests (idempotency, rate limit)
 # exercise the real redis.asyncio code paths without a running broker.

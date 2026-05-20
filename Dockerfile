@@ -16,8 +16,15 @@ RUN apt-get update \
 RUN pip install --no-cache-dir uv==0.5.11
 
 WORKDIR /build
-COPY requirements.txt ./
+COPY requirements.txt requirements-ingest.txt ./
+# Base runtime deps (api + outbound worker need only these).
 RUN uv pip install --system --no-cache -r requirements.txt
+# Ingest deps (transformers / torch CPU / docling / chonkie / sentence-transformers).
+# Needed in this image because Step 4A runs `docker compose exec api python -m
+# rag.ingest_v2 ingest --vault`. Image grows ~1 GB; acceptable for an ops box.
+RUN uv pip install --system --no-cache \
+    --extra-index-url https://download.pytorch.org/whl/cpu \
+    -r requirements-ingest.txt
 
 # ---------- Stage 2: runtime ----------
 FROM python:3.11-slim AS runtime
@@ -43,7 +50,9 @@ USER nexus
 
 EXPOSE 8000
 
-# Phase 2 entry: the v2 Messenger webhook surface. v1 (`rag/app.py`) keeps
-# running on the VPS systemd unit until the Phase 9 cutover; it is not
-# imported by this container, so its flat imports are irrelevant here.
-CMD ["uvicorn", "rag.messenger.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# Phase 9 entry: unified Nexus API — v1 SPA / admin + v2 webhook + LangGraph
+# cortex. v1's flat imports (e.g. ``from database import …``) resolve via
+# ``PYTHONPATH=/app/rag`` set above. v1 ``rag/app.py`` is no longer the
+# entry point and the legacy ``nexus-chat`` systemd unit is decommissioned
+# as part of the cutover.
+CMD ["uvicorn", "rag.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

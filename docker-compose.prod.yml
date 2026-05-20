@@ -37,11 +37,14 @@ services:
     volumes:
       - /home/nexus-vault:/vault:ro
       - api_data:/app/rag/data
+    # 4G covers jina-embeddings-v2-base-en (~1.2G resident) + chonkie's
+    # SentenceTransformer fallback + uvicorn + tokenizer caches. The ingest
+    # CLI (one-shot, exec'd into this container) is the peak consumer.
     deploy:
       resources:
         limits:
           cpus: "2.0"
-          memory: 2g
+          memory: 4g
 
   outbound_worker:
     env_file: .env.prod
