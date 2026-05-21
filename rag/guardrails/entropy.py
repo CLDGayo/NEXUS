@@ -147,7 +147,7 @@ class EntropyValidator:
     ceiling: float = 0.7
 
     def validate(
-        self, answer: str, *, retrieved: list[ScoredChunk]
+        self, answer: str, *, retrieved: list[ScoredChunk], **_kwargs: object
     ) -> ValidationResult:
         score = compute_uncertainty_score(answer, retrieved)
         passed = score <= self.ceiling

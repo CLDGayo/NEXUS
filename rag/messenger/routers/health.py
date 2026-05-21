@@ -47,6 +47,25 @@ async def api_health() -> HealthResponse:
     return _PAYLOAD
 
 
+@router.get(
+    "/health/reranker",
+    summary="Reranker import probe. Catches fastembed API drift early.",
+)
+async def reranker_health(response: Response) -> dict[str, object]:
+    """Cheap probe that resolves ``TextCrossEncoder`` without loading the
+    ONNX weights. Returns 503 with a structured error when the import
+    path breaks — the 2026-05-21 incident showed this drift is silent
+    inside the warning-and-fallback path on ``retrieval.rerank``.
+    """
+
+    from rag.retrieval.rerank import reranker_import_probe
+
+    report = reranker_import_probe()
+    if not report.get("ok"):
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    return report
+
+
 # ---------------------------------------------------------------------------
 # Readiness — aggregates Qdrant / Postgres / Redis / LiteLLM
 # ---------------------------------------------------------------------------

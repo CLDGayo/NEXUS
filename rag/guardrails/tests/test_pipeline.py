@@ -24,7 +24,7 @@ class _StubValidator:
     name: str
     result: ValidationResult
 
-    def validate(self, answer: str, *, retrieved):
+    def validate(self, answer: str, *, retrieved, **_kwargs):
         return self.result
 
 
@@ -109,11 +109,21 @@ class TestDefaultPipeline:
         out = pipeline.validate(answer, retrieved=retrieved)
         assert not out.blocked, f"failures: {[r.reason for r in out.results if r.failed]}"
 
-    def test_fabricated_price_blocks(self) -> None:
+    def test_fabricated_prices_block_when_count_exceeds_tolerance(self) -> None:
+        # Default pipeline now tolerates up to 2 unverified specifics
+        # (Phase 19.1 — relaxed from 0). Confirm 3 fabrications still block.
         pipeline = default_pipeline()
         retrieved = [ScoredChunk(id="a", text="our plan starts at $99", score=1.0)]
-        answer = "Plan starts at $147.99 [1]."
-        out = pipeline.validate(answer, retrieved=retrieved)
+        # Long enough answer so the short-turn bypass doesn't kick in.
+        answer = (
+            "The plan starts at $147.99 [1], rises to $258.50 [1], and "
+            "doubles to $911.42 [1] in year three when we apply the "
+            "contractual escalator described above."
+        )
+        # Query > 3 tokens so the short-turn bypass doesn't skip exact_match.
+        out = pipeline.validate(
+            answer, retrieved=retrieved, query="tell me about the pricing tiers please"
+        )
         assert out.blocked
         assert "exact_match" in out.failed_names
 

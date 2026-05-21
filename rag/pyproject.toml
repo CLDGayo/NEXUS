@@ -5,6 +5,9 @@ description = "NEXUS personal RAG chatbot — Obsidian vault × Qdrant × Groq"
 requires-python = ">=3.11"
 dependencies = [
     "qdrant-client[fastembed]>=1.14.0",
+    # Direct pin so a qdrant-client bump can't silently drop or relocate
+    # `TextCrossEncoder`. See rag/retrieval/rerank.py for the drift history.
+    "fastembed>=0.4.0,<1.0.0",
     "groq>=0.13.0",
     "python-frontmatter>=1.1.0",
     "python-dotenv>=1.0.0",

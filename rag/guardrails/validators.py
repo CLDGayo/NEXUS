@@ -49,12 +49,17 @@ class ValidationResult:
 
 
 class Validator(Protocol):
-    """Structural type for any validator. Pipeline iterates this."""
+    """Structural type for any validator. Pipeline iterates this.
+
+    Extra keyword arguments (``query``, future per-turn context) are passed
+    through; validators that don't consume them should accept ``**kwargs``
+    and ignore.
+    """
 
     name: str
 
     def validate(
-        self, answer: str, *, retrieved: list[ScoredChunk]
+        self, answer: str, *, retrieved: list[ScoredChunk], **kwargs: Any
     ) -> ValidationResult: ...
 
 
@@ -67,7 +72,7 @@ class CitationValidator:
     name: str = "citation"
 
     def validate(
-        self, answer: str, *, retrieved: list[ScoredChunk]
+        self, answer: str, *, retrieved: list[ScoredChunk], **_kwargs: Any
     ) -> ValidationResult:
         result = check_groundedness(answer, retrieved)
         return ValidationResult(
@@ -106,6 +111,9 @@ _PROPER_NOUN_ALLOWLIST: frozenset[str] = frozenset(
         "Sunday", "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December",
         "AM", "PM", "USD", "EUR", "GBP", "PHP",
+        # Owner identity (vault subject). The bot may say these in any turn
+        # — they're stage props, not claims to verify.
+        "Clarence", "Nexus", "Gayo", "Sphere",
     )
 )
 
@@ -114,10 +122,33 @@ def _normalize_numeric(token: str) -> str:
     return token.lstrip("$").rstrip("%").replace(",", "")
 
 
-def _retrieved_text_blob(retrieved: list[ScoredChunk]) -> tuple[str, str]:
-    """Return (lowercased blob, normalized digits-only blob) over context."""
+def _retrieved_text_blob(
+    retrieved: list[ScoredChunk], *, extra: str = ""
+) -> tuple[str, str]:
+    """Return (lowercased blob, normalized digits-only blob) over context.
 
-    joined = "\n".join(c.text or "" for c in retrieved)
+    The blob includes both each chunk's text **and** string-valued metadata
+    fields (title, aliases, tags, folder, heading_path). Metadata is real
+    context per CLAUDE.md §1 Stage 2 — names that live only in frontmatter
+    (an alias, a tag) shouldn't get flagged as fabricated.
+
+    ``extra`` lets the pipeline thread the user query into the blob so a
+    user introducing themselves ("I am Clarence") makes their own name
+    non-suspicious in the same turn.
+    """
+
+    parts: list[str] = []
+    for c in retrieved:
+        if c.text:
+            parts.append(c.text)
+        for value in c.metadata.values():
+            if isinstance(value, str):
+                parts.append(value)
+            elif isinstance(value, (list, tuple)):
+                parts.extend(item for item in value if isinstance(item, str))
+    if extra:
+        parts.append(extra)
+    joined = "\n".join(parts)
     return joined.lower(), joined.replace(",", "").lower()
 
 
@@ -132,10 +163,20 @@ class ExactMatchValidator:
     """
 
     name: str = "exact_match"
-    max_suspicious: int = 0  # fail if any suspicious tokens found
+    # Tolerate up to 2 unverifiable proper nouns / numerics before blocking.
+    # ``0`` was the right call for a public-facing booking bot; on a personal
+    # second-brain surface where the user is the subject, a single sibling
+    # entity bleeding in shouldn't nuke the whole answer. High-stakes
+    # pipelines can still set this back to 0.
+    max_suspicious: int = 2
 
     def validate(
-        self, answer: str, *, retrieved: list[ScoredChunk]
+        self,
+        answer: str,
+        *,
+        retrieved: list[ScoredChunk],
+        query: str = "",
+        **_kwargs: Any,
     ) -> ValidationResult:
         if not answer.strip():
             return ValidationResult(name=self.name, passed=False, reason="empty answer")
@@ -146,7 +187,7 @@ class ExactMatchValidator:
                 name=self.name, passed=True, reason="no retrieved context to verify"
             )
 
-        joined_lower, digits_blob = _retrieved_text_blob(retrieved)
+        joined_lower, digits_blob = _retrieved_text_blob(retrieved, extra=query)
 
         # Citation markers like ``[1]`` are bookkeeping, not factual claims.
         # Drop them before scanning for fabricated numerics/nouns.

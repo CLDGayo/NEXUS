@@ -81,7 +81,10 @@ class TestExactMatchValidator:
         assert r.passed
 
     def test_fails_on_fabricated_price(self) -> None:
-        v = ExactMatchValidator()
+        # Strict mode still blocks any single fabrication; default mode
+        # tolerates up to 2 (Phase 19.1). The strict contract is what
+        # this test pins.
+        v = ExactMatchValidator(max_suspicious=0)
         retrieved = [chunk("our plan starts at $99 per month")]
         r = v.validate("Plan is $147.99 per month [1].", retrieved=retrieved)
         assert r.failed
@@ -89,7 +92,7 @@ class TestExactMatchValidator:
         assert any("147" in t for t in suspicious)
 
     def test_fails_on_fabricated_proper_noun(self) -> None:
-        v = ExactMatchValidator()
+        v = ExactMatchValidator(max_suspicious=0)
         retrieved = [chunk("we work with ACME Industries on projects")]
         r = v.validate(
             "We work with FakeCorp on critical projects [1].", retrieved=retrieved

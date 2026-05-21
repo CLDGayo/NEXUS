@@ -326,7 +326,10 @@ async def generate_node(state: NexusState) -> dict:
 async def guardrails_node(state: NexusState) -> dict:
     answer = state.get("answer", "")
     reranked = state.get("reranked", [])
-    pipeline_result = _GUARDRAILS.validate(answer, retrieved=reranked)
+    query = state.get("query", "") or ""
+    pipeline_result = _GUARDRAILS.validate(
+        answer, retrieved=reranked, query=query
+    )
 
     failed_names = pipeline_result.failed_names
 

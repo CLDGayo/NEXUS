@@ -84,11 +84,31 @@ class GuardrailsPipeline:
         answer: str,
         *,
         retrieved: list[ScoredChunk],
+        query: str = "",
     ) -> PipelineResult:
         results: list[ValidationResult] = []
+        # Short conversational turns ("hi", "who am I?") with terse replies
+        # can't carry P0 hallucinations worth exact-match scanning. Bypass
+        # the validator so a single proper noun bled in from sibling
+        # retrieved chunks doesn't block a greeting.
+        is_short_turn = (
+            0 < len(query.split()) <= 3 and 0 < len(answer.split()) <= 30
+        )
         for validator in self.validators:
+            if is_short_turn and getattr(validator, "name", "") == "exact_match":
+                results.append(
+                    ValidationResult(
+                        name="exact_match",
+                        passed=True,
+                        reason="short-turn bypass",
+                        metadata={"bypassed": True},
+                    )
+                )
+                continue
             try:
-                result = validator.validate(answer, retrieved=retrieved)
+                result = validator.validate(
+                    answer, retrieved=retrieved, query=query
+                )
             except Exception as exc:
                 # A validator that crashes is treated as a critical fail —
                 # never silently pass an answer when the safety layer broke.

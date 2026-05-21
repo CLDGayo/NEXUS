@@ -151,14 +151,21 @@ async def test_graph_abstains_on_fabricated_facts(
         lambda q, c, top_k=8: _async_return(c[:top_k]),
     )
 
-    # LLM emits a price NOT in the retrieved context → exact_match must block.
+    # LLM emits prices NOT in the retrieved context → exact_match must block.
+    # Phase 19.1 raised the default `max_suspicious` from 0 → 2 and added a
+    # short-turn bypass; we now need 3+ fabrications and a multi-word query
+    # to still trigger the block, which is the contract this test pins.
     async def fabricated(*_a, **_kw):
-        return _llm_result("Our pricing is exactly $147.99 per month [1].")
+        return _llm_result(
+            "Pricing is exactly $147.99 per month [1], jumping to $258.50 "
+            "in year two [1], and $911.42 in year three [1] under the "
+            "standard contractual escalator clause noted above."
+        )
 
     monkeypatch.setattr("rag.orchestrator.nodes.chat_complete", fabricated)
 
     result = await graph_module.run_graph(
-        query="pricing?",
+        query="tell me about the full pricing schedule",
         thread_key="psid_test_3",
         correlation_id="corr_3",
         surface="messenger",
