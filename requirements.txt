@@ -54,6 +54,7 @@ watchdog==6.0.0
 tiktoken==0.8.0
 rich==13.9.4
 pypdf==5.1.0
+pymupdf==1.24.14
 
 # ---- Dev / test ----
 # fakeredis lets the webhook security tests (idempotency, rate limit)
