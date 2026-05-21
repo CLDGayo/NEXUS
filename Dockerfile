@@ -54,6 +54,15 @@ RUN apt-get update \
     && groupadd -r nexus --gid 1000 \
     && useradd -r -g nexus --uid 1000 --create-home --home-dir /home/nexus nexus
 
+# Pre-create the cache tree so the nexus user owns ``~/.cache`` *before* the
+# docker volume mount at ``~/.cache/fastembed``. Without this the implicit
+# mkdir performed by the volume mount creates ``~/.cache`` as root, which
+# blocks ``huggingface_hub`` and ``hf_xet`` from writing their own siblings
+# (``~/.cache/huggingface/xet/logs``, ``hub/``, etc.) and surfaces as
+# ``[I/O] Permission denied (os error 13)`` during model download.
+RUN mkdir -p /home/nexus/.cache/fastembed /home/nexus/.cache/huggingface \
+    && chown -R nexus:nexus /home/nexus/.cache
+
 # Copy installed Python packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
@@ -63,6 +72,10 @@ COPY --chown=nexus:nexus rag /app/rag
 
 # React SPA build — rag/main.py serves nexus-ui/dist/index.html + assets.
 COPY --from=ui --chown=nexus:nexus /ui/dist /app/nexus-ui/dist
+
+# Point HF + Xet caches at writable nexus-owned paths.
+ENV HF_HOME=/home/nexus/.cache/huggingface \
+    XDG_CACHE_HOME=/home/nexus/.cache
 
 USER nexus
 
