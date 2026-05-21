@@ -11,7 +11,12 @@ pydantic-settings==2.6.1
 python-multipart==0.0.18
 
 # ---- Storage clients ----
-qdrant-client[fastembed]==1.12.1
+# qdrant-client's `[fastembed]` extra hard-pins fastembed==0.3.6 (which has
+# no `rerank` submodule and no `TextCrossEncoder`). Depend on fastembed
+# directly instead — 2026-05-21 incident showed the silent reranker
+# fallback was driven by exactly this transitive pin.
+qdrant-client==1.12.1
+fastembed>=0.4.2,<1.0.0
 redis==5.2.0
 asyncpg==0.30.0
 psycopg[binary]==3.2.3
