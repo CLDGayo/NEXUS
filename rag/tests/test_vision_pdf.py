@@ -1,4 +1,4 @@
-"""Unit tests for Phase 16 PDF image captioning.
+"""Unit tests for Phase 16 / 17 PDF image captioning.
 
 PyMuPDF (``fitz``) and the vision LLM are both stubbed so the tests run
 without a real PDF and without hitting LiteLLM. The module under test
@@ -28,11 +28,18 @@ import vision_pdf
 
 
 class _FakePage:
-    def __init__(self, images_meta: list[tuple]) -> None:
+    def __init__(
+        self, images_meta: list[tuple], *, page_text: str = ""
+    ) -> None:
         self._images_meta = images_meta
+        self._page_text = page_text
 
     def get_images(self, full: bool = False) -> list[tuple]:  # noqa: ARG002
         return list(self._images_meta)
+
+    def get_text(self, option: str = "text") -> str:  # noqa: ARG002
+        """Phase 17 stub — returns configured page text."""
+        return self._page_text
 
 
 class _FakeDoc:
@@ -70,11 +77,20 @@ def _install_fitz_stub(
     *,
     pages: list[list[int]],
     blobs: dict[int, dict[str, Any]],
+    page_texts: list[str] | None = None,
 ) -> _FakeDoc:
-    """``pages[i]`` lists the xref ints on page ``i``."""
+    """``pages[i]`` lists the xref ints on page ``i``.
+
+    Phase 17: ``page_texts[i]`` (optional) sets the text returned by
+    ``page.get_text()`` for page ``i``. Defaults to empty string.
+    """
+    texts = page_texts or [""] * len(pages)
     fake_pages = [
-        _FakePage([(xref, 0, 0, 0, 0, "", "", "", "") for xref in xrefs])
-        for xrefs in pages
+        _FakePage(
+            [(xref, 0, 0, 0, 0, "", "", "", "") for xref in xrefs],
+            page_text=texts[i] if i < len(texts) else "",
+        )
+        for i, xrefs in enumerate(pages)
     ]
     doc = _FakeDoc(fake_pages, blobs)
     monkeypatch.setattr(vision_pdf.fitz, "open", lambda _path: doc)
@@ -285,6 +301,61 @@ async def test_encrypted_pdf_returns_empty(
 
     assert result == []
     assert calls == []
+
+# ---------------------------------------------------------------------------
+# Phase 17 — context-aware captioning
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_context_aware_caption_uses_page_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When page text is present, the context-aware prompt is used."""
+    _set_limits(monkeypatch)
+    _install_fitz_stub(
+        monkeypatch,
+        pages=[[1]],
+        blobs={1: _make_blob()},
+        page_texts=["Curriculum Vitae — John Doe, Software Engineer"],
+    )
+    calls = _install_llm_stub(monkeypatch, response="Photograph of John Doe")
+
+    result = await vision_pdf.extract_pdf_captions("/tmp/fake.pdf")
+
+    assert len(calls) == 1
+    system_msg = calls[0][0]["content"]
+    # Must use the context-aware prompt with the surrounding text.
+    assert "analytical captioner" in system_msg
+    assert "John Doe, Software Engineer" in system_msg
+    # Result still returns the caption normally.
+    assert result == [vision_pdf.PageCaptions(page=0, captions=["Photograph of John Doe"])]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_context_aware_caption_falls_back_without_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When page text is empty, falls back to the generic prompt."""
+    _set_limits(monkeypatch)
+    _install_fitz_stub(
+        monkeypatch,
+        pages=[[1]],
+        blobs={1: _make_blob()},
+        page_texts=[""],  # empty — scanned image
+    )
+    calls = _install_llm_stub(monkeypatch, response="a person in a blazer")
+
+    result = await vision_pdf.extract_pdf_captions("/tmp/fake.pdf")
+
+    assert len(calls) == 1
+    system_msg = calls[0][0]["content"]
+    # Must use the generic fallback prompt, not the context-aware one.
+    assert "Describe this image in detail" in system_msg
+    assert "analytical captioner" not in system_msg
+    assert result == [vision_pdf.PageCaptions(page=0, captions=["a person in a blazer"])]
 
 
 # ---------------------------------------------------------------------------

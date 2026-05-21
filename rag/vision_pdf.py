@@ -1,4 +1,4 @@
-"""PDF image extraction + vision captioning (Phase 16).
+"""PDF image extraction + vision captioning (Phase 16 / 17).
 
 PyMuPDF (``fitz``) pulls embedded images from each PDF page; each surviving
 blob is base64-encoded and sent to the existing LiteLLM-proxied vision model
@@ -46,6 +46,23 @@ CAPTION_SYSTEM_PROMPT = (
     "appearance, clothing, hair, and posture. Keep it concise."
 )
 
+# Phase 17 — context-aware prompt. When the page surrounding the image
+# contains extractable text, we inject it so the vision LLM can ground
+# its caption in the document context (names, product titles, etc.).
+CONTEXT_CAPTION_SYSTEM_PROMPT = (
+    "You are an analytical captioner. Here is an image extracted from a "
+    "document, and here is the text surrounding it: {surrounding_text}\n\n"
+    "Generate a rich metadata caption that explicitly links the visual "
+    "contents to the text. For example, if the text is a CV for 'John Doe', "
+    "explicitly state 'Photograph of John Doe wearing...'. If the text "
+    "describes a product or funnel, name the product. Output only the "
+    "contextual description."
+)
+
+# Cap surrounding text injected into the caption prompt so the vision LLM
+# prompt stays within budget. 2000 chars ≈ ~500 tokens.
+PAGE_TEXT_MAX_CHARS: int = 2000
+
 
 class PageCaptions(NamedTuple):
     """Captions emitted for a single PDF page (0-indexed)."""
@@ -62,6 +79,7 @@ class _ImageBlob:
     ext: str
     width: int
     height: int
+    page_text: str  # Phase 17 — surrounding text for context-aware captioning
 
 
 @dataclass(frozen=True)
@@ -145,6 +163,9 @@ def _collect_blobs(path: str, limits: _Limits) -> list[_ImageBlob]:
 
     Returns ``[]`` on any fitz error (encrypted / corrupt PDFs included).
     Synchronous; callers should wrap in ``asyncio.to_thread``.
+
+    Phase 17: also extracts the page text surrounding each image so the
+    captioner can generate context-aware descriptions.
     """
 
     try:
@@ -171,6 +192,19 @@ def _collect_blobs(path: str, limits: _Limits) -> list[_ImageBlob]:
                     exc,
                 )
                 continue
+
+            if not images:
+                continue
+
+            # Phase 17 — extract page text once per page (shared across
+            # all images on the same page). Truncate to stay within the
+            # vision LLM prompt budget.
+            try:
+                raw_page_text = page.get_text("text") or ""
+            except Exception:  # noqa: BLE001
+                raw_page_text = ""
+            page_text = raw_page_text.strip()[:PAGE_TEXT_MAX_CHARS]
+
             for img_meta in images:
                 if len(collected) >= limits.max_images:
                     break
@@ -200,6 +234,7 @@ def _collect_blobs(path: str, limits: _Limits) -> list[_ImageBlob]:
                         ext=ext,
                         width=width,
                         height=height,
+                        page_text=page_text,
                     )
                 )
     finally:
@@ -213,13 +248,26 @@ async def _caption_one(
     limits: _Limits,
     llm_error_cls: type[BaseException],
 ) -> str | None:
-    """Caption a single image blob. Returns ``None`` on any failure."""
+    """Caption a single image blob. Returns ``None`` on any failure.
+
+    Phase 17: when ``blob.page_text`` is non-empty, uses the context-aware
+    prompt so the caption references names, products, and other identifiers
+    found in the surrounding document text.
+    """
+
+    # Phase 17 — choose prompt based on available context.
+    if blob.page_text:
+        system_prompt = CONTEXT_CAPTION_SYSTEM_PROMPT.format(
+            surrounding_text=blob.page_text
+        )
+    else:
+        system_prompt = CAPTION_SYSTEM_PROMPT
 
     data_uri = (
         f"data:image/{blob.ext};base64,{base64.b64encode(blob.data).decode('ascii')}"
     )
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": CAPTION_SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {
             "role": "user",
             "content": [

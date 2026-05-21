@@ -24,6 +24,12 @@ rag/__pycache__
 rag/.pytest_cache
 rag/.ruff_cache
 
+# nexus-ui — stage `ui` runs `npm ci && npm run build` inside the image,
+# so the host's node_modules and dist are not shipped to the build context.
+nexus-ui/node_modules
+nexus-ui/dist
+nexus-ui/.vite
+
 # Vault content (NOT shipped in the API image — mounted at runtime)
 00 - Inbox
 01 - Projects

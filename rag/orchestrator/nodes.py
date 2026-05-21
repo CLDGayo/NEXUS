@@ -8,6 +8,10 @@ the same trace.
 The ``guardrails_node`` runs the Phase 5 ``GuardrailsPipeline`` (citation
 + exact-match + entropy), and routes blocked answers to the deterministic
 fallback while flagging ``requires_human_handover=True``.
+
+Phase 17 adds surface-aware vision intent overlays so image queries on
+Messenger get customer-service-style responses while SPA queries get
+structured knowledge-base retrieval.
 """
 
 from __future__ import annotations
@@ -37,6 +41,33 @@ _log = logging.getLogger(__name__)
 
 _PROMPTS_DIR = Path(__file__).parent / "prompts"
 _GUARDRAILS = default_pipeline()
+
+# ---------------------------------------------------------------------------
+# Phase 17 — vision intent overlays
+# ---------------------------------------------------------------------------
+
+_VISION_INTENT_MESSENGER = (
+    "\n\n--- IMAGE QUERY INSTRUCTIONS ---\n"
+    "The user has uploaded an image. Assume they are a customer inquiring "
+    "about product availability, similarity, or identifying a person/service. "
+    "Search the knowledge base for visual and semantic matches. Respond as a "
+    "pleasant customer service representative. If a match is found, "
+    "enthusiastically confirm it, provide the specific name/title (e.g., "
+    "product name or person's name), and suggest related items or "
+    "descriptions. Format cleanly for a chat interface."
+)
+
+_VISION_INTENT_SPA = (
+    "\n\n--- IMAGE QUERY INSTRUCTIONS ---\n"
+    "The user has uploaded an image to query their personal knowledge base. "
+    "Search for visual and semantic matches. You must reply with a highly "
+    "structured response. Include the following sections:\n"
+    "**Source Document:** [Where this image/concept originated]\n"
+    "**Identified Subject:** [Name of the person, product, or concept]\n"
+    "**Context & Description:** [Details surrounding this item in the vault]\n"
+    "**Related Topics:**\n"
+    "- [Bullet points of adjacent concepts in the vault]"
+)
 
 
 def _load_prompt(surface: str) -> str:
@@ -150,6 +181,11 @@ async def generate_node(state: NexusState) -> dict:
         system_content = prompt.replace("{context}", context_block).replace(
             "{question}", "(see user message below)"
         )
+        # Phase 17 — inject surface-specific vision intent overlay.
+        if surface == "messenger":
+            system_content += _VISION_INTENT_MESSENGER
+        else:
+            system_content += _VISION_INTENT_SPA
         user_parts: list[dict[str, Any]] = [
             {"type": "text", "text": state["query"]},
         ]

@@ -22,6 +22,12 @@ rsync -avz --delete \
   --exclude='.git/' \
   "$VAULT_ROOT/" "$VPS:$VPS_VAULT/"
 
+# The Docker api container runs as nexus (UID 1000). rsync copies files
+# with the local macOS UID (501), so 00 - Inbox/ must be re-owned so the
+# upload endpoint (routers/uploads.py → inbox.write_note_at) can write.
+echo "→ Fixing ownership on 00 - Inbox/ for Docker nexus user ..."
+ssh "$VPS" "chown -R 1000:1000 '$VPS_VAULT/00 - Inbox'"
+
 echo "→ Syncing rag/ code to $VPS:$VPS_PROJECT/rag ..."
 rsync -avz --delete \
   --exclude='.env' \

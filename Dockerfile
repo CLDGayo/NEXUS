@@ -1,6 +1,21 @@
 # syntax=docker/dockerfile:1.7
 
-# ---------- Stage 1: builder ----------
+# ---------- Stage 0: UI builder ----------
+# Compiles the React SPA (nexus-ui) into static assets. The runtime stage
+# COPYs the produced dist/ folder into /app/nexus-ui/dist, which rag/main.py
+# serves via FastAPI StaticFiles + a catch-all SPA route.
+FROM node:22-alpine AS ui
+
+WORKDIR /ui
+
+# Cache npm install layer until lockfile changes.
+COPY nexus-ui/package.json nexus-ui/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+COPY nexus-ui/ ./
+RUN npm run build
+
+# ---------- Stage 1: Python builder ----------
 FROM python:3.11-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -46,6 +61,9 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 WORKDIR /app
 COPY --chown=nexus:nexus rag /app/rag
 
+# React SPA build — rag/main.py serves nexus-ui/dist/index.html + assets.
+COPY --from=ui --chown=nexus:nexus /ui/dist /app/nexus-ui/dist
+
 USER nexus
 
 EXPOSE 8000
@@ -54,5 +72,6 @@ EXPOSE 8000
 # cortex. v1's flat imports (e.g. ``from database import …``) resolve via
 # ``PYTHONPATH=/app/rag`` set above. v1 ``rag/app.py`` is no longer the
 # entry point and the legacy ``nexus-chat`` systemd unit is decommissioned
-# as part of the cutover.
+# as part of the cutover. Phase 11 swapped the legacy rag/static/ SPA for
+# the React build at /app/nexus-ui/dist (copied from stage `ui`).
 CMD ["uvicorn", "rag.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

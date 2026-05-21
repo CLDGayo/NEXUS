@@ -170,3 +170,58 @@ async def test_generate_vision_llm_error_abstains(
     assert result["abstained"] is True
     assert result["requires_human_handover"] is True
     assert "llm error" in result["handover_reason"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 17 — vision intent overlay tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+async def test_vision_intent_messenger_overlay(
+    captured: dict[str, Any],
+) -> None:
+    """Messenger + image → system prompt contains the customer-service overlay."""
+    state = _state(
+        surface="messenger",
+        attachments=[{"type": "image", "url": "data:image/jpeg;base64,AAA"}],
+    )
+    await nodes_module.generate_node(state)
+
+    system_content = captured["messages"][0]["content"]
+    assert "--- IMAGE QUERY INSTRUCTIONS ---" in system_content
+    assert "pleasant customer service representative" in system_content
+    # Must NOT contain the SPA structured sections.
+    assert "**Source Document:**" not in system_content
+
+
+@pytest.mark.unit
+async def test_vision_intent_spa_overlay(
+    captured: dict[str, Any],
+) -> None:
+    """SPA + image → system prompt contains the structured-response overlay."""
+    state = _state(
+        surface="spa",
+        attachments=[{"type": "image", "url": "data:image/jpeg;base64,AAA"}],
+    )
+    await nodes_module.generate_node(state)
+
+    system_content = captured["messages"][0]["content"]
+    assert "--- IMAGE QUERY INSTRUCTIONS ---" in system_content
+    assert "**Source Document:**" in system_content
+    assert "**Identified Subject:**" in system_content
+    assert "**Related Topics:**" in system_content
+    # Must NOT contain the Messenger customer-service phrasing.
+    assert "pleasant customer service representative" not in system_content
+
+
+@pytest.mark.unit
+async def test_no_vision_overlay_without_images(
+    captured: dict[str, Any],
+) -> None:
+    """Text-only query → no vision overlay injected."""
+    state = _state(surface="spa")
+    await nodes_module.generate_node(state)
+
+    system_content = captured["messages"][0]["content"]
+    assert "--- IMAGE QUERY INSTRUCTIONS ---" not in system_content

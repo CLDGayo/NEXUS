@@ -35,7 +35,9 @@ services:
       litellm:
         condition: service_started
     volumes:
-      - /home/nexus-vault:/vault:ro
+      # rw required: the document upload endpoint writes converted notes
+      # into /vault/00 - Inbox/ (routers/uploads.py → inbox.write_note_at).
+      - /home/nexus-vault:/vault:rw
       - api_data:/app/rag/data
     # 4G covers jina-embeddings-v2-base-en (~1.2G resident) + chonkie's
     # SentenceTransformer fallback + uvicorn + tokenizer caches. The ingest
