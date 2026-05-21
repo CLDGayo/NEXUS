@@ -86,6 +86,14 @@ class Settings(BaseSettings):
         default=5 * 1024 * 1024, ge=1, le=20 * 1024 * 1024
     )
 
+    # ---- Phase 16: PDF image captioning ----
+    vision_pdf_max_images: int = Field(default=20, ge=0, le=200)
+    vision_pdf_concurrency: int = Field(default=4, ge=1, le=16)
+    vision_pdf_caption_max_tokens: int = Field(default=256, ge=64, le=1024)
+    vision_pdf_min_dimension: int = Field(default=64, ge=0, le=4096)
+    vision_pdf_min_bytes: int = Field(default=2048, ge=0, le=1_048_576)
+    vision_pdf_v2_enabled: bool = Field(default=False)
+
     # ---- LangGraph checkpointer (Phase 3) ----
     # ``memory`` is the default for local dev and tests; switch to
     # ``postgres`` in production (requires `await saver.setup()` once).

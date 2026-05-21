@@ -4,8 +4,7 @@ The endpoint stays single-file; the SPA loops over a staged batch to drive a
 per-file progress UI. See plan: content-hash dedup, vector GC, batch uploads.
 """
 
-import os
-import tempfile
+import logging
 from pathlib import Path
 
 import frontmatter
@@ -16,12 +15,14 @@ from inbox import (
     VAULT_PATH,
     compute_content_hash,
     delete_vectors_for_file,
-    extract_pdf_text,
     index_note,
     safe_stem,
     write_note_at,
 )
+from rag.vision_pdf import caption_pdf_for_upload
 from routers.deps import require_auth
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["documents"], dependencies=[Depends(require_auth)])
 
@@ -30,8 +31,17 @@ MAX_BYTES = 50 * 1024 * 1024  # 50 MB
 UPLOAD_TAGS = ["inbox", "upload"]
 
 
-def _extract_text(ext: str, data: bytes) -> str:
-    """Decode/extract text per file type. Raises HTTPException on empty/unscannable."""
+async def _extract_text(ext: str, data: bytes) -> str:
+    """Decode/extract text per file type.
+
+    For PDFs, embedded images are extracted and captioned via the vision LLM
+    (Phase 16); captions are interleaved into the per-page text so they flow
+    through the same chunker + embedder as native PDF text. If pypdf yields
+    no text but vision produces ≥1 caption, the document is still accepted
+    (scanned-PDF / image-only path).
+
+    Raises HTTPException on empty/unscannable.
+    """
     if ext == ".md":
         return data.decode("utf-8", errors="replace")
     if ext == ".txt":
@@ -39,23 +49,19 @@ def _extract_text(ext: str, data: bytes) -> str:
         if not text.strip():
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
         return text
-    # .pdf
-    tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
-    try:
-        tmp.write(data)
-        tmp.close()
-        text = extract_pdf_text(tmp.name)
-    finally:
-        try:
-            os.unlink(tmp.name)
-        except OSError:
-            pass
-    if not text.strip():
+    # .pdf — text via pypdf + vision captions via fitz/llama-4-scout
+    body, caption_count = await caption_pdf_for_upload(data)
+    if not body.strip():
         raise HTTPException(
             status_code=422,
-            detail="PDF appears to be scanned — no text could be extracted. OCR required.",
+            detail=(
+                "PDF could not be parsed: pypdf returned no text and vision "
+                "captioning produced no descriptions. Try OCR or a re-export."
+            ),
         )
-    return text
+    if caption_count > 0:
+        log.info("pdf.vision_captions: %d caption(s) injected", caption_count)
+    return body
 
 
 @router.post("/documents/upload")
@@ -77,7 +83,7 @@ async def upload_document(file: UploadFile = File(...)) -> dict:
     if len(data) > MAX_BYTES:
         raise HTTPException(status_code=413, detail="File exceeds 50 MB limit")
 
-    text = _extract_text(ext, data)
+    text = await _extract_text(ext, data)
     # PDFs: hash raw bytes (avoids pypdf extraction non-determinism).
     # .md/.txt: hash decoded UTF-8 text.
     content_hash = compute_content_hash(data if ext == ".pdf" else text)

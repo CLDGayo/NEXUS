@@ -32,7 +32,7 @@ from rag.ingest_v2.metadata import (
 )
 from rag.ingest_v2.multimodal import (
     UnsupportedFormatError,
-    parse_to_markdown,
+    parse_to_markdown_with_vision,
 )
 from rag.ingest_v2.qdrant_writer import init_collection, upsert_chunks
 from rag.ingest_v2.semantic_chunker import chunk_text
@@ -91,7 +91,7 @@ async def ingest_file(
 
     # 1. Multimodal parse
     try:
-        markdown = parse_to_markdown(path)
+        markdown = await parse_to_markdown_with_vision(path)
     except UnsupportedFormatError as exc:
         return IngestResult(
             source=path, chunks_emitted=0, chunks_upserted=0,

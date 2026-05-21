@@ -11,9 +11,12 @@ installing torch + the heavy parsing stack.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import Protocol
+
+from rag.config import settings
 
 _log = logging.getLogger(__name__)
 
@@ -22,7 +25,18 @@ _PASSTHROUGH_EXT: frozenset[str] = frozenset({".md", ".markdown"})
 
 # Extensions Docling can parse.
 _DOCLING_EXT: frozenset[str] = frozenset(
-    {".pdf", ".docx", ".pptx", ".html", ".htm", ".xlsx", ".png", ".jpg", ".jpeg", ".tiff"}
+    {
+        ".pdf",
+        ".docx",
+        ".pptx",
+        ".html",
+        ".htm",
+        ".xlsx",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tiff",
+    }
 )
 
 
@@ -100,6 +114,35 @@ def parse_to_markdown(path: Path) -> str:
         if isinstance(emit, str):
             return emit
 
-    raise RuntimeError(
-        f"docling result for {path} exposed no markdown export method"
-    )
+    raise RuntimeError(f"docling result for {path} exposed no markdown export method")
+
+
+async def parse_to_markdown_with_vision(path: Path) -> str:
+    """Async variant that appends vision captions for PDFs (Phase 16).
+
+    Equivalent to :func:`parse_to_markdown` when
+    ``settings.vision_pdf_v2_enabled`` is False (default) — Docling output
+    is returned verbatim. When enabled and ``path`` is a PDF, embedded
+    images are extracted via PyMuPDF, captioned via the vision LLM, and
+    appended as a trailing ``## Image Descriptions`` block. Failures are
+    logged and the un-augmented Markdown is returned.
+    """
+
+    markdown = await asyncio.to_thread(parse_to_markdown, path)
+    if not settings.vision_pdf_v2_enabled:
+        return markdown
+    if path.suffix.lower() != ".pdf":
+        return markdown
+    try:
+        # Lazy import — keeps the heavy LLM/httpx stack off the import path
+        # for callers that never enable vision.
+        from rag.vision_pdf import extract_pdf_captions, format_caption_appendix
+
+        page_captions = await extract_pdf_captions(str(path))
+        appendix = format_caption_appendix(page_captions)
+    except Exception as exc:  # noqa: BLE001 — never break ingest
+        _log.warning("vision_pdf: v2 captioning failed for %s: %s", path, exc)
+        return markdown
+    if not appendix:
+        return markdown
+    return f"{markdown.rstrip()}\n\n{appendix}"
