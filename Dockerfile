@@ -74,4 +74,8 @@ EXPOSE 8000
 # entry point and the legacy ``nexus-chat`` systemd unit is decommissioned
 # as part of the cutover. Phase 11 swapped the legacy rag/static/ SPA for
 # the React build at /app/nexus-ui/dist (copied from stage `ui`).
-CMD ["uvicorn", "rag.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+#
+# Phase 20: gate uvicorn behind ``rag.preflight_validator`` so the worker
+# refuses to bind ``:8000`` until both FastEmbed ONNX models are verified
+# on disk. ``exec`` hands uvicorn PID 1 so SIGTERM still propagates.
+CMD ["sh", "-c", "python -m rag.preflight_validator && exec uvicorn rag.main:app --host 0.0.0.0 --port 8000 --proxy-headers"]

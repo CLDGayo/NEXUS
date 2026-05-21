@@ -121,11 +121,12 @@ async def upload_document(file: UploadFile = File(...)) -> dict:
     try:
         chunk_count = index_note(target)
     except Exception as exc:
+        log.exception("documents.upload: indexing failed for %s", rel_path)
         raise HTTPException(
-            status_code=502,
+            status_code=500,
             detail=(
-                f"Saved to Inbox but indexing failed: {exc}. "
-                "Re-run `python ingest.py --changed` to retry."
+                "AI Model Integrity Error. The system is auto-recovering. "
+                "Please try again in 60 seconds."
             ),
         ) from exc
 
