@@ -39,8 +39,13 @@ services:
       LITELLM_BASE_URL: http://litellm:4000
       LANGFUSE_HOST: http://langfuse-web:3000
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      # Persist fastembed ONNX caches across restarts so the worker does
+      # not block re-downloading models and fail the healthcheck.
+      FASTEMBED_CACHE_DIR: /home/nexus/.cache/fastembed
     ports:
       - "${API_PORT:-8000}:8000"
+    volumes:
+      - fastembed_cache:/home/nexus/.cache/fastembed
     depends_on:
       qdrant:
         condition: service_healthy
@@ -51,11 +56,13 @@ services:
       litellm:
         condition: service_started
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=2).status==200 else 1)"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=5).status==200 else 1)"]
+      interval: 20s
+      timeout: 10s
+      retries: 8
+      # First-call model fetches (embedder + reranker) can block the worker
+      # for ~60-90s on a cold cache. Give the cache volume time to warm.
+      start_period: 180s
     networks: [nexus_net]
 
   # -----------------------------------------------------------------------
@@ -318,3 +325,5 @@ volumes:
     name: nexus_clickhouse_logs
   minio_data:
     name: nexus_minio_data
+  fastembed_cache:
+    name: nexus_fastembed_cache

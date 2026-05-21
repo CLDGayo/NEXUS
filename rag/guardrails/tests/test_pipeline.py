@@ -120,9 +120,11 @@ class TestDefaultPipeline:
             "doubles to $911.42 [1] in year three when we apply the "
             "contractual escalator described above."
         )
-        # Query > 3 tokens so the short-turn bypass doesn't skip exact_match.
+        # Query > 8 tokens so the short-turn bypass doesn't skip exact_match.
         out = pipeline.validate(
-            answer, retrieved=retrieved, query="tell me about the pricing tiers please"
+            answer,
+            retrieved=retrieved,
+            query="tell me about all of the annual pricing tiers in detail please",
         )
         assert out.blocked
         assert "exact_match" in out.failed_names

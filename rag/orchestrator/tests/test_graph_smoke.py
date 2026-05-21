@@ -165,7 +165,9 @@ async def test_graph_abstains_on_fabricated_facts(
     monkeypatch.setattr("rag.orchestrator.nodes.chat_complete", fabricated)
 
     result = await graph_module.run_graph(
-        query="tell me about the full pricing schedule",
+        # Query >8 tokens so the short-turn bypass doesn't skip the
+        # validator the test is actually exercising (Phase 19.1 bypass).
+        query="tell me about the full pricing schedule across all of our annual tiers",
         thread_key="psid_test_3",
         correlation_id="corr_3",
         surface="messenger",
@@ -204,7 +206,9 @@ async def test_graph_abstains_on_uncited_claim(
     monkeypatch.setattr("rag.orchestrator.nodes.chat_complete", uncited)
 
     result = await graph_module.run_graph(
-        query="pricing?",
+        # Query >8 tokens to exit the short-turn bypass and exercise the
+        # strict citation path this test is documenting.
+        query="please give me a detailed breakdown of our monthly pricing",
         thread_key="psid_test_4",
         correlation_id="corr_4",
         surface="messenger",

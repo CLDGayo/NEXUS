@@ -139,10 +139,10 @@ class TestShortTurnBypass:
     def test_short_query_long_answer_runs_validator(self) -> None:
         pipeline = GuardrailsPipeline(validators=(ExactMatchValidator(),))
         chunks = [_chunk("Unrelated retrieved text.")]
-        # 31 words triggers full run because the answer is no longer terse.
+        # >40 words triggers full run because the answer is no longer terse.
         long_answer = " ".join(
             ["This"]
-            + ["filler"] * 28
+            + ["filler"] * 40
             + ["Gwyn", "Aldous", "Persephone"]  # 3 suspicious
         )
         result = pipeline.validate(
@@ -156,14 +156,37 @@ class TestShortTurnBypass:
         pipeline = GuardrailsPipeline(validators=(ExactMatchValidator(),))
         chunks = [_chunk("Unrelated retrieved text.")]
         # Three non-sentence-initial proper nouns in a single sentence.
+        # Query >8 tokens so the short-turn bypass does not trigger.
         result = pipeline.validate(
             "Yesterday Gwyn met Bartholomew and Persephone.",
             retrieved=chunks,
-            query="who are the three people you mentioned earlier",
+            query="who exactly are the three people you mentioned a moment ago",
         )
         em = next(r for r in result.results if r.name == "exact_match")
         assert em.metadata.get("bypassed") is not True
         assert not em.passed
+
+    def test_citation_validator_bypassed_on_short_turn(self) -> None:
+        # Pure conversational acknowledgement with no [n] markers — under
+        # the strict default this would block ("factual claims emitted
+        # without citations") but the bypass should let it through.
+        from rag.guardrails.validators import CitationValidator
+
+        pipeline = GuardrailsPipeline(
+            validators=(CitationValidator(), ExactMatchValidator())
+        )
+        chunks = [_chunk("Vault note about productivity systems.")]
+        result = pipeline.validate(
+            "Hello Clarence — nice to meet you.",
+            retrieved=chunks,
+            query="I am clarence and this is my picture",
+        )
+        cit = next(r for r in result.results if r.name == "citation")
+        em = next(r for r in result.results if r.name == "exact_match")
+        assert cit.passed
+        assert cit.metadata.get("bypassed") is True
+        assert em.passed
+        assert em.metadata.get("bypassed") is True
 
     def test_empty_query_does_not_bypass(self) -> None:
         # Guard: if state.get("query","") is empty (eg internal call),

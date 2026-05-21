@@ -18,6 +18,7 @@ is the only contract downstream code depends on.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from rag.guardrails.entropy import (
@@ -32,6 +33,8 @@ from rag.guardrails.validators import (
     Validator,
 )
 from rag.retrieval.types import ScoredChunk
+
+_CITATION_MARKER_RE = re.compile(r"\[(\d+)\]")
 
 
 @dataclass(frozen=True)
@@ -87,21 +90,43 @@ class GuardrailsPipeline:
         query: str = "",
     ) -> PipelineResult:
         results: list[ValidationResult] = []
-        # Short conversational turns ("hi", "who am I?") with terse replies
-        # can't carry P0 hallucinations worth exact-match scanning. Bypass
-        # the validator so a single proper noun bled in from sibling
-        # retrieved chunks doesn't block a greeting.
+        # Short conversational turns ("hi", "I am clarence", "who am I?")
+        # with terse replies can't carry P0 hallucinations worth scanning
+        # for exact-match or strict citation. Bypass both so a self-
+        # introduction or greeting doesn't get blocked by either (the
+        # ExactMatchValidator still backstops factual fabrication on
+        # longer turns; EntropyValidator still gates wishy-washy text).
         is_short_turn = (
-            0 < len(query.split()) <= 3 and 0 < len(answer.split()) <= 30
+            0 < len(query.split()) <= 8 and 0 < len(answer.split()) <= 40
         )
+        _SHORT_TURN_SKIP = {"exact_match", "citation"}
         for validator in self.validators:
-            if is_short_turn and getattr(validator, "name", "") == "exact_match":
+            v_name = getattr(validator, "name", "")
+            if is_short_turn and v_name in _SHORT_TURN_SKIP:
+                # Citation bypass still surfaces [n] markers when the LLM
+                # included them — downstream surface adapters render
+                # source tags from `cited_ids` and would otherwise lose
+                # the link.
+                meta: dict[str, object] = {"bypassed": True}
+                if v_name == "citation":
+                    indices = sorted(
+                        {
+                            int(m.group(1))
+                            for m in _CITATION_MARKER_RE.finditer(answer)
+                        }
+                    )
+                    valid_ids = [
+                        retrieved[i - 1].id
+                        for i in indices
+                        if 1 <= i <= len(retrieved)
+                    ]
+                    meta["cited_ids"] = valid_ids
                 results.append(
                     ValidationResult(
-                        name="exact_match",
+                        name=v_name,
                         passed=True,
                         reason="short-turn bypass",
-                        metadata={"bypassed": True},
+                        metadata=meta,
                     )
                 )
                 continue

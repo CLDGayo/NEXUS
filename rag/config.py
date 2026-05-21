@@ -66,7 +66,17 @@ class Settings(BaseSettings):
     # ---- Retrieval tuning (Phase 3) ----
     retrieval_k_per_arm: int = Field(default=50, ge=1, le=200)
     retrieval_top_k: int = Field(default=8, ge=1, le=50)
-    rerank_model: str = Field(default="jinaai/jina-reranker-v2-base-multilingual")
+    # Default to ms-marco-MiniLM-L-6-v2: 23MB single-file ONNX, fastembed-native,
+    # loads in <2s on first call (vs. ~30s for jina-v2 multi-file ~700MB).
+    # Switched 2026-05-21 after jina-v2 ONNX path failed to load post-fetch.
+    # Multilingual notes can override via `RERANK_MODEL=BAAI/bge-reranker-base`.
+    rerank_model: str = Field(default="Xenova/ms-marco-MiniLM-L-6-v2")
+
+    # Persistent path for fastembed ONNX caches. Mounted as a docker volume
+    # so containers don't re-download multi-hundred-MB models on every
+    # restart (which blocked the event loop long enough to fail the
+    # healthcheck on 2026-05-21).
+    fastembed_cache_dir: str = Field(default="/home/nexus/.cache/fastembed")
 
     # ---- Generation (Phase 3) ----
     generation_model: str = Field(default="groq-llama-3.3-70b")

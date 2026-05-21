@@ -60,10 +60,21 @@ def _load_cross_encoder_cls() -> Any:
 @lru_cache(maxsize=1)
 def get_cross_encoder():
     """Memoized lazy-loaded cross-encoder. Imported here to defer the
-    fastembed model download until the first real rerank call."""
+    fastembed model download until the first real rerank call.
+
+    Passes ``cache_dir`` explicitly so the ONNX weights persist across
+    container restarts on the mounted ``fastembed_cache`` volume.
+    """
+
+    from pathlib import Path
 
     cls = _load_cross_encoder_cls()
-    return cls(model_name=settings.rerank_model)
+    cache_dir = Path(settings.fastembed_cache_dir)
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        _log.warning("could not create fastembed cache dir %s: %s", cache_dir, exc)
+    return cls(model_name=settings.rerank_model, cache_dir=str(cache_dir))
 
 
 def reranker_import_probe() -> dict[str, Any]:
