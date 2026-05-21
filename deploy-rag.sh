@@ -29,6 +29,7 @@ rsync -avz --delete \
   --exclude='__pycache__/' \
   --exclude='.ingest_state.json' \
   --exclude='data/.password_override.json' \
+  --exclude='data/.messenger_override.json' \
   --exclude='data/nexus.db' \
   --exclude='data/traces/' \
   --exclude='data/app.log' \
@@ -37,15 +38,35 @@ rsync -avz --delete \
   --exclude='auth/' \
   "$VAULT_ROOT/rag/" "$VPS:$VPS_PROJECT/rag/"
 
-echo "→ Syncing project root infra files (Dockerfile, compose, requirements) ..."
+echo "→ Syncing nexus-ui/ source for Docker UI builder stage ..."
+rsync -avz --delete \
+  --exclude='node_modules/' \
+  --exclude='dist/' \
+  --exclude='.vite/' \
+  "$VAULT_ROOT/nexus-ui/" "$VPS:$VPS_PROJECT/nexus-ui/"
+
+echo "→ Syncing litellm/ config (mounted into the litellm container) ..."
+rsync -avz --delete \
+  "$VAULT_ROOT/litellm/" "$VPS:$VPS_PROJECT/litellm/"
+
+echo "→ Syncing project root infra files (Dockerfile, compose, requirements, dockerignore) ..."
 rsync -avz \
   "$VAULT_ROOT/Dockerfile" \
+  "$VAULT_ROOT/.dockerignore" \
   "$VAULT_ROOT/docker-compose.yml" \
   "$VAULT_ROOT/docker-compose.prod.yml" \
   "$VAULT_ROOT/docker-compose.lite.yml" \
   "$VAULT_ROOT/requirements.txt" \
   "$VAULT_ROOT/requirements-ingest.txt" \
   "$VPS:$VPS_PROJECT/"
+
+echo "→ Restarting litellm container so the new config.yaml is loaded ..."
+ssh "$VPS" "
+  set -e
+  cd $VPS_PROJECT
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+                 --env-file .env.prod restart litellm
+"
 
 echo "→ Rebuilding api container via docker compose ..."
 ssh "$VPS" "
@@ -71,10 +92,22 @@ ssh "$VPS" '
 '
 
 echo "→ Smoke-test public endpoints ..."
-curl -sS -o /dev/null -w "  GET  /health                 : HTTP %{http_code}\n" \
-  https://chat.nexus.gayo-sphere.cloud/health
+HOST="https://chat.nexus.gayo-sphere.cloud"
+curl -sS -o /dev/null -w "  GET  /health                 : HTTP %{http_code}\n" "$HOST/health"
+curl -sS -o /dev/null -w "  GET  /                       : HTTP %{http_code}  (React index)\n" "$HOST/"
+curl -sS -o /dev/null -w "  GET  /documents              : HTTP %{http_code}  (SPA catch-all)\n" "$HOST/documents"
+curl -sS -o /dev/null -w "  GET  /integrations           : HTTP %{http_code}  (SPA catch-all)\n" "$HOST/integrations"
 curl -sS -o /dev/null -w "  POST /api/auth/login (wrong) : HTTP %{http_code}\n" \
-  -X POST https://chat.nexus.gayo-sphere.cloud/api/auth/login \
+  -X POST "$HOST/api/auth/login" \
   -H 'content-type: application/json' -d '{"password":"__smoke__"}'
 
-echo "Done. App at https://chat.nexus.gayo-sphere.cloud"
+# Confirm the hashed Vite entry bundle is served — parse <script src="/assets/...">
+echo "→ Verifying Vite bundle URL ..."
+asset=$(curl -sS "$HOST/" | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+if [ -n "$asset" ]; then
+  curl -sS -o /dev/null -w "  GET  $asset : HTTP %{http_code}\n" "$HOST$asset"
+else
+  echo "  (could not detect hashed bundle path — check /)"
+fi
+
+echo "Done. App at $HOST"
