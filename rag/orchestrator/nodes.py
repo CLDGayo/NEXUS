@@ -165,6 +165,89 @@ def _collect_image_attachments(state: NexusState) -> list[dict]:
     return images
 
 
+@traced("graph.node.preprocess_vision", kind="llm")
+async def preprocess_vision_node(state: NexusState) -> dict:
+    """Preprocess node that:
+    1. Captions incoming image queries to synthesize a text search query for Qdrant.
+    2. Contextualizes the query if conversational history is present.
+    """
+    current_query = state.get("query", "")
+    updates = {}
+
+    # 1. Caption incoming image if attachments exist
+    images = _collect_image_attachments(state)
+    if images:
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "Briefly describe this image to generate a search query for a "
+                    "knowledge base. Focus on identifiable people, products, text, "
+                    "and unique objects. Be concise."
+                )
+            },
+            {
+                "role": "user",
+                "content": [{"type": "image_url", "image_url": {"url": img["url"]}} for img in images]
+            }
+        ]
+
+        try:
+            result: LLMResult = await chat_complete(
+                messages,
+                model=settings.vision_model,
+                temperature=0.0,
+                max_tokens=100,
+            )
+            caption = result.content.strip()
+            current_query = f"{current_query}\n[Image Analysis: {caption}]".strip()
+            updates["query"] = current_query
+        except LLMError as exc:
+            _log.warning("preprocess_vision failed: %s", exc)
+
+    # 2. Contextualize the query based on conversation history if present
+    history = state.get("history")
+    if history:
+        history_str = ""
+        for msg in history:
+            role = msg.get("role", "")
+            content = msg.get("content", "")
+            history_str += f"{role.capitalize()}: {content}\n"
+
+        system_prompt = (
+            "Given the conversation history and the latest user query, reformulate the query into a "
+            "standalone search query that captures all necessary context from the conversation history. "
+            "Do NOT answer the query or add any extra commentary. Just return the reformulated standalone query. "
+            "If the user query is already a clear standalone query, return the user query exactly as it is."
+        )
+        user_content = f"Conversation History:\n{history_str}\nLatest Query: {current_query}"
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content},
+        ]
+
+        try:
+            result = await chat_complete(
+                messages,
+                model=settings.generation_model,
+                temperature=0.0,
+                max_tokens=150,
+            )
+            contextualized_query = result.content.strip()
+            if contextualized_query:
+                _log.info(
+                    "query_contextualization query=%r -> reformulated=%r",
+                    current_query,
+                    contextualized_query,
+                )
+                current_query = contextualized_query
+                updates["query"] = current_query
+        except LLMError as exc:
+            _log.warning("query contextualization failed: %s", exc)
+
+    return updates
+
+
 @traced("graph.node.generate", kind="llm")
 async def generate_node(state: NexusState) -> dict:
     reranked = state.get("reranked", [])
@@ -298,18 +381,30 @@ def _format_pipeline_reason(pipeline_result) -> str | None:
 
 @traced("graph.node.respond", kind="terminal")
 async def respond_node(state: NexusState) -> dict:
-    return {"answer": state.get("answer", "")}
+    answer = state.get("answer", "")
+    return {
+        "answer": answer,
+        "history": [
+            {"role": "user", "content": state.get("query", "")},
+            {"role": "assistant", "content": answer},
+        ],
+    }
 
 
 @traced("graph.node.abstain", kind="terminal")
 async def abstain_node(state: NexusState) -> dict:
+    answer = handover_fallback_text()
     return {
-        "answer": handover_fallback_text(),
+        "answer": answer,
         "abstained": True,
         "requires_human_handover": True,
         "handover_reason": state.get("handover_reason")
         or state.get("guardrail_reason")
         or "guardrail abstain",
+        "history": [
+            {"role": "user", "content": state.get("query", "")},
+            {"role": "assistant", "content": answer},
+        ],
     }
 
 

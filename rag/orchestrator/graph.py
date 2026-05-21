@@ -23,6 +23,7 @@ from rag.orchestrator.nodes import (
     generate_node,
     guardrails_node,
     guardrails_router,
+    preprocess_vision_node,
     rerank_node,
     respond_node,
     retrieve_dense_node,
@@ -77,6 +78,7 @@ def build_graph() -> Any:
 
     graph = StateGraph(NexusState)
 
+    graph.add_node("preprocess_vision", preprocess_vision_node)
     graph.add_node("retrieve_dense", retrieve_dense_node)
     graph.add_node("retrieve_sparse", retrieve_sparse_node)
     graph.add_node("retrieve_graph", retrieve_graph_node)
@@ -91,9 +93,10 @@ def build_graph() -> Any:
     # make `fuse` wait for all three to complete (langgraph default
     # barrier). The graph arm degrades gracefully (empty list) when the
     # wikilink DB is missing, so it never blocks the pipeline.
-    graph.add_edge(START, "retrieve_dense")
-    graph.add_edge(START, "retrieve_sparse")
-    graph.add_edge(START, "retrieve_graph")
+    graph.add_edge(START, "preprocess_vision")
+    graph.add_edge("preprocess_vision", "retrieve_dense")
+    graph.add_edge("preprocess_vision", "retrieve_sparse")
+    graph.add_edge("preprocess_vision", "retrieve_graph")
     graph.add_edge("retrieve_dense", "fuse")
     graph.add_edge("retrieve_sparse", "fuse")
     graph.add_edge("retrieve_graph", "fuse")

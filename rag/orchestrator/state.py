@@ -7,11 +7,21 @@ and ``surface`` are required at entry.
 
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 from rag.retrieval.types import ScoredChunk
 
 Surface = Literal["messenger", "spa", "test"]
+
+
+def append_history(
+    left: list[dict[str, str]] | None, right: list[dict[str, str]] | None
+) -> list[dict[str, str]]:
+    if left is None:
+        left = []
+    if right is None:
+        right = []
+    return left + right
 
 
 class NexusState(TypedDict, total=False):
@@ -54,3 +64,6 @@ class NexusState(TypedDict, total=False):
     llm_completion_tokens: int
     llm_total_tokens: int
     llm_latency_ms: int
+
+    # Phase 18 — conversational memory
+    history: Annotated[list[dict[str, str]], append_history]

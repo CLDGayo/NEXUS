@@ -320,3 +320,82 @@ async def test_graph_threads_attachments_to_generate(
 
 async def _async_return(value):
     return value
+
+
+# ---------------------------------------------------------------------------
+# Phase 18 — Conversational history and query contextualization
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+async def test_graph_query_contextualization_and_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # 1. Setup mock functions for search and rerank
+    monkeypatch.setattr(
+        "rag.orchestrator.nodes.dense_search",
+        lambda *a, **kw: _async_return(_stub_chunks("d")),
+    )
+    monkeypatch.setattr(
+        "rag.orchestrator.nodes.sparse_search",
+        lambda *a, **kw: _async_return(_stub_chunks("s")),
+    )
+    monkeypatch.setattr(
+        "rag.orchestrator.nodes.graph_search",
+        lambda *a, **kw: _async_return([]),
+    )
+    monkeypatch.setattr(
+        "rag.orchestrator.nodes.rerank",
+        lambda q, c, top_k=8: _async_return(c[:top_k]),
+    )
+
+    chat_calls = []
+
+    async def fake_chat(messages, *, model, **kw):
+        chat_calls.append((messages, model))
+        # Check if this is the query contextualization call (system prompt has 'standalone')
+        is_contextualize = any("standalone" in m.get("content", "") for m in messages if m.get("role") == "system")
+        if is_contextualize:
+            return _llm_result("pricing and plans details")
+        return _llm_result(
+            "Our plan starts at $99 per month [1] including onboarding [2]."
+        )
+
+    monkeypatch.setattr("rag.orchestrator.nodes.chat_complete", fake_chat)
+
+    # First turn: Ask "pricing?"
+    result1 = await graph_module.run_graph(
+        query="pricing?",
+        thread_key="thread_context_test",
+        correlation_id="corr_c1",
+        surface="messenger",
+    )
+
+    assert result1["guardrail_passed"] is True
+    # Verify the history is now populated
+    assert "history" in result1
+    assert len(result1["history"]) == 2
+    assert result1["history"][0] == {"role": "user", "content": "pricing?"}
+    assert result1["history"][1] == {"role": "assistant", "content": "Our plan starts at $99 per month [1] including onboarding [2]."}
+
+    # Second turn: Ask a follow-up "yes please"
+    result2 = await graph_module.run_graph(
+        query="yes please",
+        thread_key="thread_context_test",
+        correlation_id="corr_c2",
+        surface="messenger",
+    )
+
+    # Verify that query contextualization was called and LLM reformulated the query
+    assert len(chat_calls) >= 3  # 1 for turn 1, 2 for turn 2 (contextualize + generate)
+    # Check that one of the chat completions was the contextualization one
+    contextualize_call = None
+    for msgs, model in chat_calls:
+        if any("standalone" in m.get("content", "") for m in msgs if m.get("role") == "system"):
+            contextualize_call = msgs
+            break
+    assert contextualize_call is not None
+    # Check that history was passed in the user content
+    user_msg = next(m for m in contextualize_call if m["role"] == "user")
+    assert "pricing?" in user_msg["content"]
+    assert "yes please" in user_msg["content"]
+

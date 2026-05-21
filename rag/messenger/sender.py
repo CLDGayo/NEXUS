@@ -17,6 +17,7 @@ to drive on retry.
 from __future__ import annotations
 
 import logging
+import re
 import time
 from dataclasses import dataclass
 from typing import Literal
@@ -217,10 +218,14 @@ class OutboundSender:
             )
 
         url = f"{_GRAPH_API_BASE}?access_token={token}"
+        # Phase 18 — strip [\d+] citation brackets from Messenger outbound only.
+        # Guardrail pipeline + SPA SSE stream still see the cited answer.
+        clean_text = re.sub(r"\[\d+\]", "", payload.reply.text).strip()
+
         graph_body = {
             "recipient": {"id": payload.user_id},
             "messaging_type": "RESPONSE",
-            "message": {"text": payload.reply.text},
+            "message": {"text": clean_text},
         }
 
         try:

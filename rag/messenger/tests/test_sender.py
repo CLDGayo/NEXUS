@@ -211,7 +211,7 @@ async def test_graph_api_send_uses_current_page_access_token(
     assert client.last_body == {
         "recipient": {"id": "psid_99"},
         "messaging_type": "RESPONSE",
-        "message": {"text": "Plan [1]. Reply YES to book."},
+        "message": {"text": "Plan . Reply YES to book."},
     }
 
     # Rotate the token. The next send must use the NEW value.
