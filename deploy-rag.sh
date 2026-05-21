@@ -74,6 +74,18 @@ ssh "$VPS" "
                  --env-file .env.prod restart litellm
 "
 
+# Docker creates named volumes owned by root, but the api container runs as
+# the nexus user (UID/GID 1000). Without this fix, FastEmbed fails with
+# [Errno 13] Permission denied when downloading ms-marco / bge-small models
+# into /home/nexus/.cache/fastembed, breaking reranker + ingest.
+echo "→ Ensuring fastembed cache volume is writable by nexus (UID 1000) ..."
+ssh "$VPS" "
+  set -e
+  docker volume create nexus_fastembed_cache >/dev/null
+  docker run --rm -v nexus_fastembed_cache:/cache alpine:3.20 \
+    chown -R 1000:1000 /cache
+"
+
 echo "→ Rebuilding api container via docker compose ..."
 ssh "$VPS" "
   set -e
