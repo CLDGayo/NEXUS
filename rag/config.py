@@ -140,6 +140,26 @@ class Settings(BaseSettings):
         le=604_800,
         description="TTL for the SET-NX idempotency key (seconds).",
     )
+    # Phase 21 — webhook coalescing window. Events from the same sender
+    # within this many seconds collapse into one logical turn before any
+    # idempotency / lock / dispatch work runs. Wide enough to absorb
+    # Meta's split between an image event and its caption text event,
+    # narrow enough that a deliberate follow-up stays a separate turn.
+    messenger_coalesce_window_s: int = Field(
+        default=2,
+        ge=1,
+        le=30,
+        description="Seconds within which inbound events from the same sender are merged into one turn.",
+    )
+    # Phase 21 — shutdown drain. Lifespan awaits in-flight messenger
+    # background tasks up to this many seconds before tearing down the
+    # Postgres checkpointer pool. Survivors are cancelled.
+    messenger_shutdown_drain_seconds: float = Field(
+        default=30.0,
+        gt=0.0,
+        le=300.0,
+        description="Max seconds to wait for in-flight messenger tasks during shutdown.",
+    )
 
     # ---- Facebook Messenger surface (Phase 8) ----
     messenger_public_enabled: bool = Field(default=False)

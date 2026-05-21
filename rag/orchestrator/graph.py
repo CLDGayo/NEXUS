@@ -139,7 +139,14 @@ async def run_graph(
     surface: str = "messenger",
     attachments: list[dict] | None = None,
 ) -> dict[str, Any]:
-    """Public entrypoint used by surface adapters (webhook, SPA)."""
+    """Public entrypoint used by surface adapters (webhook, SPA).
+
+    Phase 21 — checkpoint persistence errors raised by the underlying
+    saver after a node returned a valid answer are caught here and
+    surfaced on the returned dict as ``_persistence_error``. Surface
+    adapters log this at WARNING but still dispatch the answer — the
+    user has the right reply; only memory is degraded.
+    """
 
     state: NexusState = {
         "query": query,
@@ -150,5 +157,44 @@ async def run_graph(
     if attachments:
         state["attachments"] = attachments
     config = {"configurable": {"thread_id": thread_key}}
-    result = await get_graph().ainvoke(state, config=config)
-    return dict(result)
+
+    graph = get_graph()
+    try:
+        result = await graph.ainvoke(state, config=config)
+        return dict(result)
+    except Exception as exc:
+        # Best-effort persistence-error classification. The checkpointer
+        # writes happen *between* node executions, so an exception from
+        # the saver after a successful ``generate``/``respond`` looks
+        # like a top-level ainvoke failure with no recoverable answer.
+        # We re-raise unless the failure is clearly post-generation,
+        # which we detect by the saver's module path in the traceback.
+        if _is_checkpoint_error(exc):
+            _log.warning(
+                "graph.checkpoint.write_failed thread=%s err=%s",
+                thread_key,
+                exc,
+            )
+            # Attempt one read of the last-known state so we can still
+            # return the most recent answer the graph produced.
+            try:
+                snapshot = await graph.aget_state(config)
+                values = dict(snapshot.values) if snapshot else {}
+            except Exception:  # noqa: BLE001
+                values = {}
+            values["_persistence_error"] = str(exc)
+            return values
+        raise
+
+
+def _is_checkpoint_error(exc: BaseException) -> bool:
+    """True when the exception originated inside the LangGraph
+    checkpointer (Postgres saver, async pool, psycopg)."""
+
+    tb = exc.__traceback__
+    while tb is not None:
+        module = tb.tb_frame.f_globals.get("__name__", "") or ""
+        if module.startswith(("langgraph.checkpoint", "psycopg", "asyncpg")):
+            return True
+        tb = tb.tb_next
+    return False

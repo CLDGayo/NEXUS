@@ -37,7 +37,12 @@ from opentelemetry import trace
 
 from rag.config import settings
 from rag.guardrails.groundedness import abstention_text
-from rag.messenger.idempotency import check_idempotency
+from rag.messenger.idempotency import (
+    acquire_thread_lock,
+    check_idempotency,
+    claim_content_idempotency,
+    release_thread_lock,
+)
 from rag.messenger.payloads import build_outbound_payload
 from rag.messenger.pii import scrub
 from rag.messenger.ratelimit import enforce_rate_limit
@@ -106,9 +111,28 @@ async def get_outbound_sender() -> OutboundSender:
 
 EventScheduler = Callable[[Awaitable[None]], None]
 
+# Phase 21 — optional registry of background tasks so the app lifespan
+# can drain them on shutdown before tearing down the Postgres
+# checkpointer pool. Wired by ``rag.main`` via
+# :func:`register_task_tracker`; ``None`` means tasks are fire-and-forget
+# (test default).
+_task_registry: set[asyncio.Task[Any]] | None = None
+
+
+def register_task_tracker(registry: set[asyncio.Task[Any]] | None) -> None:
+    """Wire (or unwire) the background-task registry used by the default
+    scheduler. ``None`` reverts to fire-and-forget."""
+
+    global _task_registry
+    _task_registry = registry
+
 
 def _default_scheduler(coro: Awaitable[None]) -> None:
-    asyncio.create_task(coro)  # type: ignore[arg-type]
+    task = asyncio.create_task(coro)  # type: ignore[arg-type]
+    registry = _task_registry
+    if registry is not None:
+        registry.add(task)
+        task.add_done_callback(registry.discard)
 
 
 _scheduler: EventScheduler = _default_scheduler
@@ -225,59 +249,167 @@ async def messenger_inbound_direct(
         _log.info("messenger.inbound.ignored_object obj=%s", envelope.get("object"))
         return PlainTextResponse("EVENT_RECEIVED")
 
-    scheduled = 0
+    # Phase 21 — pre-schedule pipeline:
+    #   1. Parse raw messaging events into candidates (drop echoes, non-image
+    #      attachments, empty events).
+    #   2. Coalesce candidates by (page_id, sender_id, COALESCE_WINDOW_S
+    #      time bucket) so one logical user turn delivered as multiple
+    #      events (text + attachment, or two attachments) becomes one
+    #      InboundMessage with merged text + deduped image URLs.
+    #   3. Atomically claim a content-keyed idempotency slot in Redis so a
+    #      Meta retry with a fresh mid still dedupes against the original.
+    #   4. Atomically acquire a per-thread lock so two simultaneous
+    #      envelopes for the same user can't race on the LangGraph
+    #      checkpointer thread.
+    #   5. Schedule the background task only after both claims succeed.
+    candidates: list[dict[str, Any]] = []
     for entry in envelope.get("entry") or []:
         page_id = str(entry.get("id") or "")
         for event in entry.get("messaging") or []:
-            sender_id = str(((event.get("sender") or {}).get("id")) or "")
             message = event.get("message") or {}
-            mid = str(message.get("mid") or "")
-            text = message.get("text")
             if message.get("is_echo"):
                 # Our own outbound deliveries echo back — never reply to them.
                 continue
+            sender_id = str(((event.get("sender") or {}).get("id")) or "")
+            if not sender_id:
+                continue
+            text_raw = message.get("text")
+            text = text_raw if isinstance(text_raw, str) and text_raw else None
 
             # Phase 15 — extract image attachments. Meta delivers them as
             # ``message.attachments`` = [{"type":"image","payload":{"url":..}}].
             # Stickers, files, audio, video are ignored.
-            raw_atts = message.get("attachments") or []
             images: list[dict] = []
-            for att in raw_atts:
+            for att in message.get("attachments") or []:
                 if not isinstance(att, dict) or att.get("type") != "image":
                     continue
                 url = ((att.get("payload") or {}).get("url")) or ""
                 if url:
                     images.append({"type": "image", "url": url})
 
-            has_text = isinstance(text, str) and bool(text)
-            if not sender_id or (not has_text and not images):
+            if text is None and not images:
                 continue
 
-            # Image-only events have no text — synthesize a caption so the
-            # downstream graph still has a textual prompt to anchor retrieval.
-            effective_text = (
-                text if has_text else "What can you tell me about this image?"
+            ts_raw = event.get("timestamp")
+            try:
+                ts_ms = int(ts_raw) if ts_raw is not None else 0
+            except (TypeError, ValueError):
+                ts_ms = 0
+
+            candidates.append(
+                {
+                    "page_id": page_id,
+                    "sender_id": sender_id,
+                    "mid": str(message.get("mid") or ""),
+                    "text": text,
+                    "images": images,
+                    "ts_ms": ts_ms,
+                }
             )
 
-            inbound = InboundMessage(
-                user_id=sender_id,
-                message_text=effective_text,
-                timestamp=_now_epoch(),
-                channel="messenger",
-                page_id=page_id or None,
-                correlation_id=mid or None,
-                attachments=images or None,
-            )
-            _scheduler(
-                _handle_messenger_event(
-                    inbound=inbound,
-                    runner=runner,
-                    sender=sender,
-                )
-            )
-            scheduled += 1
+    # Coalescing window: events from the same sender within this many
+    # seconds collapse into one turn. Two seconds is wider than Meta's
+    # observed split between an image event and its caption text event
+    # while still being narrow enough that a deliberate follow-up
+    # ("wait, ignore that") stays a separate turn.
+    coalesce_window_s = settings.messenger_coalesce_window_s
 
-    _log.info("messenger.inbound.accepted scheduled=%d", scheduled)
+    groups: dict[tuple[str, str, int], list[dict[str, Any]]] = {}
+    for cand in candidates:
+        bucket = (cand["ts_ms"] // 1000) // max(1, coalesce_window_s)
+        key = (cand["page_id"], cand["sender_id"], bucket)
+        groups.setdefault(key, []).append(cand)
+
+    scheduled = 0
+    for (page_id, sender_id, _bucket), group in groups.items():
+        texts = [c["text"] for c in group if c["text"]]
+        images: list[dict] = []
+        seen_urls: set[str] = set()
+        for c in group:
+            for img in c["images"]:
+                url = img.get("url", "")
+                if url and url not in seen_urls:
+                    images.append(img)
+                    seen_urls.add(url)
+
+        # Image-only turns get a synthesized caption so the downstream
+        # graph always has a textual prompt to anchor retrieval.
+        if texts:
+            merged_text = " ".join(texts)
+        elif images:
+            merged_text = "What can you tell me about this image?"
+        else:
+            continue
+
+        mids = [c["mid"] for c in group if c["mid"]]
+
+        inbound = InboundMessage(
+            user_id=sender_id,
+            message_text=merged_text,
+            timestamp=_now_epoch(),
+            channel="messenger",
+            page_id=page_id or None,
+            correlation_id=mids[0] if mids else None,
+            attachments=images or None,
+        )
+
+        # Content-keyed claim survives Meta retries with fresh mids.
+        try:
+            claim_verdict = await claim_content_idempotency(inbound)
+        except Exception as exc:  # noqa: BLE001 — Redis flake must not block
+            _log.warning(
+                "messenger.event.claim_unavailable sender=%s err=%s",
+                sender_id,
+                exc,
+            )
+            claim_verdict = None
+
+        if claim_verdict is not None and claim_verdict.duplicate:
+            _log.info(
+                "messenger.event.dedup_dropped sender=%s key=%s mids=%s",
+                sender_id,
+                claim_verdict.key,
+                ",".join(mids) if mids else "-",
+            )
+            continue
+
+        # Per-thread lock keeps two near-simultaneous turns from racing
+        # on the same LangGraph checkpointer thread.
+        try:
+            lock_verdict = await acquire_thread_lock(sender_id)
+        except Exception as exc:  # noqa: BLE001
+            _log.warning(
+                "messenger.event.lock_unavailable sender=%s err=%s",
+                sender_id,
+                exc,
+            )
+            lock_verdict = None
+
+        if lock_verdict is not None and not lock_verdict.acquired:
+            _log.info(
+                "messenger.event.dropped_locked sender=%s lock_key=%s",
+                sender_id,
+                lock_verdict.key,
+            )
+            continue
+
+        _scheduler(
+            _handle_messenger_event(
+                inbound=inbound,
+                runner=runner,
+                sender=sender,
+                lock_thread_key=sender_id if lock_verdict is not None else None,
+                coalesced=len(group),
+            )
+        )
+        scheduled += 1
+
+    _log.info(
+        "messenger.inbound.accepted scheduled=%d candidates=%d groups=%d",
+        scheduled,
+        len(candidates),
+        len(groups),
+    )
     return PlainTextResponse("EVENT_RECEIVED")
 
 
@@ -286,88 +418,101 @@ async def _handle_messenger_event(
     inbound: InboundMessage,
     runner: GraphRunner,
     sender: OutboundSender,
+    lock_thread_key: str | None = None,
+    coalesced: int = 1,
 ) -> None:
-    """Background task: run LangGraph + send reply directly to Meta."""
+    """Background task: run LangGraph + send reply directly to Meta.
+
+    Idempotency + thread-lock claims are made by the request handler
+    *before* scheduling (Phase 21), so this task only worries about
+    rate-limiting, PII, graph execution, dispatch, and releasing the
+    per-thread lock when it's done.
+    """
 
     started = time.perf_counter()
     correlation_id = _correlation_id(inbound.correlation_id)
 
     try:
-        await enforce_rate_limit(inbound)
-    except HTTPException as exc:
-        _log.info(
-            "messenger.event.rate_limited user=%s status=%d",
-            inbound.user_id,
-            exc.status_code,
-        )
-        return
-
-    try:
-        verdict = await check_idempotency(inbound)
-    except Exception as exc:  # noqa: BLE001 — never let Redis flake kill the reply
-        _log.warning("messenger.event.idempotency_unavailable err=%s", exc)
-        verdict = None
-
-    if verdict is not None and verdict.duplicate:
-        _log.info(
-            "messenger.event.duplicate correlation_id=%s mid=%s",
-            correlation_id,
-            inbound.correlation_id,
-        )
-        return
-
-    scrub_result = scrub(inbound.message_text)
-    if scrub_result.redactions:
-        current_span = trace.get_current_span()
-        if current_span is not None and current_span.is_recording():
-            current_span.add_event(
-                "pii.scrubbed",
-                attributes={
-                    f"pii.count.{kind.lower()}": count
-                    for kind, count in scrub_result.counts_by_kind.items()
-                },
+        try:
+            await enforce_rate_limit(inbound)
+        except HTTPException as exc:
+            _log.info(
+                "messenger.event.rate_limited user=%s status=%d",
+                inbound.user_id,
+                exc.status_code,
             )
-        inbound = inbound.model_copy(
-            update={"message_text": scrub_result.scrubbed_text}
-        )
+            return
 
-    graph_result: dict[str, Any] = {}
-    try:
-        graph_result = await runner(inbound, correlation_id)
-        reply_text = (graph_result.get("answer") or "").strip() or abstention_text()
-    except Exception as exc:
-        _log.exception(
-            "graph dispatch failed",
-            extra={"correlation_id": correlation_id, "err": str(exc)},
-        )
-        reply_text = abstention_text()
-        graph_result = {"abstained": True, "requires_human_handover": True}
+        scrub_result = scrub(inbound.message_text)
+        if scrub_result.redactions:
+            current_span = trace.get_current_span()
+            if current_span is not None and current_span.is_recording():
+                current_span.add_event(
+                    "pii.scrubbed",
+                    attributes={
+                        f"pii.count.{kind.lower()}": count
+                        for kind, count in scrub_result.counts_by_kind.items()
+                    },
+                )
+            inbound = inbound.model_copy(
+                update={"message_text": scrub_result.scrubbed_text}
+            )
 
-    try:
-        outbound_payload = build_outbound_payload(
-            inbound=inbound,
-            correlation_id=correlation_id,
-            reply_text=reply_text,
-            graph_result=graph_result,
-        )
-        result: SendResult = await sender.dispatch(
-            outbound_payload, target="graph_api"
-        )
-        _log.info(
-            "messenger.event.dispatched outcome=%s status=%s attempts=%d "
-            "elapsed_ms=%d correlation_id=%s",
-            result.outcome,
-            result.status_code,
-            result.attempts,
-            int((time.perf_counter() - started) * 1000),
-            correlation_id,
-        )
-    except Exception as exc:
-        _log.exception(
-            "messenger.event.dispatch_crashed correlation_id=%s err=%s",
-            correlation_id,
-            exc,
-        )
+        graph_result: dict[str, Any] = {}
+        try:
+            graph_result = await runner(inbound, correlation_id)
+            reply_text = (graph_result.get("answer") or "").strip() or abstention_text()
+        except Exception as exc:
+            _log.exception(
+                "graph dispatch failed",
+                extra={"correlation_id": correlation_id, "err": str(exc)},
+            )
+            reply_text = abstention_text()
+            graph_result = {"abstained": True, "requires_human_handover": True}
+
+        # Step F — checkpoint persistence is decoupled from outbound
+        # delivery. If the graph reports a persistence error (raised
+        # inside the saver after the answer was already produced), we
+        # log a warning but DO NOT fire an additional abstention: the
+        # user already has the right reply, only memory is degraded.
+        persistence_error = graph_result.get("_persistence_error")
+
+        try:
+            outbound_payload = build_outbound_payload(
+                inbound=inbound,
+                correlation_id=correlation_id,
+                reply_text=reply_text,
+                graph_result=graph_result,
+            )
+            result: SendResult = await sender.dispatch(
+                outbound_payload, target="graph_api"
+            )
+            if persistence_error:
+                _log.warning(
+                    "messenger.event.persistence_degraded "
+                    "correlation_id=%s err=%s",
+                    correlation_id,
+                    persistence_error,
+                )
+            _log.info(
+                "messenger.event.dispatched outcome=%s status=%s attempts=%d "
+                "elapsed_ms=%d correlation_id=%s coalesced=%d",
+                result.outcome,
+                result.status_code,
+                result.attempts,
+                int((time.perf_counter() - started) * 1000),
+                correlation_id,
+                coalesced,
+            )
+        except Exception as exc:
+            _log.exception(
+                "messenger.event.dispatch_crashed correlation_id=%s err=%s",
+                correlation_id,
+                exc,
+            )
+    finally:
+        if lock_thread_key:
+            await release_thread_lock(lock_thread_key)
 
 
 # ---------------------------------------------------------------------------

@@ -40,10 +40,11 @@ package into ``/app/rag``. v2 modules use absolute ``rag.…`` imports.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Any, AsyncIterator
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -90,11 +91,18 @@ WIDGET_STATIC_DIR = Path(__file__).parent / "widget-static"
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Boot v1 state, then optionally bring up the LangGraph Postgres saver."""
 
     await init_db()
     integrations_dispatcher.register()
+
+    # Phase 21 — background-task registry. The Messenger webhook scheduler
+    # registers each ``_handle_messenger_event`` task here so we can drain
+    # them on shutdown before the AsyncExitStack closes the Postgres pool.
+    background_tasks: set[asyncio.Task[Any]] = set()
+    app.state.background_tasks = background_tasks
+    v2_webhook.register_task_tracker(background_tasks)
 
     async with AsyncExitStack() as stack:
         backend = settings.langgraph_checkpoint.lower()
@@ -119,7 +127,35 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         else:
             _log.info("LangGraph checkpointer: memory (dev/test default)")
 
-        yield
+        try:
+            yield
+        finally:
+            # Drain in-flight tasks BEFORE the AsyncExitStack closes the
+            # Postgres saver context — otherwise the pool can be yanked
+            # mid-checkpoint and a task that was about to persist state
+            # raises an InterfaceError into a finished request.
+            v2_webhook.register_task_tracker(None)
+            pending = list(background_tasks)
+            if pending:
+                drain_timeout = settings.messenger_shutdown_drain_seconds
+                _log.info(
+                    "lifespan.drain.waiting count=%d timeout_s=%.1f",
+                    len(pending),
+                    drain_timeout,
+                )
+                done, still_pending = await asyncio.wait(
+                    pending, timeout=drain_timeout
+                )
+                if still_pending:
+                    _log.warning(
+                        "lifespan.drain.timeout cancelled=%d completed=%d",
+                        len(still_pending),
+                        len(done),
+                    )
+                    for task in still_pending:
+                        task.cancel()
+                else:
+                    _log.info("lifespan.drain.complete count=%d", len(done))
 
 
 app = FastAPI(
