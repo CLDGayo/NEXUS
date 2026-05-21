@@ -25,8 +25,8 @@ rsync -avz --delete \
 # The Docker api container runs as nexus (UID 1000). rsync copies files
 # with the local macOS UID (501), so 00 - Inbox/ must be re-owned so the
 # upload endpoint (routers/uploads.py → inbox.write_note_at) can write.
-echo "→ Fixing ownership on 00 - Inbox/ for Docker nexus user ..."
-ssh "$VPS" "chown -R 1000:1000 '$VPS_VAULT/00 - Inbox'"
+echo "→ Fixing ownership on 00 - Inbox/ and 04 - Archive/ for Docker nexus user ..."
+ssh "$VPS" "mkdir -p '$VPS_VAULT/00 - Inbox' '$VPS_VAULT/04 - Archive' && chown -R 1000:1000 '$VPS_VAULT/00 - Inbox' '$VPS_VAULT/04 - Archive'"
 
 echo "→ Syncing rag/ code to $VPS:$VPS_PROJECT/rag ..."
 rsync -avz --delete \
