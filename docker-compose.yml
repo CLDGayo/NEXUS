@@ -29,9 +29,12 @@ services:
     environment:
       QDRANT_URL: http://qdrant:6333
       POSTGRES_DSN: postgresql+asyncpg://${POSTGRES_USER:-nexus}:${POSTGRES_PASSWORD:-nexus}@postgres:5432/${POSTGRES_DB:-nexus}
-      # Phase 19 — durable LangGraph checkpoint in Postgres by default.
-      # Override to `memory` via host env for one-off debug runs only.
-      LANGGRAPH_CHECKPOINT: ${LANGGRAPH_CHECKPOINT:-postgres}
+      # Phase 19 — durable LangGraph checkpoint in Postgres. Hard-coded
+      # because `${VAR:-postgres}` interpolation reads from the project's
+      # .env file at parse time, and stale "memory" entries on the VPS
+      # would otherwise win silently. For one-off debug runs, edit this
+      # line or use `docker compose run -e LANGGRAPH_CHECKPOINT=memory`.
+      LANGGRAPH_CHECKPOINT: postgres
       REDIS_URL: redis://redis:6379/0
       LITELLM_BASE_URL: http://litellm:4000
       LANGFUSE_HOST: http://langfuse-web:3000
