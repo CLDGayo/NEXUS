@@ -45,6 +45,11 @@ class InboundMessage(BaseModel):
             "POSTed to. Falls back to MAKE_WEBHOOK_URL env when omitted."
         ),
     )
+    # Phase 15 — multimodal: normalized inbound media.
+    # Each item: {"type": "image", "url": "<https URL>"}.
+    # Only "image" attachments are forwarded; sticker/file/audio/video drop
+    # at the adapter so the orchestrator never sees them.
+    attachments: list[dict] | None = Field(default=None)
 
 
 class InboundAck(BaseModel):

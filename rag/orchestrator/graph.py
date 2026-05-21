@@ -134,6 +134,7 @@ async def run_graph(
     thread_key: str,
     correlation_id: str,
     surface: str = "messenger",
+    attachments: list[dict] | None = None,
 ) -> dict[str, Any]:
     """Public entrypoint used by surface adapters (webhook, SPA)."""
 
@@ -143,6 +144,8 @@ async def run_graph(
         "correlation_id": correlation_id,
         "surface": surface,  # type: ignore[typeddict-item]
     }
+    if attachments:
+        state["attachments"] = attachments
     config = {"configurable": {"thread_id": thread_key}}
     result = await get_graph().ainvoke(state, config=config)
     return dict(result)

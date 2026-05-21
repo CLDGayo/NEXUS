@@ -20,6 +20,10 @@ class NexusState(TypedDict, total=False):
     thread_key: str
     correlation_id: str
     surface: Surface
+    # Phase 15 — multimodal attachments forwarded from the surface adapter.
+    # Each item: {"type": "image", "url": "data:image/jpeg;base64,..."} (SPA)
+    # or {"type": "image", "url": "https://scontent.../..."} (Messenger CDN).
+    attachments: list[dict]
 
     # Retrieval pipeline outputs
     dense_hits: list[ScoredChunk]

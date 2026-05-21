@@ -59,7 +59,7 @@ def _record_langfuse_generation(
     *,
     name: str,
     model: str,
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     content: str,
     prompt_tokens: int,
     completion_tokens: int,
@@ -99,7 +99,7 @@ def _record_langfuse_generation(
 
 
 async def chat_complete(
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     *,
     model: str,
     temperature: float = 0.3,

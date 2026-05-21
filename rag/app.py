@@ -18,6 +18,7 @@ from routers import (  # noqa: E402
     auth,
     changelog,
     chat,
+    chat_uploads,
     conversations,
     dashboard,
     documents,
@@ -52,6 +53,7 @@ app.add_middleware(
 app.include_router(auth.router,          prefix="/api/auth")
 app.include_router(health.router,        prefix="/api")
 app.include_router(chat.router,          prefix="/api/chat")
+app.include_router(chat_uploads.router,  prefix="/api/chat")
 app.include_router(dashboard.router,     prefix="/api/dashboard")
 app.include_router(documents.router,     prefix="/api")
 app.include_router(uploads.router,       prefix="/api")

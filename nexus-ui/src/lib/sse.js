@@ -27,7 +27,7 @@ const DECODER = new TextDecoder();
  * Throws: HTTPError on non-2xx (with status=401 surfaced for the
  * AuthProvider to handle), AbortError on user cancel.
  */
-export async function* chatStream({ question, sessionId, history, signal }) {
+export async function* chatStream({ question, sessionId, history, attachments, signal }) {
   const res = await fetch('/api/chat/stream', {
     method: 'POST',
     headers: authHeaders({ Accept: 'text/event-stream' }),
@@ -35,6 +35,7 @@ export async function* chatStream({ question, sessionId, history, signal }) {
       question,
       session_id: sessionId,
       history,
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
     }),
     signal,
   });

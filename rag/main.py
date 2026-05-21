@@ -68,6 +68,7 @@ from routers import (  # noqa: E402
     auth,
     changelog,
     chat,
+    chat_uploads,
     conversations,
     dashboard,
     documents,
@@ -80,7 +81,12 @@ from routers import (  # noqa: E402
 
 _log = logging.getLogger(__name__)
 
-STATIC_DIR = Path(__file__).parent / "static"
+# Phase 11: React SPA at nexus-ui/dist replaces the legacy rag/static/ vanilla
+# app. The Vite build emits `index.html` + `assets/*.js,*.css`. The Dockerfile
+# stage `ui` runs `npm run build` and copies dist into /app/nexus-ui/dist;
+# locally, `npm run build` populates the same path relative to the repo.
+WEBAPP_DIR = Path(__file__).parent.parent / "nexus-ui" / "dist"
+WIDGET_STATIC_DIR = Path(__file__).parent / "widget-static"
 
 
 @asynccontextmanager
@@ -142,6 +148,7 @@ app.include_router(v2_webhook.router, prefix="/webhook")
 # dropped: v2's health router already serves /health + /api/health.
 app.include_router(auth.router,          prefix="/api/auth")
 app.include_router(chat.router,          prefix="/api/chat")
+app.include_router(chat_uploads.router,  prefix="/api/chat")
 app.include_router(dashboard.router,     prefix="/api/dashboard")
 app.include_router(documents.router,     prefix="/api")
 app.include_router(uploads.router,       prefix="/api")
@@ -153,21 +160,42 @@ app.include_router(integrations.router,  prefix="/api/integrations")
 app.include_router(api_tokens.router,    prefix="/api/tokens")
 app.include_router(resources.router,     prefix="/api/resources")
 
-# Static SPA + widget mounts. The catch-all must be registered last so that
-# named API/static routes win the match.
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+# React SPA assets + widget mounts. The catch-all must be registered last so
+# that named API/asset routes win the match. Vite emits hashed bundles under
+# /assets/, so we serve that directory directly; the catch-all hands every
+# other path the React index.html (React Router takes over client-side).
+app.mount(
+    "/assets",
+    StaticFiles(directory=str(WEBAPP_DIR / "assets")),
+    name="assets",
+)
+app.mount(
+    "/widget-static",
+    StaticFiles(directory=str(WIDGET_STATIC_DIR)),
+    name="widget-static",
+)
 
 
 @app.get("/widget", include_in_schema=False)
 async def widget() -> FileResponse:
-    return FileResponse(str(STATIC_DIR / "widget.html"))
+    return FileResponse(str(WIDGET_STATIC_DIR / "widget.html"))
 
 
 @app.get("/", include_in_schema=False)
 async def index() -> FileResponse:
-    return FileResponse(str(STATIC_DIR / "index.html"))
+    return FileResponse(str(WEBAPP_DIR / "index.html"))
 
 
-@app.get("/{_:path}", include_in_schema=False)
-async def spa(_: str = "") -> FileResponse:
-    return FileResponse(str(STATIC_DIR / "index.html"))
+@app.get("/{full_path:path}", include_in_schema=False)
+async def spa(full_path: str) -> FileResponse:
+    # Root-level static files (favicon, robots.txt, etc.) are served from
+    # disk when present; everything else falls through to the React index so
+    # client-side routes (/documents, /integrations, /conversations) survive
+    # a hard refresh.
+    if full_path:
+        candidate = (WEBAPP_DIR / full_path).resolve()
+        webapp_root = WEBAPP_DIR.resolve()
+        # Guard against `..` path traversal escaping the build directory.
+        if webapp_root in candidate.parents and candidate.is_file():
+            return FileResponse(str(candidate))
+    return FileResponse(str(WEBAPP_DIR / "index.html"))

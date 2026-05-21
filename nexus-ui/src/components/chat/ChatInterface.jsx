@@ -47,7 +47,7 @@ export default function ChatInterface() {
       </div>
 
       <ChatInput
-        onSend={(q) => send(q)}
+        onSend={(q, attachment) => send(q, { attachment })}
         onCancel={cancel}
         streaming={streaming}
         value={inputValue}

@@ -77,11 +77,16 @@ export function useChatStream() {
   }, [cancel]);
 
   const send = useCallback(
-    async (question, { regenerate = false } = {}) => {
+    async (question, { regenerate = false, attachment = null } = {}) => {
       const trimmed = String(question || '').trim();
-      if (!trimmed || streaming) return;
+      if ((!trimmed && !attachment) || streaming) return;
 
       setStreaming(true);
+
+      // Phase 15 — wire the SPA attachment into the chat payload.
+      const attachments = attachment
+        ? [{ type: 'image', url: attachment.url }]
+        : null;
 
       // Snapshot the history we send to the server — exclude the
       // assistant turn we're about to append, exclude any error turn.
@@ -92,7 +97,13 @@ export function useChatStream() {
 
       setMessages((prev) => [
         ...prev,
-        { id: `u-${Date.now()}`, role: 'user', content: trimmed, status: 'completed' },
+        {
+          id: `u-${Date.now()}`,
+          role: 'user',
+          content: trimmed,
+          status: 'completed',
+          attachments,
+        },
         { ...emptyAssistantTurn(), id: `a-${Date.now()}`, isRetrying: regenerate },
       ]);
 
@@ -104,6 +115,7 @@ export function useChatStream() {
           question: trimmed,
           sessionId: sessionIdRef.current,
           history: historyForApi,
+          attachments,
           signal: ctl.signal,
         })) {
           switch (ev.type) {
@@ -215,7 +227,14 @@ export function useChatStream() {
     if (lastUserIdx === -1) return;
     const lastUser = messages[lastUserIdx];
     setMessages((prev) => prev.slice(0, lastUserIdx));
-    await send(lastUser.content, { regenerate: true });
+    const priorAttachment =
+      lastUser.attachments && lastUser.attachments[0]
+        ? { url: lastUser.attachments[0].url }
+        : null;
+    await send(lastUser.content, {
+      regenerate: true,
+      attachment: priorAttachment,
+    });
   }, [messages, send]);
 
   return {

@@ -78,6 +78,7 @@ async def _real_graph_runner(payload: InboundMessage, correlation_id: str) -> di
         thread_key=payload.user_id,
         correlation_id=correlation_id,
         surface="messenger",
+        attachments=payload.attachments,
     )
 
 
@@ -232,19 +233,40 @@ async def messenger_inbound_direct(
             message = event.get("message") or {}
             mid = str(message.get("mid") or "")
             text = message.get("text")
-            if not sender_id or not text or not isinstance(text, str):
-                continue
             if message.get("is_echo"):
                 # Our own outbound deliveries echo back — never reply to them.
                 continue
 
+            # Phase 15 — extract image attachments. Meta delivers them as
+            # ``message.attachments`` = [{"type":"image","payload":{"url":..}}].
+            # Stickers, files, audio, video are ignored.
+            raw_atts = message.get("attachments") or []
+            images: list[dict] = []
+            for att in raw_atts:
+                if not isinstance(att, dict) or att.get("type") != "image":
+                    continue
+                url = ((att.get("payload") or {}).get("url")) or ""
+                if url:
+                    images.append({"type": "image", "url": url})
+
+            has_text = isinstance(text, str) and bool(text)
+            if not sender_id or (not has_text and not images):
+                continue
+
+            # Image-only events have no text — synthesize a caption so the
+            # downstream graph still has a textual prompt to anchor retrieval.
+            effective_text = (
+                text if has_text else "What can you tell me about this image?"
+            )
+
             inbound = InboundMessage(
                 user_id=sender_id,
-                message_text=text,
+                message_text=effective_text,
                 timestamp=_now_epoch(),
                 channel="messenger",
                 page_id=page_id or None,
                 correlation_id=mid or None,
+                attachments=images or None,
             )
             _scheduler(
                 _handle_messenger_event(

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from rag.config import settings
 from rag.guardrails.handover import (
@@ -110,25 +110,77 @@ async def rerank_node(state: NexusState) -> dict:
 # Generation
 # ---------------------------------------------------------------------------
 
+def _collect_image_attachments(state: NexusState) -> list[dict]:
+    """Return only valid image attachments, capped at ``vision_max_attachments``."""
+
+    raw = state.get("attachments") or []
+    images: list[dict] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") != "image":
+            continue
+        url = item.get("url")
+        if not isinstance(url, str) or not url:
+            continue
+        images.append({"type": "image", "url": url})
+    if len(images) > settings.vision_max_attachments:
+        _log.info(
+            "vision.attachments_truncated count=%d max=%d",
+            len(images),
+            settings.vision_max_attachments,
+        )
+        images = images[: settings.vision_max_attachments]
+    return images
+
+
 @traced("graph.node.generate", kind="llm")
 async def generate_node(state: NexusState) -> dict:
     reranked = state.get("reranked", [])
     surface = state.get("surface", "messenger")
     prompt = _load_prompt(surface)
-    rendered = prompt.replace("{context}", _format_context(reranked)).replace(
-        "{question}", state["query"]
-    )
-    messages = [{"role": "system", "content": rendered}]
+    context_block = _format_context(reranked)
+    images = _collect_image_attachments(state)
+
+    messages: list[dict[str, Any]]
+    if images:
+        # Multimodal path: instructions+context on system, question+images
+        # on user turn. Keeps the citation rules visible while letting the
+        # vision model see the actual image content.
+        system_content = prompt.replace("{context}", context_block).replace(
+            "{question}", "(see user message below)"
+        )
+        user_parts: list[dict[str, Any]] = [
+            {"type": "text", "text": state["query"]},
+        ]
+        for img in images:
+            user_parts.append(
+                {"type": "image_url", "image_url": {"url": img["url"]}}
+            )
+        messages = [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": user_parts},
+        ]
+        model = settings.vision_model
+    else:
+        # Text-only fallback unchanged from Phase 5 behaviour.
+        rendered = prompt.replace("{context}", context_block).replace(
+            "{question}", state["query"]
+        )
+        messages = [{"role": "system", "content": rendered}]
+        model = settings.generation_model
 
     try:
         result: LLMResult = await chat_complete(
             messages,
-            model=settings.generation_model,
+            model=model,
             temperature=settings.generation_temperature,
             max_tokens=settings.generation_max_tokens,
         )
     except LLMError as exc:
-        _log.warning("generation failed; abstaining: %s", exc)
+        _log.warning(
+            "generation failed; abstaining: %s (vision=%s)", exc, bool(images)
+        )
         return {
             "answer": handover_fallback_text(),
             "abstained": True,

@@ -370,3 +370,173 @@ class TestSignedPost:
         )
         assert r.status_code == 200
         assert captured_events == []
+
+
+# ---------------------------------------------------------------------------
+# Phase 15 — multimodal image attachments
+# ---------------------------------------------------------------------------
+
+def _envelope_with_attachments(
+    *,
+    text: str | None = None,
+    attachments: list[dict] | None = None,
+    mid: str = "m_img",
+    sender_id: str = "psid_img",
+) -> dict:
+    message: dict = {"mid": mid}
+    if text is not None:
+        message["text"] = text
+    if attachments is not None:
+        message["attachments"] = attachments
+    return {
+        "object": "page",
+        "entry": [
+            {
+                "id": "page_1",
+                "messaging": [
+                    {
+                        "sender": {"id": sender_id},
+                        "recipient": {"id": "page_1"},
+                        "timestamp": 1731742800,
+                        "message": message,
+                    }
+                ],
+            }
+        ],
+    }
+
+
+@pytest.mark.unit
+class TestMultimodal:
+    def test_image_only_event_dispatches_with_default_caption(
+        self,
+        client: TestClient,
+        overlay_tmp,
+        monkeypatch: pytest.MonkeyPatch,
+        stub_runner: _StubRunner,
+        stub_sender: _StubSender,
+        captured_events: list[Awaitable[None]],
+    ) -> None:
+        monkeypatch.setenv("MESSENGER_APP_SECRET", "img-secret")
+        overlay_tmp.set_page_access_token("EAA-page-access-token-img")
+
+        body = json.dumps(
+            _envelope_with_attachments(
+                attachments=[
+                    {
+                        "type": "image",
+                        "payload": {"url": "https://scontent.xx.fbcdn.net/x.jpg"},
+                    }
+                ],
+            )
+        ).encode()
+        sig = _sign(body, "img-secret")
+
+        r = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Hub-Signature-256": sig},
+            content=body,
+        )
+        assert r.status_code == 200
+
+        assert len(captured_events) == 1
+        import asyncio
+
+        asyncio.run(captured_events[0])
+
+        assert len(stub_runner.calls) == 1
+        inbound, _corr = stub_runner.calls[0]
+        assert inbound.attachments == [
+            {"type": "image", "url": "https://scontent.xx.fbcdn.net/x.jpg"}
+        ]
+        assert "image" in inbound.message_text.lower()
+
+    def test_text_plus_image_event_threads_both(
+        self,
+        client: TestClient,
+        overlay_tmp,
+        monkeypatch: pytest.MonkeyPatch,
+        stub_runner: _StubRunner,
+        captured_events: list[Awaitable[None]],
+    ) -> None:
+        monkeypatch.setenv("MESSENGER_APP_SECRET", "img-secret-2")
+        overlay_tmp.set_page_access_token("EAA-tok-1234567890")
+
+        body = json.dumps(
+            _envelope_with_attachments(
+                text="What is this?",
+                attachments=[
+                    {
+                        "type": "image",
+                        "payload": {"url": "https://scontent/y.png"},
+                    }
+                ],
+            )
+        ).encode()
+        sig = _sign(body, "img-secret-2")
+
+        client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Hub-Signature-256": sig},
+            content=body,
+        )
+        import asyncio
+
+        asyncio.run(captured_events[0])
+        inbound, _ = stub_runner.calls[0]
+        assert inbound.message_text == "What is this?"
+        assert inbound.attachments == [
+            {"type": "image", "url": "https://scontent/y.png"}
+        ]
+
+    def test_non_image_attachments_are_dropped(
+        self,
+        client: TestClient,
+        overlay_tmp,
+        monkeypatch: pytest.MonkeyPatch,
+        stub_runner: _StubRunner,
+        captured_events: list[Awaitable[None]],
+    ) -> None:
+        monkeypatch.setenv("MESSENGER_APP_SECRET", "img-secret-3")
+        overlay_tmp.set_page_access_token("EAA-tok-1234567890")
+
+        body = json.dumps(
+            _envelope_with_attachments(
+                text="hi",
+                attachments=[
+                    {"type": "audio", "payload": {"url": "https://a.mp3"}},
+                    {"type": "file", "payload": {"url": "https://x.pdf"}},
+                ],
+            )
+        ).encode()
+        sig = _sign(body, "img-secret-3")
+
+        client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Hub-Signature-256": sig},
+            content=body,
+        )
+        import asyncio
+
+        asyncio.run(captured_events[0])
+        inbound, _ = stub_runner.calls[0]
+        assert inbound.attachments is None
+
+    def test_no_text_no_image_event_skipped(
+        self,
+        client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
+        stub_runner: _StubRunner,
+        captured_events: list[Awaitable[None]],
+    ) -> None:
+        monkeypatch.setenv("MESSENGER_APP_SECRET", "img-secret-4")
+        body = json.dumps(_envelope_with_attachments()).encode()
+        sig = _sign(body, "img-secret-4")
+        r = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Hub-Signature-256": sig},
+            content=body,
+        )
+        assert r.status_code == 200
+        assert captured_events == []
+        assert stub_runner.calls == []

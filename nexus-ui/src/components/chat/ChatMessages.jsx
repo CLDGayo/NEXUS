@@ -68,6 +68,7 @@ export default function ChatMessages({
               thinking={m.thinking}
               error={m.error}
               onSourceClick={onSourceClick}
+              attachments={m.attachments}
             />
             {showActions && (
               <div className="pl-1">

@@ -41,6 +41,8 @@ class ChatRequest(BaseModel):
     question: str
     session_id: str | None = None
     history: list[dict] = []
+    # Phase 15 — multimodal: list of {type:"image", url:"data:..."} items.
+    attachments: list[dict] | None = None
 
 
 class FeedbackRequest(BaseModel):
@@ -86,6 +88,7 @@ async def _stream_graph_events(
     session_id: str | None,
     system_prompt: str | None,  # accepted for parity; surface-aware prompt
     # selection lives inside the graph (rag/orchestrator/nodes.py).
+    attachments: list[dict] | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Drive the LangGraph orchestrator and translate node lifecycle events
     into the v1 SSE payload shape (``status / sources / token / followups``).
@@ -102,6 +105,8 @@ async def _stream_graph_events(
         "correlation_id": correlation_id,
         "surface": "spa",
     }
+    if attachments:
+        state["attachments"] = attachments
     config = {"configurable": {"thread_id": thread_key}}
 
     yield {"type": "status", "stage": "searching"}
@@ -195,6 +200,7 @@ async def chat_stream(body: ChatRequest) -> StreamingResponse:
                 body.question,
                 body.session_id,
                 system_prompt,
+                attachments=body.attachments,
             ):
                 etype = event.get("type")
                 if etype == "__final__":

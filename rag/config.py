@@ -73,6 +73,19 @@ class Settings(BaseSettings):
     generation_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     generation_max_tokens: int = Field(default=1024, ge=64, le=8192)
 
+    # ---- Multimodal / vision (Phase 15) ----
+    vision_model: str = Field(
+        default="groq-llama-4-scout",
+        description=(
+            "LiteLLM alias used when a request includes image attachments. "
+            "Routes to a vision-capable model in litellm/config.yaml."
+        ),
+    )
+    vision_max_attachments: int = Field(default=4, ge=1, le=8)
+    vision_upload_max_bytes: int = Field(
+        default=5 * 1024 * 1024, ge=1, le=20 * 1024 * 1024
+    )
+
     # ---- LangGraph checkpointer (Phase 3) ----
     # ``memory`` is the default for local dev and tests; switch to
     # ``postgres`` in production (requires `await saver.setup()` once).

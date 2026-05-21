@@ -36,6 +36,7 @@ export default function MessageBubble({
   thinking = [],
   error,
   onSourceClick,
+  attachments = [],
 }) {
   const isUser = role === 'user';
   const isAssistant = role === 'assistant';
@@ -61,6 +62,20 @@ export default function MessageBubble({
               : 'bg-white border border-nexus-border rounded-bl-sm text-slate-800',
           ].join(' ')}
         >
+          {isUser && attachments && attachments.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {attachments.map((a, i) =>
+                a && a.type === 'image' && a.url ? (
+                  <img
+                    key={i}
+                    src={a.url}
+                    alt="attachment"
+                    className="max-h-32 max-w-[160px] rounded-lg border border-white/30 object-cover"
+                  />
+                ) : null,
+              )}
+            </div>
+          )}
           {status === 'error' ? (
             <div className="flex items-start gap-2 text-red-600">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />

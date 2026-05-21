@@ -261,6 +261,60 @@ async def test_graph_three_arm_fusion(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Phase 15 — multimodal attachments propagate to generate
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+async def test_graph_threads_attachments_to_generate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "rag.orchestrator.nodes.dense_search",
+        lambda *a, **kw: _async_return(_stub_chunks("d")),
+    )
+    monkeypatch.setattr(
+        "rag.orchestrator.nodes.sparse_search",
+        lambda *a, **kw: _async_return(_stub_chunks("s")),
+    )
+    monkeypatch.setattr(
+        "rag.orchestrator.nodes.graph_search",
+        lambda *a, **kw: _async_return([]),
+    )
+    monkeypatch.setattr(
+        "rag.orchestrator.nodes.rerank",
+        lambda q, c, top_k=8: _async_return(c[:top_k]),
+    )
+
+    captured: dict = {}
+
+    async def fake_chat(messages, *, model, **kw):
+        captured["messages"] = messages
+        captured["model"] = model
+        return _llm_result(
+            "Our plan starts at $99 per month [1] including onboarding [2]."
+        )
+
+    monkeypatch.setattr("rag.orchestrator.nodes.chat_complete", fake_chat)
+
+    await graph_module.run_graph(
+        query="pricing?",
+        thread_key="psid_mm",
+        correlation_id="corr_mm",
+        surface="messenger",
+        attachments=[{"type": "image", "url": "data:image/png;base64,AA"}],
+    )
+
+    from rag.config import settings as _settings
+
+    assert captured["model"] == _settings.vision_model
+    assert len(captured["messages"]) == 2
+    user_msg = captured["messages"][1]
+    assert user_msg["role"] == "user"
+    assert isinstance(user_msg["content"], list)
+    assert any(p.get("type") == "image_url" for p in user_msg["content"])
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
