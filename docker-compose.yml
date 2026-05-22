@@ -35,7 +35,7 @@ services:
       # would otherwise win silently. For one-off debug runs, edit this
       # line or use `docker compose run -e LANGGRAPH_CHECKPOINT=memory`.
       LANGGRAPH_CHECKPOINT: postgres
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_AUTH:-}@redis:6379/0
       LITELLM_BASE_URL: http://litellm:4000
       LANGFUSE_HOST: http://langfuse-web:3000
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
@@ -54,6 +54,8 @@ services:
       redis:
         condition: service_healthy
       litellm:
+        condition: service_started
+      otel-collector:
         condition: service_started
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=5).status==200 else 1)"]
@@ -78,13 +80,15 @@ services:
     command: ["python", "-m", "rag.messenger.worker"]
     env_file: .env
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: redis://:${REDIS_AUTH:-}@redis:6379/0
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     depends_on:
       api:
         condition: service_healthy
       redis:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'rag.messenger.worker' >/dev/null || exit 1"]
       interval: 30s
@@ -143,14 +147,18 @@ services:
     <<: [*restart, *logging]
     image: redis:7-alpine
     container_name: nexus-redis
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "${REDIS_MAXMEMORY:-512mb}", "--maxmemory-policy", "allkeys-lru"]
+    # --requirepass "" (empty) is a no-op in redis 7 — keeps dev compatible
+    # while letting prod harden by setting REDIS_AUTH in .env.prod.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "${REDIS_MAXMEMORY:-512mb}", "--maxmemory-policy", "allkeys-lru", "--requirepass", "${REDIS_AUTH:-}"]
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_AUTH\" --no-auth-warning ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 5
+    environment:
+      REDIS_AUTH: ${REDIS_AUTH:-}
     networks: [nexus_net]
 
   # -----------------------------------------------------------------------
@@ -170,6 +178,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-nexus}:${POSTGRES_PASSWORD:-nexus}@postgres:5432/litellm
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      REDIS_PASSWORD: ${REDIS_AUTH:-}
     volumes:
       - ./litellm/config.yaml:/app/config.yaml:ro
     depends_on:
@@ -228,6 +237,30 @@ services:
       start_period: 10s
     networks: [nexus_net]
 
+  # One-shot bucket provisioner — Langfuse v3 assumes `langfuse` bucket exists.
+  # mc mb --ignore-existing is idempotent; container exits 0 once the bucket
+  # is reachable. langfuse-worker waits on `service_completed_successfully`.
+  minio-init:
+    image: minio/mc:RELEASE.2024-11-21T17-21-54Z
+    container_name: nexus-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing local/langfuse
+        mc anonymous set none local/langfuse
+        echo "bucket langfuse ready"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-miniosecret}
+    restart: "no"
+    networks: [nexus_net]
+
   langfuse-worker:
     <<: [*restart, *logging]
     image: langfuse/langfuse-worker:3
@@ -241,6 +274,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     environment: &langfuse-env
       DATABASE_URL: postgresql://${POSTGRES_USER:-nexus}:${POSTGRES_PASSWORD:-nexus}@postgres:5432/langfuse
       SALT: ${LANGFUSE_SALT:-change-me-please}
@@ -254,6 +289,7 @@ services:
       CLICKHOUSE_CLUSTER_ENABLED: "false"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      REDIS_AUTH: ${REDIS_AUTH:-}
       LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
       LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
       LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
@@ -305,6 +341,35 @@ services:
       timeout: 5s
       retries: 5
       start_period: 45s
+    networks: [nexus_net]
+
+  # -----------------------------------------------------------------------
+  # OpenTelemetry collector (Phase 26)
+  # Receives OTLP/gRPC from api + outbound_worker on :4317 and tees to
+  # (a) stdout via the `debug` exporter and (b) Langfuse's native OTel
+  # ingest endpoint via `otlphttp/langfuse`. Config at
+  # ./otel/otel-collector-config.yaml — Langfuse auth is supplied via the
+  # LANGFUSE_OTEL_AUTH_B64 env var (base64 of "publickey:secretkey").
+  # -----------------------------------------------------------------------
+  otel-collector:
+    <<: [*restart, *logging]
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    container_name: nexus-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    environment:
+      LANGFUSE_OTEL_AUTH_B64: ${LANGFUSE_OTEL_AUTH_B64:-}
+    expose:
+      - "4317"
+      - "4318"
+      - "13133"
+    depends_on:
+      langfuse-web:
+        condition: service_healthy
+    # The contrib image is distroless (no shell, no wget/curl), so we cannot
+    # exec a healthcheck binary. The collector process dying = container exits
+    # = depends_on(service_started) fails fast. Adequate for Phase 26.
     networks: [nexus_net]
 
 networks:

@@ -171,6 +171,20 @@ services:
           cpus: "1.0"
           memory: 1g
 
+  minio-init:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 128m
+
+  otel-collector:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 256m
+
 volumes:
   api_data:
     name: nexus_api_data
