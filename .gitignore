@@ -14,3 +14,15 @@ _publish/public/
 
 # macOS
 .DS_Store
+
+# Runtime data — application logs and SQLite databases live here.
+# Never commit. The deploy script rsyncs sources only.
+rag/data/*.log
+rag/data/*.db
+rag/data/*.db-journal
+rag/data/*.db-wal
+rag/data/*.db-shm
+rag/data/traces/
+rag/data/.password_override.json
+rag/data/.messenger_override.json
+rag/.ingest_state.json
