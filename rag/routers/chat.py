@@ -159,7 +159,13 @@ async def _stream_graph_events(
         elif ev_type == "on_chain_end" and name in {"respond", "abstain"}:
             output = data.get("output") or {}
             answer = (output.get("answer") or "").strip()
-            if answer:
+            if answer and answer != final_answer:
+                # Phase 25.1 — guardrails may swap state["answer"] (e.g.
+                # generate emitted empty content and abstain_node wrote
+                # handover_fallback_text). Emit that as a token so the
+                # SPA actually renders the message body instead of just
+                # the citations strip (the "ghost query" bug).
+                yield {"type": "token", "content": answer}
                 final_answer = answer
 
     if not searching_announced:

@@ -474,8 +474,25 @@ async def generate_node(state: NexusState) -> dict:
             "handover_reason": f"llm error: {exc}",
         }
 
+    content = result.content.strip()
+    if not content:
+        # Phase 25.1 — Groq sometimes returns an empty string when it
+        # decides to refuse without emitting the abstention phrase the
+        # groundedness validator recognises. Without this WARNING the
+        # downstream guardrail block is the only signal anything went
+        # wrong, and it's easy to mistake the empty answer for a crash.
+        _log.warning(
+            "generate.empty_completion model=%s prompt_tokens=%d "
+            "completion_tokens=%d latency_ms=%d query=%r",
+            result.model,
+            result.prompt_tokens,
+            result.completion_tokens,
+            result.latency_ms,
+            (state.get("query") or "")[:200],
+        )
+
     return {
-        "answer": result.content.strip(),
+        "answer": content,
         "abstained": False,
         "llm_model": result.model,
         "llm_prompt_tokens": result.prompt_tokens,
