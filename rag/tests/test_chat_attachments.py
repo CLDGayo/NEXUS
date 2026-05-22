@@ -57,18 +57,22 @@ def client(db, monkeypatch, tmp_path):
     from fastapi.testclient import TestClient
     import app as app_module
 
+    # Phase 27 — chat endpoints now require fastapi-users auth + AsyncSession.
+    # Override both deps so this test exercises attachment-threading logic
+    # without standing up Postgres / a real fastapi-users JWT pipeline.
+    from tests._phase27_helpers import install_chat_test_overrides
+
+    install_chat_test_overrides(app_module.app)
+
     with TestClient(app_module.app) as c:
         yield c
+    app_module.app.dependency_overrides.clear()
 
 
-def _login(client) -> str:
-    r = client.post("/api/auth/login", json={"password": "test-password-1234"})
-    assert r.status_code == 200, r.text
-    return r.json()["token"]
-
-
-def _auth(token: str) -> dict:
-    return {"Authorization": f"Bearer {token}"}
+def _auth_stub() -> dict:
+    # Anything non-empty satisfies the bearer-format check; the override
+    # short-circuits real JWT decoding.
+    return {"Authorization": "Bearer test-token-stubbed"}
 
 
 @pytest.mark.integration
@@ -77,8 +81,10 @@ def test_chat_stream_accepts_attachments_field(
 ) -> None:
     captured: dict = {}
 
-    async def fake_stream(question, session_id, system_prompt, attachments=None):
+    async def fake_stream(question, thread_key, user_id, system_prompt, attachments=None):
         captured["question"] = question
+        captured["thread_key"] = thread_key
+        captured["user_id"] = user_id
         captured["attachments"] = attachments
         yield {"type": "__final__", "answer": "ok", "sources": []}
 
@@ -91,10 +97,9 @@ def test_chat_stream_accepts_attachments_field(
 
     monkeypatch.setattr(chat_module, "generate_followups", no_followups)
 
-    t = _login(client)
     r = client.post(
         "/api/chat/stream",
-        headers=_auth(t),
+        headers=_auth_stub(),
         json={
             "question": "what's this?",
             "session_id": None,
@@ -110,6 +115,7 @@ def test_chat_stream_accepts_attachments_field(
     assert captured["attachments"] == [
         {"type": "image", "url": "data:image/png;base64,AAA"}
     ]
+    assert captured["user_id"] == "00000000-0000-0000-0000-000000000001"
 
 
 @pytest.mark.integration
@@ -118,7 +124,7 @@ def test_chat_stream_without_attachments_threads_none(
 ) -> None:
     captured: dict = {}
 
-    async def fake_stream(question, session_id, system_prompt, attachments=None):
+    async def fake_stream(question, thread_key, user_id, system_prompt, attachments=None):
         captured["attachments"] = attachments
         yield {"type": "__final__", "answer": "ok", "sources": []}
 
@@ -131,10 +137,9 @@ def test_chat_stream_without_attachments_threads_none(
 
     monkeypatch.setattr(chat_module, "generate_followups", no_followups)
 
-    t = _login(client)
     r = client.post(
         "/api/chat/stream",
-        headers=_auth(t),
+        headers=_auth_stub(),
         json={"question": "plain text", "session_id": None, "history": []},
     )
     assert r.status_code == 200, r.text

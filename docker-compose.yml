@@ -29,6 +29,11 @@ services:
     environment:
       QDRANT_URL: http://qdrant:6333
       POSTGRES_DSN: postgresql+asyncpg://${POSTGRES_USER:-nexus}:${POSTGRES_PASSWORD:-nexus}@postgres:5432/${POSTGRES_DB:-nexus}
+      # Phase 27 — fastapi-users JWT signing secret. The boot guard in
+      # rag/main.py::_enforce_jwt_secret refuses to start if this is unset
+      # or shorter than 32 bytes. Generate once via `openssl rand -hex 32`
+      # and keep in .env / .env.prod.
+      NEXUS_JWT_SECRET: ${NEXUS_JWT_SECRET:-}
       # Phase 19 — durable LangGraph checkpoint in Postgres. Hard-coded
       # because `${VAR:-postgres}` interpolation reads from the project's
       # .env file at parse time, and stale "memory" entries on the VPS

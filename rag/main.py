@@ -56,7 +56,15 @@ load_dotenv()
 
 # v2 imports (absolute) — must come before flat v1 imports so settings load
 # fails fast on missing env vars before SQLite touches disk.
+from rag.auth import (  # noqa: E402
+    UserCreate,
+    UserRead,
+    UserUpdate,
+    auth_backend,
+    fastapi_users,
+)
 from rag.config import settings  # noqa: E402
+from rag.database.engine import dispose_engine  # noqa: E402
 from rag.messenger.routers import health as v2_health  # noqa: E402
 from rag.messenger.routers import webhook as v2_webhook  # noqa: E402
 from rag.observability.tracing import init_tracing  # noqa: E402
@@ -90,10 +98,29 @@ WEBAPP_DIR = Path(__file__).parent.parent / "nexus-ui" / "dist"
 WIDGET_STATIC_DIR = Path(__file__).parent / "widget-static"
 
 
+def _enforce_jwt_secret() -> None:
+    """Phase 27 — refuse to boot without a non-trivial ``NEXUS_JWT_SECRET``.
+
+    Bypassed under pytest (PYTEST_CURRENT_TEST set by conftest stubs)."""
+
+    import os
+
+    if "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("NEXUS_SKIP_JWT_GUARD"):
+        return
+    secret = settings.nexus_jwt_secret
+    if not secret or len(secret) < 32:
+        raise RuntimeError(
+            "NEXUS_JWT_SECRET is unset or shorter than 32 bytes — "
+            "set a 32+ byte secret (e.g. `openssl rand -hex 32`) in the env "
+            "before booting the API."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Boot v1 state, then optionally bring up the LangGraph Postgres saver."""
 
+    _enforce_jwt_secret()
     await init_db()
     integrations_dispatcher.register()
 
@@ -157,6 +184,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 else:
                     _log.info("lifespan.drain.complete count=%d", len(done))
 
+            # Phase 27 — release the asyncpg pool the fastapi-users SQLA
+            # engine has been holding. Safe even when no auth route was hit
+            # because the engine is lazily constructed.
+            await dispose_engine()
+
 
 app = FastAPI(
     title="NEXUS — Unified API",
@@ -183,6 +215,26 @@ app.include_router(v2_webhook.router, prefix="/webhook")
 # v1 routers — admin + SPA chat surface. ``routers.health`` is intentionally
 # dropped: v2's health router already serves /health + /api/health.
 app.include_router(auth.router,          prefix="/api/auth")
+
+# Phase 27 — fastapi-users routes coexist with the legacy admin login. The
+# legacy POST /api/auth/login stays mounted (decommissioned in Part 2 once
+# the SPA cuts over to /api/auth/jwt/login).
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend),
+    prefix="/api/auth/jwt",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/api/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/api/users",
+    tags=["users"],
+)
+
 app.include_router(chat.router,          prefix="/api/chat")
 app.include_router(chat_uploads.router,  prefix="/api/chat")
 app.include_router(dashboard.router,     prefix="/api/dashboard")

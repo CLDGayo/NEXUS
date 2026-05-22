@@ -21,6 +21,12 @@ dependencies = [
     "rich>=13.0.0",
     "pypdf>=4.0.0",
     "pymupdf>=1.24.0",
+    # Phase 27 Part 1 — IAM stack.
+    "sqlalchemy[asyncio]>=2.0.30,<3",
+    "fastapi-users[sqlalchemy]>=14.0.0,<16",
+    "asyncpg>=0.29.0,<0.31",
+    "alembic>=1.13.0,<2",
+    "email-validator>=2.1.0",
 ]
 
 [tool.uv]

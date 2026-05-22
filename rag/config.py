@@ -44,6 +44,12 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://nexus:nexus@postgres:5432/nexus"
     )
 
+    # ---- Phase 27 — IAM (fastapi-users JWT) ----
+    # Signs every access token issued by /api/auth/jwt/login. Must be set in
+    # production (the lifespan boot guard fails fast if missing/short).
+    # Tests stub a known-weak default via rag/conftest.py.
+    nexus_jwt_secret: str = Field(default="", alias="NEXUS_JWT_SECRET")
+
     # ---- Redis ----
     redis_url: str = Field(default="redis://redis:6379/0")
 

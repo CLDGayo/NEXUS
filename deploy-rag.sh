@@ -41,7 +41,6 @@ rsync -avz --delete \
   --exclude='data/app.log' \
   --exclude='.pytest_cache/' \
   --exclude='.ruff_cache/' \
-  --exclude='auth/' \
   "$VAULT_ROOT/rag/" "$VPS:$VPS_PROJECT/rag/"
 
 echo "→ Syncing nexus-ui/ source for Docker UI builder stage ..."
@@ -108,6 +107,16 @@ ssh "$VPS" '
   docker logs nexus-api --tail 50
   exit 1
 '
+
+# Phase 27 — apply IAM migrations against the live Postgres. Runs inside
+# the api container so the env (POSTGRES_DSN, NEXUS_JWT_SECRET) and the
+# alembic.ini at /app/rag/alembic.ini are picked up exactly as the app
+# sees them. Idempotent: alembic upgrade head is a no-op after first run.
+echo "→ Applying Phase 27 Alembic migrations (app.users, app.access_token, app.chat_sessions) ..."
+ssh "$VPS" "
+  set -e
+  docker exec -w /app/rag nexus-api alembic upgrade head
+"
 
 echo "→ Smoke-test public endpoints ..."
 HOST="https://chat.nexus.gayo-sphere.cloud"

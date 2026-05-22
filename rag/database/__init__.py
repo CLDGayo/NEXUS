@@ -1,4 +1,16 @@
-"""SQLite persistence for conversation history, settings, integrations, tokens."""
+"""Database package.
+
+The legacy aiosqlite tables (``conversations``, ``messages``, ``settings``,
+``integrations``, ``api_tokens``) live here directly so existing flat imports
+(``from database import DB_PATH, init_db, ...``) and ``monkeypatch.setattr(
+database, "DB_PATH", ...)`` calls in tests keep working without modification.
+
+The SQLAlchemy ``Base`` (``rag.database.base``), the async engine
+(``rag.database.engine``), and the ORM models (``rag.database.models``) are
+sibling sub-modules pulled in lazily by the auth + chat surfaces.
+"""
+
+from __future__ import annotations
 
 import os
 import uuid
@@ -6,7 +18,10 @@ from datetime import datetime, timezone
 
 import aiosqlite
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "nexus.db")
+# Phase 9 path: ``rag/data/nexus.db`` (one level above this package
+# directory, so the file lives next to ``rag/main.py`` exactly as before
+# the Phase 27 package promotion).
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "nexus.db")
 
 _CREATE_CONVERSATIONS = """
 CREATE TABLE IF NOT EXISTS conversations (
@@ -87,3 +102,6 @@ def now_iso() -> str:
 
 def new_id() -> str:
     return str(uuid.uuid4())
+
+
+__all__ = ["DB_PATH", "init_db", "new_id", "now_iso"]

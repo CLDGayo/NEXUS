@@ -20,9 +20,10 @@ import uuid
 from typing import Any, AsyncIterator
 
 import aiosqlite
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import settings_service
 from app_logger import logger
@@ -30,8 +31,10 @@ from database import DB_PATH, new_id, now_iso
 from events import bus
 from query import display_name, generate_followups
 from resources_store import load_active_system_prompt
-from routers.deps import require_auth_or_token
 
+from rag.auth import current_active_user
+from rag.database.engine import get_async_session
+from rag.database.models import ChatSession, User
 from rag.retrieval.types import ScoredChunk
 
 router = APIRouter(tags=["chat"])
@@ -83,9 +86,42 @@ def _chunks_to_v1_sources(chunks: list[ScoredChunk]) -> list[dict]:
     return [by_file[f] for f in order]
 
 
+async def _resolve_session(
+    db: AsyncSession,
+    user: User,
+    session_id: str | None,
+) -> str:
+    """Phase 27 — bind every chat turn to ``app.chat_sessions``.
+
+    * If the client passes a session_id, the row must exist and be owned by
+      the authenticated user. Foreign sessions return 403; unknown ones 404.
+    * If no session_id is given, mint a new server-side UUID v4 and persist
+      a chat_sessions row owned by the user before returning it.
+
+    The returned string is what we pass to LangGraph as ``thread_id``.
+    """
+    if session_id:
+        row = await db.get(ChatSession, session_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="session not found")
+        if row.user_id != user.id:
+            raise HTTPException(status_code=403, detail="session not owned")
+        # ``last_used_at`` advances automatically via the ``onupdate`` server
+        # default; force a no-op write so the timestamp moves.
+        row.title = row.title
+        await db.commit()
+        return row.session_id
+
+    new_id_str = str(uuid.uuid4())
+    db.add(ChatSession(session_id=new_id_str, user_id=user.id))
+    await db.commit()
+    return new_id_str
+
+
 async def _stream_graph_events(
     question: str,
-    session_id: str | None,
+    thread_key: str,
+    user_id: str,
     system_prompt: str | None,  # accepted for parity; surface-aware prompt
     # selection lives inside the graph (rag/orchestrator/nodes.py).
     attachments: list[dict] | None = None,
@@ -93,11 +129,14 @@ async def _stream_graph_events(
     """Drive the LangGraph orchestrator and translate node lifecycle events
     into the v1 SSE payload shape (``status / sources / token / followups``).
 
+    ``thread_key`` is pre-resolved by ``_resolve_session()`` against the
+    ``app.chat_sessions`` ownership table — callers must NOT pass a raw
+    client-supplied session_id here.
+
     Yields the captured final answer + sources at the end via a synthetic
     ``__final__`` event so the caller can persist the exchange.
     """
 
-    thread_key = session_id or str(uuid.uuid4())
     correlation_id = str(uuid.uuid4())
     state: dict[str, Any] = {
         "query": question,
@@ -107,7 +146,7 @@ async def _stream_graph_events(
     }
     if attachments:
         state["attachments"] = attachments
-    config = {"configurable": {"thread_id": thread_key}}
+    config = {"configurable": {"thread_id": thread_key, "user_id": user_id}}
 
     yield {"type": "status", "stage": "searching"}
 
@@ -185,8 +224,16 @@ async def _stream_graph_events(
     }
 
 
-@router.post("/stream", dependencies=[Depends(require_auth_or_token("chat:read"))])
-async def chat_stream(body: ChatRequest) -> StreamingResponse:
+@router.post("/stream")
+async def chat_stream(
+    body: ChatRequest,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session),
+) -> StreamingResponse:
+    # Phase 27 — bind the turn to an owned session BEFORE LangGraph runs.
+    thread_key = await _resolve_session(db, user, body.session_id)
+    user_id = str(user.id)
+
     # Settings reads kept for SPA compatibility (UI may surface the chosen
     # models even though the graph itself reads from rag.config.settings).
     await settings_service.get("TOP_K")
@@ -199,12 +246,16 @@ async def chat_stream(body: ChatRequest) -> StreamingResponse:
         sources_data: list[dict] = []
         t0 = time.time()
 
-        logger.info(f"Chat query: {body.question[:80]!r}")
+        logger.info(
+            f"Chat query user={user_id} thread={thread_key} "
+            f"q={body.question[:80]!r}"
+        )
 
         try:
             async for event in _stream_graph_events(
                 body.question,
-                body.session_id,
+                thread_key,
+                user_id,
                 system_prompt,
                 attachments=body.attachments,
             ):
@@ -222,14 +273,14 @@ async def chat_stream(body: ChatRequest) -> StreamingResponse:
             yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
             await bus.publish(
                 "chat.error",
-                {"session_id": body.session_id, "error": str(exc)},
+                {"session_id": thread_key, "user_id": user_id, "error": str(exc)},
             )
 
         yield "data: [DONE]\n\n"
 
-        if body.session_id and full_response:
+        if full_response:
             await _save_exchange(
-                body.session_id,
+                thread_key,
                 body.question,
                 full_response,
                 sources_data,
@@ -238,7 +289,8 @@ async def chat_stream(body: ChatRequest) -> StreamingResponse:
         await bus.publish(
             "chat.complete",
             {
-                "session_id": body.session_id,
+                "session_id": thread_key,
+                "user_id": user_id,
                 "question": body.question[:200],
                 "latency_ms": int((time.time() - t0) * 1000),
                 "source_count": len(sources_data),
@@ -252,19 +304,36 @@ async def chat_stream(body: ChatRequest) -> StreamingResponse:
     )
 
 
-@router.post("/feedback", dependencies=[Depends(require_auth_or_token("chat:write"))])
-async def chat_feedback(body: FeedbackRequest) -> dict:
-    """Log a rating and publish a chat.feedback.{up,down} event."""
+@router.post("/feedback")
+async def chat_feedback(
+    body: FeedbackRequest,
+    user: User = Depends(current_active_user),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict:
+    """Log a rating and publish a chat.feedback.{up,down} event.
+
+    Phase 27 — the optional ``session_id`` must exist and belong to the
+    caller. If absent, feedback is recorded as user-scoped only.
+    """
     if body.rating not in {"up", "down"}:
         return {"ok": False, "error": "rating must be 'up' or 'down'"}
+
+    if body.session_id is not None:
+        row = await db.get(ChatSession, body.session_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="session not found")
+        if row.user_id != user.id:
+            raise HTTPException(status_code=403, detail="session not owned")
+
     logger.info(
-        f"Chat feedback: rating={body.rating} session={body.session_id} "
-        f"q={body.question[:60]!r}"
+        f"Chat feedback: user={user.id} rating={body.rating} "
+        f"session={body.session_id} q={body.question[:60]!r}"
     )
     await bus.publish(
         f"chat.feedback.{body.rating}",
         {
             "session_id": body.session_id,
+            "user_id": str(user.id),
             "question": body.question[:200],
             "answer": body.answer[:500],
         },

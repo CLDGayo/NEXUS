@@ -13,6 +13,8 @@ from jose import JWTError, jwt
 from auth_overlay import current_jwt_secret
 from database import DB_PATH, now_iso
 
+from rag.config import settings
+
 _bearer = HTTPBearer(auto_error=False)
 
 TOKEN_PREFIX = "nxs_"
@@ -27,8 +29,29 @@ VALID_SCOPES = frozenset(
     }
 )
 
+# Phase 27 Part 1.1 — fastapi-users mints JWTs with this audience claim.
+# python-jose's `jwt.decode` rejects tokens whose `aud` doesn't match the
+# `audience=` kwarg, so the legacy deps must opt in to validate them.
+_FASTAPI_USERS_AUDIENCE = "fastapi-users:auth"
+
 
 def _try_jwt(raw: str) -> dict | None:
+    """Decode either a fastapi-users JWT (Phase 27 shim output) or the
+    legacy admin JWT. Returning the first that verifies preserves
+    backward compatibility for any tokens already cached in clients."""
+    # New tokens minted by the Phase 27 shim / fastapi-users login.
+    nexus_secret = settings.nexus_jwt_secret
+    if nexus_secret:
+        try:
+            return jwt.decode(
+                raw,
+                nexus_secret,
+                algorithms=["HS256"],
+                audience=_FASTAPI_USERS_AUDIENCE,
+            )
+        except JWTError:
+            pass
+    # Legacy admin JWT (sub="admin", no audience).
     try:
         return jwt.decode(raw, current_jwt_secret(), algorithms=["HS256"])
     except JWTError:

@@ -31,3 +31,6 @@ os.environ.setdefault("QDRANT_COLLECTION", "nexus-vault-test")
 os.environ.setdefault("GROQ_API_KEY", "test-key")
 os.environ.setdefault("JWT_SECRET", "test-jwt-secret-do-not-use-in-prod")
 os.environ.setdefault("NEXUS_PASSWORD", "test-password")
+os.environ.setdefault(
+    "NEXUS_JWT_SECRET", "test-nexus-jwt-secret-32-bytes-minimum-XX"
+)

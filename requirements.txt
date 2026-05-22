@@ -8,7 +8,7 @@ fastapi==0.115.5
 uvicorn[standard]==0.32.1
 pydantic==2.10.3
 pydantic-settings==2.6.1
-python-multipart==0.0.18
+python-multipart==0.0.29
 
 # ---- Storage clients ----
 # qdrant-client's `[fastembed]` extra hard-pins fastembed==0.3.6 (which has
@@ -47,6 +47,14 @@ httpx==0.28.0
 python-dotenv==1.0.1
 structlog==24.4.0
 tenacity==9.0.0
+
+# ---- Phase 27 Part 1 — IAM (fastapi-users + SQLAlchemy ORM) ----
+# Multipart pin must stay >=0.0.18 because fastapi-users 15.x relaxed it;
+# the v1 upload routers depend on the newer streaming API.
+fastapi-users[sqlalchemy]==15.0.5
+sqlalchemy[asyncio]==2.0.49
+alembic==1.18.4
+email-validator==2.1.2
 
 # ---- v1 SPA + admin (Phase 9 cutover) ----
 # Pulled in when the unified ``rag.main:app`` entrypoint imports the legacy
