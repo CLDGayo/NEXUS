@@ -109,3 +109,128 @@ def test_metadata_preserved_from_first_occurrence() -> None:
     fused = reciprocal_rank_fusion([[a_first], [a_second]])
     assert len(fused) == 1
     assert fused[0].metadata["src"] == "arm1"
+
+
+# ---------------------------------------------------------------------------
+# Phase 25 — weighted RRF.
+#
+# ``score(d) = Σ_r W_r · 1/(k + rank_r(d))``. ``weights=None`` collapses
+# to the unweighted formula (all W_r = 1.0), so the existing tests above
+# remain authoritative for backward compatibility.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_named_rankings_no_weights_matches_positional() -> None:
+    """Mapping input + weights=None must produce identical scores to the
+    legacy positional API — backward-compat math proof."""
+
+    dense = [chunk("a"), chunk("b"), chunk("c")]
+    sparse = [chunk("b"), chunk("a"), chunk("d")]
+
+    positional = reciprocal_rank_fusion([dense, sparse])
+    named = reciprocal_rank_fusion({"dense": dense, "sparse": sparse})
+
+    pos_scores = {c.id: c.score for c in positional}
+    named_scores = {c.id: c.score for c in named}
+    assert pos_scores.keys() == named_scores.keys()
+    for cid in pos_scores:
+        assert isclose(pos_scores[cid], named_scores[cid], rel_tol=1e-12)
+
+
+@pytest.mark.unit
+def test_weights_scale_linearly() -> None:
+    """A doc at rank 1 in sparse and rank 2 in dense with sparse=2.0 dense=1.0
+    must score 2.0/(k+1) + 1.0/(k+2)."""
+
+    sparse = [chunk("x"), chunk("noise1")]
+    dense = [chunk("filler"), chunk("x")]
+    fused = reciprocal_rank_fusion(
+        {"sparse": sparse, "dense": dense},
+        weights={"sparse": 2.0, "dense": 1.0},
+    )
+    scores = {c.id: c.score for c in fused}
+    expected_x = 2.0 / (DEFAULT_K + 1) + 1.0 / (DEFAULT_K + 2)
+    assert isclose(scores["x"], expected_x, rel_tol=1e-12)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "weights,expected_top",
+    [
+        ({"sparse": 1.5, "dense": 0.5, "graph": 1.0}, "x"),  # factual
+        ({"dense": 1.5, "sparse": 0.5, "graph": 1.0}, "y"),  # conceptual
+    ],
+)
+def test_intent_weights_promote_correct_arm(
+    weights: dict[str, float], expected_top: str
+) -> None:
+    """Factual matrix must surface the sparse-only doc above the dense-only
+    doc; conceptual matrix must do the opposite."""
+
+    sparse = [chunk("x"), chunk("noise_s")]
+    dense = [chunk("y"), chunk("noise_d")]
+    graph: list[ScoredChunk] = []
+
+    fused = reciprocal_rank_fusion(
+        {"sparse": sparse, "dense": dense, "graph": graph},
+        weights=weights,
+    )
+    assert fused[0].id == expected_top
+
+
+@pytest.mark.unit
+def test_zero_weight_drops_arm_contribution() -> None:
+    """A zero weight on an arm makes its rankings invisible — useful for
+    surgical kill-switches without changing the call site shape."""
+
+    dense = [chunk("d1"), chunk("d2")]
+    sparse = [chunk("s1"), chunk("s2")]
+
+    fused = reciprocal_rank_fusion(
+        {"dense": dense, "sparse": sparse},
+        weights={"dense": 1.0, "sparse": 0.0},
+    )
+    ids = {c.id for c in fused}
+    assert ids == {"d1", "d2"}
+
+
+@pytest.mark.unit
+def test_negative_weight_raises() -> None:
+    with pytest.raises(ValueError, match="must be >= 0"):
+        reciprocal_rank_fusion(
+            {"dense": [chunk("a")]},
+            weights={"dense": -0.5},
+        )
+
+
+@pytest.mark.unit
+def test_weights_without_named_rankings_raises() -> None:
+    """Weights are unbindable without arm identities — fail loud, not silent."""
+
+    with pytest.raises(ValueError, match="named rankings"):
+        reciprocal_rank_fusion(
+            [[chunk("a")], [chunk("b")]],
+            weights={"dense": 1.0},
+        )
+
+
+@pytest.mark.unit
+def test_missing_arm_in_weights_defaults_to_one() -> None:
+    """An arm present in rankings but absent from weights uses 1.0."""
+
+    dense = [chunk("d1")]
+    sparse = [chunk("s1")]
+    graph = [chunk("g1")]
+
+    fused = reciprocal_rank_fusion(
+        {"dense": dense, "sparse": sparse, "graph": graph},
+        weights={"dense": 2.0},  # sparse + graph default to 1.0
+    )
+    scores = {c.id: c.score for c in fused}
+    expected_d1 = 2.0 / (DEFAULT_K + 1)
+    expected_s1 = 1.0 / (DEFAULT_K + 1)
+    expected_g1 = 1.0 / (DEFAULT_K + 1)
+    assert isclose(scores["d1"], expected_d1, rel_tol=1e-12)
+    assert isclose(scores["s1"], expected_s1, rel_tol=1e-12)
+    assert isclose(scores["g1"], expected_g1, rel_tol=1e-12)
