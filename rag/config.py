@@ -82,6 +82,11 @@ class Settings(BaseSettings):
     generation_model: str = Field(default="groq-llama-3.3-70b")
     generation_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
     generation_max_tokens: int = Field(default=1024, ge=64, le=8192)
+    # Phase 22 — fast, cheap model used for follow-up suggestions and the
+    # history-aware coreference rewriter. ~10x cheaper than the 70B main
+    # generation model and ~150ms per call, so it can run on every
+    # multi-turn request without blowing the latency budget.
+    followup_model: str = Field(default="groq-llama-3.1-8b")
 
     # ---- Multimodal / vision (Phase 15) ----
     vision_model: str = Field(
@@ -103,6 +108,19 @@ class Settings(BaseSettings):
     vision_pdf_min_dimension: int = Field(default=64, ge=0, le=4096)
     vision_pdf_min_bytes: int = Field(default=2048, ge=0, le=1_048_576)
     vision_pdf_v2_enabled: bool = Field(default=False)
+
+    # ---- Phase 24: Agentic iterative plan-and-solve loop ----
+    # Hard cap on research-mode loop iterations. The loop_decision node
+    # forces exit when ``research_iterations >= research_max_iterations``
+    # regardless of how many sub-queries the planner emitted, so this is
+    # the single termination guarantee that defends the pipeline from a
+    # mis-behaving planner LLM returning an unbounded list.
+    research_max_iterations: int = Field(default=3, ge=1, le=5)
+    # Per-iteration rerank top_k for research mode. Three iterations × 4
+    # chunks = 12 chunks max in ``accumulated_context`` after dedup, which
+    # keeps the synthesis prompt under the existing 1024-token generation
+    # budget (vs. retrieval_top_k=8 which would 3× the envelope).
+    research_subquery_top_k: int = Field(default=4, ge=1, le=20)
 
     # ---- LangGraph checkpointer (Phase 3) ----
     # ``memory`` is the default for local dev and tests; switch to

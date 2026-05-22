@@ -19,16 +19,24 @@ from langgraph.graph import END, START, StateGraph
 from rag.config import settings
 from rag.orchestrator.nodes import (
     abstain_node,
+    accumulate_context_node,
+    direct_fanout_node,
     fuse_node,
     generate_node,
     guardrails_node,
     guardrails_router,
+    loop_decision,
+    next_subquery_node,
+    plan_research_node,
     preprocess_vision_node,
     rerank_node,
     respond_node,
     retrieve_dense_node,
     retrieve_graph_node,
     retrieve_sparse_node,
+    rewrite_query_node,
+    route_decision,
+    route_query_node,
 )
 from rag.orchestrator.state import NexusState
 
@@ -78,32 +86,76 @@ def build_graph() -> Any:
 
     graph = StateGraph(NexusState)
 
+    # Phase 22.1 — rewrite runs BEFORE vision captioning so the 8B coreference
+    # resolver only ever sees raw conversational text. Vision then appends its
+    # "[Image Analysis: ...]" block to the already-disambiguated query, keeping
+    # the retriever's input free of caption-driven attention sinks.
+    # Phase 24 — after vision captioning, ``route_query`` classifies the query
+    # into direct vs research mode. Research mode goes through
+    # ``plan_research → next_subquery → retrieval → fuse → rerank →
+    # accumulate_context → (loop or generate)``. Direct mode skips the planner
+    # entirely via the ``direct_fanout`` pass-through; the accumulator still
+    # runs once so generate reads a uniform ``accumulated_context``.
+    graph.add_node("rewrite_query", rewrite_query_node)
     graph.add_node("preprocess_vision", preprocess_vision_node)
+    graph.add_node("route_query", route_query_node)
+    graph.add_node("direct_fanout", direct_fanout_node)
+    graph.add_node("plan_research", plan_research_node)
+    graph.add_node("next_subquery", next_subquery_node)
     graph.add_node("retrieve_dense", retrieve_dense_node)
     graph.add_node("retrieve_sparse", retrieve_sparse_node)
     graph.add_node("retrieve_graph", retrieve_graph_node)
     graph.add_node("fuse", fuse_node)
     graph.add_node("rerank", rerank_node)
+    graph.add_node("accumulate_context", accumulate_context_node)
     graph.add_node("generate", generate_node)
     graph.add_node("guardrails", guardrails_node)
     graph.add_node("respond", respond_node)
     graph.add_node("abstain", abstain_node)
 
-    # Fan out to retrieval arms in parallel; the three edges into `fuse`
-    # make `fuse` wait for all three to complete (langgraph default
-    # barrier). The graph arm degrades gracefully (empty list) when the
-    # wikilink DB is missing, so it never blocks the pipeline.
-    graph.add_edge(START, "preprocess_vision")
-    graph.add_edge("preprocess_vision", "retrieve_dense")
-    graph.add_edge("preprocess_vision", "retrieve_sparse")
-    graph.add_edge("preprocess_vision", "retrieve_graph")
+    graph.add_edge(START, "rewrite_query")
+    graph.add_edge("rewrite_query", "preprocess_vision")
+    graph.add_edge("preprocess_vision", "route_query")
+
+    # Route into one of two fan-out preludes. Both preludes fan out to the
+    # same three retrieval arms; ``fuse`` is the barrier that waits for all
+    # three to complete on whichever pre-arm path actually fired.
+    graph.add_conditional_edges(
+        "route_query",
+        route_decision,
+        {"direct_fanout": "direct_fanout", "plan_research": "plan_research"},
+    )
+
+    # Direct path fan-out — single pass, no loop.
+    graph.add_edge("direct_fanout", "retrieve_dense")
+    graph.add_edge("direct_fanout", "retrieve_sparse")
+    graph.add_edge("direct_fanout", "retrieve_graph")
+
+    # Research path fan-out — ``plan_research`` populates ``sub_queries``,
+    # then ``next_subquery`` pops the first one and the retrieval arms run
+    # on that single sub-query. Subsequent iterations re-enter
+    # ``next_subquery`` from ``accumulate_context`` below.
+    graph.add_edge("plan_research", "next_subquery")
+    graph.add_edge("next_subquery", "retrieve_dense")
+    graph.add_edge("next_subquery", "retrieve_sparse")
+    graph.add_edge("next_subquery", "retrieve_graph")
+
+    # Shared barrier + post-rerank accumulator (both paths converge here).
     graph.add_edge("retrieve_dense", "fuse")
     graph.add_edge("retrieve_sparse", "fuse")
     graph.add_edge("retrieve_graph", "fuse")
     graph.add_edge("fuse", "rerank")
-    graph.add_edge("rerank", "generate")
-    graph.add_edge("generate", "guardrails")
+    graph.add_edge("rerank", "accumulate_context")
 
+    # Cycle: loop back into ``next_subquery`` while sub-queries remain and
+    # the iteration cap has not been reached, else proceed to generation.
+    graph.add_conditional_edges(
+        "accumulate_context",
+        loop_decision,
+        {"next_subquery": "next_subquery", "generate": "generate"},
+    )
+
+    graph.add_edge("generate", "guardrails")
     graph.add_conditional_edges(
         "guardrails",
         guardrails_router,

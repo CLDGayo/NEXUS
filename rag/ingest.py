@@ -11,6 +11,7 @@ Usage:
 """
 
 import argparse
+import asyncio
 import hashlib
 import json
 import os
@@ -28,6 +29,9 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
 from events import publish_sync
+from ingest_v2.graph_db import connect as graph_connect
+from ingest_v2.graph_db import resolve_link_targets
+from ingest_v2.graph_index import index_file_links
 
 load_dotenv()
 
@@ -242,6 +246,46 @@ def upsert_batch(client: QdrantClient, embedder: TextEmbedding, chunks: list[dic
     client.upsert(collection_name=COLLECTION, points=points, wait=True)
 
 
+# ── Graph indexing (Phase 23 — Architect option 4.A) ──────────────────────────
+#
+# Production ingest stays on v1, but each processed file also gets its
+# outbound wikilinks recorded into the v2 ``vault_notes`` + ``vault_links``
+# SQLite graph so ``rag.orchestrator.nodes.retrieve_graph_node`` has data
+# to expand over. ``wikilinks_in`` is computed on-the-fly at retrieval
+# time via ``graph_db.neighbors_of`` (forward + reverse) — no Qdrant
+# payload migration. Paths are stored as relative strings so they match
+# the Qdrant ``file`` payload key used by ``retrieve_graph_node``'s
+# filtered chunk fetch.
+
+async def _index_graph_for_files(file_paths: list[Path]) -> tuple[int, int]:
+    """Upsert one ``vault_notes`` row + outbound ``vault_links`` per file,
+    then resolve every ``dst_target`` against known note titles/aliases.
+
+    Returns ``(notes_indexed, edges_resolved)``. Skips files that fail to
+    parse — they are already absent from Qdrant for the same reason, so
+    the graph and the vector store stay consistent.
+    """
+
+    if not file_paths:
+        return 0, 0
+    indexed = 0
+    async with graph_connect() as conn:
+        for fp in file_paths:
+            try:
+                post = frontmatter.load(str(fp))
+            except Exception:  # noqa: BLE001
+                continue
+            body = post.content
+            fm = dict(post.metadata)
+            rel = Path(str(fp.relative_to(VAULT_PATH)))
+            await index_file_links(
+                conn, path=rel, body=body, frontmatter=fm
+            )
+            indexed += 1
+        resolved = await resolve_link_targets(conn)
+    return indexed, resolved
+
+
 def run(changed_only: bool = False, single_file: str | None = None) -> None:
     console.rule("[bold blue]NEXUS Ingestion Pipeline[/bold blue]")
     t0 = time.time()
@@ -263,6 +307,12 @@ def run(changed_only: bool = False, single_file: str | None = None) -> None:
     state = load_state()
     total_chunks = 0
     BATCH_SIZE = 32
+
+    # Phase 23 — collect every successfully-chunked file so we can update
+    # the wikilink graph DB in a single async pass after the Qdrant work
+    # finishes. A graph failure must not block Qdrant writes, so the
+    # asyncio.run() call below is wrapped in its own try/except.
+    graph_inputs: list[Path] = []
 
     with Progress(
         SpinnerColumn(),
@@ -291,6 +341,7 @@ def run(changed_only: bool = False, single_file: str | None = None) -> None:
             if chunks:
                 batch.extend(chunks)
                 total_chunks += len(chunks)
+                graph_inputs.append(file_path)
 
                 if len(batch) >= BATCH_SIZE:
                     upsert_batch(client, embedder, batch)
@@ -323,6 +374,20 @@ def run(changed_only: bool = False, single_file: str | None = None) -> None:
         f"Collection [bold]{COLLECTION}[/bold] → "
         f"{client.count(COLLECTION).count} total points"
     )
+
+    # Phase 23 — populate the wikilink graph DB so the graph arm of the
+    # orchestrator's retrieval pipeline has neighbors to expand to. Best
+    # effort: the chat path degrades gracefully when graph_hits is empty.
+    try:
+        notes, edges = asyncio.run(_index_graph_for_files(graph_inputs))
+        console.print(
+            f"[green]Graph indexed:[/green] {notes} notes, "
+            f"{edges} resolved edges"
+        )
+    except Exception as exc:  # noqa: BLE001
+        console.print(
+            f"[yellow]Graph indexing failed (Qdrant unaffected): {exc}[/yellow]"
+        )
 
 
 if __name__ == "__main__":
