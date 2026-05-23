@@ -12,6 +12,8 @@ const TITLES = {
   '/resources':     'Resources',
   '/settings':      'Settings',
   '/changelog':     "What's New",
+  '/profile':       'Profile',
+  '/admin/users':   'Admin · Users',
 };
 
 export default function AppShell() {

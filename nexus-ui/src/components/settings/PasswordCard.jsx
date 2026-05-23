@@ -2,11 +2,41 @@ import { useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { api } from '../../lib/api.js';
 
-export default function PasswordCard() {
+// `endpoint` + `bodyShape` let the same form drive both the legacy
+// `POST /api/settings/password` ({old, new}) and the Phase 28 fastapi-users
+// route `POST /api/users/me/password` ({current_password, new_password}).
+const SHAPES = {
+  legacy: (oldPw, newPw) => ({ old: oldPw, new: newPw }),
+  fastapi_users: (oldPw, newPw) => ({
+    current_password: oldPw,
+    new_password: newPw,
+  }),
+};
+
+const ERROR_COPY = {
+  CURRENT_PASSWORD_INVALID: 'Current password is incorrect.',
+  NEW_PASSWORD_SAME_AS_CURRENT: 'New password must differ from the current one.',
+};
+
+function readApiError(err) {
+  const detail = err?.body ?? err?.message ?? '';
+  if (typeof detail === 'string' && ERROR_COPY[detail]) return ERROR_COPY[detail];
+  if (typeof detail === 'string') return detail;
+  return err?.message || 'Password update failed.';
+}
+
+export default function PasswordCard({
+  endpoint = '/settings/password',
+  bodyShape = 'legacy',
+  title = 'Change Password',
+  description,
+}) {
   const [oldPw, setOldPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
+
+  const buildBody = SHAPES[bodyShape] || SHAPES.legacy;
 
   async function submit(e) {
     e.preventDefault();
@@ -17,12 +47,12 @@ export default function PasswordCard() {
     }
     setBusy(true);
     try {
-      await api.post('/settings/password', { old: oldPw, new: newPw });
+      await api.post(endpoint, buildBody(oldPw, newPw));
       setStatus({ kind: 'success', text: 'Password updated.' });
       setOldPw('');
       setNewPw('');
     } catch (err) {
-      setStatus({ kind: 'error', text: err.message });
+      setStatus({ kind: 'error', text: readApiError(err) });
     } finally {
       setBusy(false);
     }
@@ -32,8 +62,11 @@ export default function PasswordCard() {
     <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
         <KeyRound size={14} className="text-nexus-accent" />
-        <h3 className="text-sm font-semibold text-slate-800">Change Password</h3>
+        <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
       </div>
+      {description && (
+        <p className="mb-3 text-xs text-nexus-muted">{description}</p>
+      )}
       <form onSubmit={submit} className="space-y-3">
         <div>
           <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">

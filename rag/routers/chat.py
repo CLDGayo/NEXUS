@@ -284,6 +284,7 @@ async def chat_stream(
                 body.question,
                 full_response,
                 sources_data,
+                user_id,
             )
 
         await bus.publish(
@@ -346,22 +347,28 @@ async def _save_exchange(
     question: str,
     answer: str,
     sources: list[dict],
+    user_id: str,
 ) -> None:
+    """Persist a chat turn to SQLite, stamped with the owning user_id.
+
+    Phase 28 Part 1 — every conversation/message row carries the fastapi-users
+    UUID (str-encoded) so the conversations router can scope reads by owner.
+    """
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             ts = now_iso()
             title = question[:60]
             await db.execute(
-                "INSERT OR IGNORE INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
-                (session_id, title, ts, ts),
+                "INSERT OR IGNORE INTO conversations (id, title, created_at, updated_at, user_id) VALUES (?, ?, ?, ?, ?)",
+                (session_id, title, ts, ts, user_id),
             )
             await db.execute(
-                "INSERT INTO messages (id, conversation_id, role, content, sources, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (new_id(), session_id, "user", question, None, ts),
+                "INSERT INTO messages (id, conversation_id, role, content, sources, created_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (new_id(), session_id, "user", question, None, ts, user_id),
             )
             await db.execute(
-                "INSERT INTO messages (id, conversation_id, role, content, sources, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (new_id(), session_id, "assistant", answer, json.dumps(sources), ts),
+                "INSERT INTO messages (id, conversation_id, role, content, sources, created_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (new_id(), session_id, "assistant", answer, json.dumps(sources), ts, user_id),
             )
             await db.execute(
                 "UPDATE conversations SET updated_at = ? WHERE id = ?",

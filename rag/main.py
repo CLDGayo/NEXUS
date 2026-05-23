@@ -68,6 +68,8 @@ from rag.database.engine import dispose_engine  # noqa: E402
 from rag.messenger.routers import health as v2_health  # noqa: E402
 from rag.messenger.routers import webhook as v2_webhook  # noqa: E402
 from rag.observability.tracing import init_tracing  # noqa: E402
+from rag.routers import admin_users as v2_admin_users  # noqa: E402
+from rag.routers import profile as v2_profile  # noqa: E402
 
 # v1 imports (flat — resolved via PYTHONPATH=/app/rag).
 from database import init_db  # noqa: E402
@@ -234,6 +236,12 @@ app.include_router(
     prefix="/api/users",
     tags=["users"],
 )
+
+# Phase 28 Part 1 — profile self-service (custom password change) + superuser
+# admin provisioning. Mounted after fastapi-users' get_users_router so the
+# built-in `/api/users/me` (GET + PATCH) remains routable.
+app.include_router(v2_profile.router, prefix="/api/users", tags=["profile"])
+app.include_router(v2_admin_users.router, prefix="/api/admin", tags=["admin"])
 
 app.include_router(chat.router,          prefix="/api/chat")
 app.include_router(chat_uploads.router,  prefix="/api/chat")

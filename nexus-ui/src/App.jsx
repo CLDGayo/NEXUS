@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthProvider.jsx';
 import RequireAuth from './components/auth/RequireAuth.jsx';
+import RequireSuperuser from './components/auth/RequireSuperuser.jsx';
 import LoginScreen from './components/auth/LoginScreen.jsx';
 import AppShell from './components/layout/AppShell.jsx';
 
@@ -13,6 +14,8 @@ import IntegrationsPage from './pages/IntegrationsPage.jsx';
 import ResourcesPage from './pages/ResourcesPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import ChangelogPage from './pages/ChangelogPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
+import AdminUsersPage from './pages/AdminUsersPage.jsx';
 
 export default function App() {
   return (
@@ -36,6 +39,15 @@ export default function App() {
           <Route path="/resources" element={<ResourcesPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route
+            path="/admin/users"
+            element={
+              <RequireSuperuser>
+                <AdminUsersPage />
+              </RequireSuperuser>
+            }
+          />
         </Route>
         <Route path="*" element={<Navigate to="/chat" replace />} />
       </Routes>

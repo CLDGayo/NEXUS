@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
@@ -9,11 +9,12 @@ import {
   Library,
   Settings,
   Sparkles,
+  Shield,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 
-const NAV = [
+const BASE_NAV = [
   { to: '/dashboard',     label: 'Dashboard',     Icon: LayoutDashboard },
   { to: '/documents',     label: 'Documents',     Icon: FileText },
   { to: '/chat',          label: 'Chat',          Icon: MessageSquare },
@@ -25,8 +26,19 @@ const NAV = [
   { to: '/changelog',     label: "What's New",    Icon: Sparkles },
 ];
 
+const ADMIN_NAV_ITEM = { to: '/admin/users', label: 'Admin', Icon: Shield };
+
+function initialFor(user) {
+  const source = user?.display_name || user?.email || '?';
+  return source.trim().slice(0, 1).toUpperCase();
+}
+
 export default function Sidebar() {
-  const { logout } = useAuth();
+  const { user, isSuperuser, logout } = useAuth();
+  const nav = isSuperuser ? [...BASE_NAV, ADMIN_NAV_ITEM] : BASE_NAV;
+  const displayName = user?.display_name || user?.email || 'Account';
+  const roleLabel = isSuperuser ? 'Admin' : 'User';
+
   return (
     <aside className="w-60 shrink-0 border-r border-nexus-border bg-white flex flex-col">
       <div className="p-5 border-b border-nexus-border">
@@ -34,7 +46,7 @@ export default function Sidebar() {
         <div className="text-xs text-nexus-muted">Knowledge Base</div>
       </div>
       <nav className="flex-1 p-2 space-y-1">
-        {NAV.map(({ to, label, Icon }) => (
+        {nav.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -53,15 +65,27 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="p-3 border-t border-nexus-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-nexus-accent text-white text-xs font-semibold flex items-center justify-center">
-            C
+        <Link
+          to="/profile"
+          className="flex flex-1 items-center gap-2 rounded-md p-1 -m-1 hover:bg-slate-50"
+          title="Open profile"
+        >
+          {user?.profile_image_url ? (
+            <img
+              src={user.profile_image_url}
+              alt=""
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-8 w-8 rounded-full bg-nexus-accent text-white text-xs font-semibold flex items-center justify-center">
+              {initialFor(user)}
+            </div>
+          )}
+          <div className="leading-tight min-w-0">
+            <div className="text-sm font-medium truncate">{displayName}</div>
+            <div className="text-xs text-nexus-muted">{roleLabel}</div>
           </div>
-          <div className="leading-tight">
-            <div className="text-sm font-medium">Clarence</div>
-            <div className="text-xs text-nexus-muted">Admin</div>
-          </div>
-        </div>
+        </Link>
         <button
           onClick={logout}
           className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-1"

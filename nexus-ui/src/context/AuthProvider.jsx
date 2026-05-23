@@ -1,6 +1,6 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { getToken, saveToken, clearToken } from '../lib/auth.js';
-import { setUnauthorizedHandler } from '../lib/api.js';
+import { setUnauthorizedHandler, api } from '../lib/api.js';
 
 export const AuthContext = createContext(null);
 
@@ -23,6 +23,10 @@ function readErrorDetail(payload) {
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getToken());
+  // `user` is the GET /api/users/me response — UserRead shape from
+  // rag/auth/schemas.py. Null while loading or logged-out.
+  const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(false);
 
   // The api.js client calls this whenever a request returns 401 so
   // every component drops back to the login screen automatically.
@@ -30,9 +34,41 @@ export function AuthProvider({ children }) {
     setUnauthorizedHandler(() => {
       clearToken();
       setToken(null);
+      setUser(null);
     });
     return () => setUnauthorizedHandler(null);
   }, []);
+
+  const refreshUser = useCallback(async () => {
+    if (!getToken()) {
+      setUser(null);
+      return null;
+    }
+    setUserLoading(true);
+    try {
+      const me = await api.get('/users/me');
+      setUser(me);
+      return me;
+    } catch (err) {
+      // 401s already clear state via the unauthorized handler. For any
+      // other failure (network blip, 5xx), keep the existing user object
+      // and surface the error to consumers via the rejected promise.
+      throw err;
+    } finally {
+      setUserLoading(false);
+    }
+  }, []);
+
+  // Hydrate the user whenever the token changes (login, logout, fresh load).
+  useEffect(() => {
+    if (token) {
+      refreshUser().catch(() => {
+        /* unauthorized handler already cleared state on 401 */
+      });
+    } else {
+      setUser(null);
+    }
+  }, [token, refreshUser]);
 
   const login = useCallback(async (email, password) => {
     // fastapi-users expects OAuth2PasswordRequestForm — application/x-www-form-urlencoded
@@ -61,11 +97,21 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     clearToken();
     setToken(null);
+    setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ token, isAuthenticated: !!token, login, logout }),
-    [token, login, logout],
+    () => ({
+      token,
+      user,
+      userLoading,
+      isAuthenticated: !!token,
+      isSuperuser: !!(user && user.is_superuser),
+      login,
+      logout,
+      refreshUser,
+    }),
+    [token, user, userLoading, login, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
