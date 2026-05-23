@@ -27,6 +27,9 @@ dependencies = [
     "asyncpg>=0.29.0,<0.31",
     "alembic>=1.13.0,<2",
     "email-validator>=2.1.0",
+    # Phase 28 Part 2 — Minio-backed avatar uploads.
+    "aioboto3>=13.0.0,<15",
+    "pillow>=11.0.0,<12",
 ]
 
 [tool.uv]
@@ -46,4 +49,44 @@ markers = [
 [dependency-groups]
 dev = [
     "fakeredis>=2.35.1",
+    "pytest>=8.3.0,<9",
+    "pytest-asyncio>=0.24.0,<1",
+    "pytest-cov>=6.0.0,<7",
+    "ruff>=0.8.0,<1",
+    # Phase 28 Part 2 — static type checking gate. Run via:
+    #   uv run --group dev mypy --strict rag/routers/profile.py rag/services/object_store.py
+    "mypy>=1.13.0,<2",
+    "types-aioboto3>=13.0.0,<15",
+    "moto[s3,server]>=5.0.0,<6",
 ]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+# Run from repo root so ``rag.*`` package paths resolve. The pyproject lives
+# at ``rag/pyproject.toml`` so the ``files`` paths use the ``rag/...`` prefix.
+# Invocation:  uv run --project rag mypy --config-file rag/pyproject.toml
+explicit_package_bases = true
+namespace_packages = true
+# Strict gate is scoped to NEW code shipped in Phase 28 — pre-existing v1/v2
+# modules are not annotated to the same bar yet. Add modules here only after
+# they're brought up to strict cleanliness.
+files = [
+    "rag/routers/admin_users.py",
+    "rag/routers/profile.py",
+    "rag/services",
+    "rag/scripts/phase28_bootstrap_minio.py",
+]
+
+[[tool.mypy.overrides]]
+module = ["aioboto3.*", "botocore.*", "moto.*"]
+ignore_missing_imports = true
+
+# Phase 27 auth modules are transitively imported by the Phase 28 strict
+# gate but were never annotated to that bar. Soften strict here so the
+# Part 2 work isn't blocked on a v2/v3 typing backfill.
+[[tool.mypy.overrides]]
+module = ["rag.auth.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disable_error_code = ["type-arg"]

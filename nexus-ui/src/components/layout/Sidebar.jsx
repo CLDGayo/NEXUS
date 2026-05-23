@@ -70,7 +70,7 @@ export default function Sidebar() {
           className="flex flex-1 items-center gap-2 rounded-md p-1 -m-1 hover:bg-slate-50"
           title="Open profile"
         >
-          {user?.profile_image_url ? (
+          {user?.profile_image_url && /^https?:\/\//i.test(user.profile_image_url) ? (
             <img
               src={user.profile_image_url}
               alt=""

@@ -63,6 +63,34 @@ class Settings(BaseSettings):
     langfuse_secret_key: str | None = None
     otel_exporter_otlp_endpoint: str = Field(default="http://otel-collector:4317")
 
+    # ---- Phase 28 Part 2 — Minio (S3) object storage for avatars ----
+    # Endpoint the FastAPI process talks to. In docker-compose the service is
+    # named ``minio`` (host: ``minio:9000``); on the VPS the same container
+    # is reachable as ``127.0.0.1:9000``; on Mac dev pointing at the VPS
+    # tunnel set ``https://minio.nexus.gayo-sphere.cloud``.
+    minio_endpoint: str = Field(default="http://minio:9000")
+    # Credentials default to the docker-compose root user/password so a local
+    # ``docker compose up`` boots without overrides. Production must set both.
+    minio_access_key: str = Field(default="minio")
+    minio_secret_key: str = Field(default="miniosecret")
+    minio_region: str = Field(default="us-east-1")
+    # Bucket holding ``{user_id}.webp`` avatar blobs. Provisioned once by
+    # ``rag.scripts.phase28_bootstrap_minio``; the running service never
+    # creates it on the fly.
+    minio_bucket_avatars: str = Field(default="nexus-avatars")
+    # Public-facing base URL (CDN / nginx subdomain) used to render the avatar
+    # in the SPA. When set we store ``{minio_public_base_url}/{bucket}/{key}``
+    # in ``app.users.profile_image_url`` so the browser can <img src> it
+    # directly without going through the FastAPI process. When empty the
+    # avatar router returns presigned URLs instead.
+    minio_public_base_url: str = Field(default="")
+    # Avatar uploads: max bytes BEFORE Pillow normalisation. We resize down
+    # to 256×256 WebP server-side, so this caps the raw client payload.
+    avatar_max_upload_bytes: int = Field(
+        default=2 * 1024 * 1024, ge=1, le=20 * 1024 * 1024
+    )
+    avatar_output_size: int = Field(default=256, ge=64, le=1024)
+
     # ---- Embedding model ----
     # Phase 3 default matches the existing v1 Qdrant collection so live
     # retrieval works today. Phase 2's ingest_v2 will land jina-v2 + late

@@ -51,9 +51,19 @@ class AdminUserListResponse(BaseModel):
 
 
 async def _count_active_superusers(session: AsyncSession) -> int:
-    """Return the number of active superusers (``is_active=true``)."""
-    stmt = select(func.count(User.id)).where(
-        User.is_superuser.is_(True), User.is_active.is_(True)
+    """Return the number of active superusers (``is_active=true``).
+
+    SQLAlchemy 2.0 ``Mapped[bool]`` carries column ops at runtime but mypy
+    strict (no SQLA plugin) sees the equality as a plain bool — the inline
+    type ignores below acknowledge that gap without disabling the gate.
+    """
+    stmt = (
+        select(func.count())
+        .select_from(User)
+        .where(
+            User.is_superuser.is_(True),  # type: ignore[attr-defined]
+            User.is_active.is_(True),  # type: ignore[attr-defined]
+        )
     )
     result = await session.execute(stmt)
     count = result.scalar_one_or_none()
@@ -76,7 +86,7 @@ async def list_users(
     session: AsyncSession = Depends(get_async_session),
 ) -> AdminUserListResponse:
     base = select(User)
-    count_base = select(func.count(User.id))
+    count_base = select(func.count()).select_from(User)
     if q:
         like = f"%{q.lower()}%"
         base = base.where(func.lower(User.email).like(like))
@@ -102,7 +112,7 @@ async def create_user(
     body: AdminUserCreate,
     admin: User = Depends(current_superuser),
     user_manager: UserManager = Depends(get_user_manager),
-    user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
+    user_db: SQLAlchemyUserDatabase[User, uuid.UUID] = Depends(get_user_db),
 ) -> UserRead:
     try:
         created = await user_manager.create(
@@ -133,7 +143,7 @@ async def promote_user(
     user_id: uuid.UUID,
     admin: User = Depends(current_superuser),
     session: AsyncSession = Depends(get_async_session),
-    user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
+    user_db: SQLAlchemyUserDatabase[User, uuid.UUID] = Depends(get_user_db),
 ) -> UserRead:
     target = await _load_user(session, user_id)
     if target.is_superuser:
@@ -150,7 +160,7 @@ async def demote_user(
     user_id: uuid.UUID,
     admin: User = Depends(current_superuser),
     session: AsyncSession = Depends(get_async_session),
-    user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
+    user_db: SQLAlchemyUserDatabase[User, uuid.UUID] = Depends(get_user_db),
 ) -> UserRead:
     if admin.id == user_id:
         raise HTTPException(status_code=409, detail="CANNOT_DEMOTE_SELF")
@@ -173,7 +183,7 @@ async def delete_user(
     admin: User = Depends(current_superuser),
     session: AsyncSession = Depends(get_async_session),
     user_manager: UserManager = Depends(get_user_manager),
-    user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
+    user_db: SQLAlchemyUserDatabase[User, uuid.UUID] = Depends(get_user_db),
 ) -> UserRead | None:
     if admin.id == user_id:
         raise HTTPException(status_code=409, detail="CANNOT_DELETE_SELF")

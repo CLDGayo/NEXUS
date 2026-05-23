@@ -2,17 +2,9 @@ import { useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import { api } from '../../lib/api.js';
 
-// `endpoint` + `bodyShape` let the same form drive both the legacy
-// `POST /api/settings/password` ({old, new}) and the Phase 28 fastapi-users
-// route `POST /api/users/me/password` ({current_password, new_password}).
-const SHAPES = {
-  legacy: (oldPw, newPw) => ({ old: oldPw, new: newPw }),
-  fastapi_users: (oldPw, newPw) => ({
-    current_password: oldPw,
-    new_password: newPw,
-  }),
-};
-
+// Phase 28 — password rotation lives at POST /api/users/me/password,
+// requires current password proof. The legacy /api/settings/password
+// surface returns 410 (see rag/routers/settings.py).
 const ERROR_COPY = {
   CURRENT_PASSWORD_INVALID: 'Current password is incorrect.',
   NEW_PASSWORD_SAME_AS_CURRENT: 'New password must differ from the current one.',
@@ -26,8 +18,6 @@ function readApiError(err) {
 }
 
 export default function PasswordCard({
-  endpoint = '/settings/password',
-  bodyShape = 'legacy',
   title = 'Change Password',
   description,
 }) {
@@ -35,8 +25,6 @@ export default function PasswordCard({
   const [newPw, setNewPw] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
-
-  const buildBody = SHAPES[bodyShape] || SHAPES.legacy;
 
   async function submit(e) {
     e.preventDefault();
@@ -47,7 +35,10 @@ export default function PasswordCard({
     }
     setBusy(true);
     try {
-      await api.post(endpoint, buildBody(oldPw, newPw));
+      await api.post('/users/me/password', {
+        current_password: oldPw,
+        new_password: newPw,
+      });
       setStatus({ kind: 'success', text: 'Password updated.' });
       setOldPw('');
       setNewPw('');

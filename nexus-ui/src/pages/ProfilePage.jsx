@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ImagePlus, UserCircle2 } from 'lucide-react';
+import { UserCircle2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.js';
 import { api } from '../lib/api.js';
 import PasswordCard from '../components/settings/PasswordCard.jsx';
-
-function initialFor(user) {
-  const source = user?.display_name || user?.email || '?';
-  return source.trim().slice(0, 1).toUpperCase();
-}
+import AvatarUploader from '../components/profile/AvatarUploader.jsx';
 
 function DisplayNameCard({ user, onSaved }) {
   const [name, setName] = useState(user?.display_name || '');
@@ -79,36 +75,6 @@ function DisplayNameCard({ user, onSaved }) {
   );
 }
 
-function AvatarPlaceholderCard({ user }) {
-  return (
-    <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
-      <div className="mb-3 flex items-center gap-2">
-        <ImagePlus size={14} className="text-nexus-accent" />
-        <h3 className="text-sm font-semibold text-slate-800">Avatar</h3>
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-nexus-accent text-2xl font-semibold text-white">
-          {initialFor(user)}
-        </div>
-        <div className="space-y-1 text-xs text-nexus-muted">
-          <p>Uploads land in Phase 28 Part 2 (Minio-backed).</p>
-          <p>For now your initial renders as the avatar everywhere.</p>
-        </div>
-      </div>
-      <div className="mt-3 flex justify-end">
-        <button
-          type="button"
-          disabled
-          title="Avatar uploads ship in Phase 28 Part 2"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-400"
-        >
-          Upload avatar (coming soon)
-        </button>
-      </div>
-    </section>
-  );
-}
-
 export default function ProfilePage() {
   const { user, refreshUser } = useAuth();
 
@@ -125,12 +91,10 @@ export default function ProfilePage() {
 
         <DisplayNameCard user={user} onSaved={refreshUser} />
         <PasswordCard
-          endpoint="/users/me/password"
-          bodyShape="fastapi_users"
           title="Change Password"
           description="Requires your current password."
         />
-        <AvatarPlaceholderCard user={user} />
+        <AvatarUploader user={user} onChanged={refreshUser} />
       </div>
     </div>
   );

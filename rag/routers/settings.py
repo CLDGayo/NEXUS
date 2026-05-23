@@ -1,7 +1,12 @@
-"""Settings router — KV config GET/PATCH, password change, JWT rotate.
+"""Settings router — KV config GET/PATCH, JWT rotate.
 
 All endpoints require JWT auth. Settings keys are validated against the
 allow-list in `settings_service.SETTING_KEYS`.
+
+Phase 28 Part 2 — the legacy ``POST /api/settings/password`` route is gone.
+Password rotation now lives at ``POST /api/users/me/password`` (fastapi-users
+identity, requires the current password). The overlay rotation hook used by
+``auth_overlay`` is dead surface — any client still posting here gets 410.
 """
 
 from __future__ import annotations
@@ -10,18 +15,12 @@ import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from pydantic import BaseModel, Field
 
 import settings_service
-from auth_overlay import rotate_jwt_secret, set_password, verify_password
+from auth_overlay import rotate_jwt_secret
 from routers.deps import require_auth
 
 router = APIRouter(tags=["settings"], dependencies=[Depends(require_auth)])
-
-
-class PasswordChange(BaseModel):
-    old: str = Field(..., min_length=1)
-    new: str = Field(..., min_length=8)
 
 
 @router.get("")
@@ -62,15 +61,18 @@ async def patch_settings(payload: dict[str, Any]) -> dict:
     return {"updated": updated}
 
 
-@router.post("/password", status_code=204, response_class=Response)
-async def change_password(body: PasswordChange) -> Response:
-    if not verify_password(body.old):
-        raise HTTPException(status_code=401, detail="Current password is incorrect")
-    try:
-        set_password(body.new)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    return Response(status_code=204)
+@router.post("/password", status_code=410, response_class=Response)
+async def change_password_removed() -> Response:
+    """Phase 28 Part 2 — overlay password rotation retired.
+
+    Returns 410 so any stale SPA build or cached integration receives a
+    deterministic error instead of a confusing 404. Use the fastapi-users
+    surface ``POST /api/users/me/password`` instead.
+    """
+    raise HTTPException(
+        status_code=410,
+        detail="Removed. Use POST /api/users/me/password.",
+    )
 
 
 @router.post("/rotate-jwt")

@@ -411,22 +411,22 @@ def test_resources_seed_and_activate(client):
 
 
 @pytest.mark.integration
-def test_password_change_rotates_overlay(client):
-    """Phase 27 Part 2 — the legacy ``/api/auth/login`` shim is gone (410);
-    the overlay password rotation endpoint still rotates the secret in-place
-    for any future surface that consumes ``auth_overlay.verify_password``."""
-    import auth_overlay
+def test_legacy_settings_password_route_returns_410(client):
+    """Phase 28 Part 2 — POST /api/settings/password retired.
 
+    Password rotation lives at POST /api/users/me/password (fastapi-users
+    identity, requires the current password). The legacy route stays
+    mounted to surface a deterministic 410 for any stale client. The
+    /api/auth/login shim remains permanently 410 from Phase 27 Part 2.
+    """
     t = _login(client)
     r = client.post(
         "/api/settings/password",
         headers=_auth(t),
         json={"old": "test-password-1234", "new": "another-secret-12345"},
     )
-    assert r.status_code == 204
-    assert auth_overlay.verify_password("another-secret-12345") is True
-    assert auth_overlay.verify_password("test-password-1234") is False
+    assert r.status_code == 410
+    assert "users/me/password" in r.json()["detail"]
 
-    # The shim is permanently 410 regardless of the rotated password.
     gone = client.post("/api/auth/login", json={"password": "another-secret-12345"})
     assert gone.status_code == 410

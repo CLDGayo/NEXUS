@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { UserCircle2 } from 'lucide-react';
 import { api } from '../lib/api.js';
 import TunableSettingsForm from '../components/settings/TunableSettingsForm.jsx';
 import EnvReadonlyCard from '../components/settings/EnvReadonlyCard.jsx';
-import PasswordCard from '../components/settings/PasswordCard.jsx';
 import JwtRotateCard from '../components/settings/JwtRotateCard.jsx';
 
+// Phase 28 — password rotation moved to /profile (fastapi-users identity,
+// requires the current password). Settings keeps tunables + JWT rotation.
 export default function SettingsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,6 +33,20 @@ export default function SettingsPage() {
           </p>
         </div>
 
+        <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+          <div className="mb-2 flex items-center gap-2">
+            <UserCircle2 size={14} className="text-nexus-accent" />
+            <h3 className="text-sm font-semibold text-slate-800">Account</h3>
+          </div>
+          <p className="text-xs text-nexus-muted">
+            Change your password or update your display name on the{' '}
+            <Link to="/profile" className="font-medium text-nexus-accent hover:underline">
+              profile page
+            </Link>
+            .
+          </p>
+        </section>
+
         {loading && (
           <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
             Loading settings…
@@ -47,7 +64,6 @@ export default function SettingsPage() {
               onSaved={load}
             />
             <EnvReadonlyCard env={data.env_readonly} />
-            <PasswordCard />
             <JwtRotateCard />
           </>
         )}

@@ -8,10 +8,25 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
+
+# Phase 28 — every per-row aggregate now scopes to a user_id. The unit tests
+# pick a single fixed UUID and stamp every seeded row with it so the
+# dashboard helpers can be called with the same id and see the full fixture.
+_TEST_USER_ID = "11111111-1111-1111-1111-111111111111"
+
+
+class _FakeUser:
+    def __init__(self) -> None:
+        self.id = uuid.UUID(_TEST_USER_ID)
+        self.email = "dashboard@nexus.test"
+        self.is_active = True
+        self.is_superuser = True
+        self.is_verified = True
 
 
 def _reload_with_tmp_db(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
@@ -45,16 +60,16 @@ def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     return {"db": database, "dashboard": dashboard_mod, "tmp": tmp_path}
 
 
-def _seed_conversation(db_path: str, conv_id: str, title: str) -> None:
+def _seed_conversation(db_path: str, conv_id: str, title: str, user_id: str = _TEST_USER_ID) -> None:
     import aiosqlite
 
     async def _run() -> None:
         async with aiosqlite.connect(db_path) as db:
             ts = datetime.now(timezone.utc).isoformat()
             await db.execute(
-                "INSERT INTO conversations (id, title, created_at, updated_at)"
-                " VALUES (?, ?, ?, ?)",
-                (conv_id, title, ts, ts),
+                "INSERT INTO conversations (id, title, created_at, updated_at, user_id)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (conv_id, title, ts, ts, user_id),
             )
             await db.commit()
 
@@ -67,9 +82,9 @@ def _seed_message(
     role: str,
     content: str,
     created_at: datetime | None = None,
+    user_id: str = _TEST_USER_ID,
 ) -> None:
     import aiosqlite
-    import uuid
 
     ts = (created_at or datetime.now(timezone.utc)).isoformat()
 
@@ -77,8 +92,8 @@ def _seed_message(
         async with aiosqlite.connect(db_path) as db:
             await db.execute(
                 "INSERT INTO messages (id, conversation_id, role, content, sources,"
-                " created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (str(uuid.uuid4()), conv_id, role, content, None, ts),
+                " created_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (str(uuid.uuid4()), conv_id, role, content, None, ts, user_id),
             )
             await db.commit()
 
@@ -100,21 +115,21 @@ def test_count_messages_reads_real_rows(env):
     _seed_message(db_path, "c1", "user", "hello")
     _seed_message(db_path, "c1", "assistant", "hi")
 
-    msgs, convs = asyncio.run(env["dashboard"]._count_messages())
+    msgs, convs = asyncio.run(env["dashboard"]._count_messages(_TEST_USER_ID))
     assert msgs == 2
     assert convs == 1
 
 
 @pytest.mark.unit
 def test_count_messages_empty_db(env):
-    msgs, convs = asyncio.run(env["dashboard"]._count_messages())
+    msgs, convs = asyncio.run(env["dashboard"]._count_messages(_TEST_USER_ID))
     assert msgs == 0
     assert convs == 0
 
 
 @pytest.mark.unit
 def test_query_volume_7d_zero_fill(env):
-    out = asyncio.run(env["dashboard"]._query_volume_7d())
+    out = asyncio.run(env["dashboard"]._query_volume_7d(_TEST_USER_ID))
     assert len(out) == 7
     assert all(row["queries"] == 0 for row in out)
     assert all("date" in row for row in out)
@@ -129,10 +144,28 @@ def test_query_volume_7d_counts_user_messages(env):
     _seed_message(db_path, "c1", "user", "q2", today)
     _seed_message(db_path, "c1", "assistant", "a1", today)
 
-    out = asyncio.run(env["dashboard"]._query_volume_7d())
+    out = asyncio.run(env["dashboard"]._query_volume_7d(_TEST_USER_ID))
     today_key = today.date().isoformat()
     today_row = next(r for r in out if r["date"] == today_key)
     assert today_row["queries"] == 2
+
+
+@pytest.mark.unit
+def test_query_volume_7d_excludes_foreign_user(env):
+    """Phase 28 — query volume must not bleed across users."""
+    db_path = env["db"].DB_PATH
+    other_user = "22222222-2222-2222-2222-222222222222"
+    _seed_conversation(db_path, "c1", "Mine")
+    _seed_conversation(db_path, "c2", "Theirs", user_id=other_user)
+    today = datetime.now(timezone.utc)
+    _seed_message(db_path, "c1", "user", "mine", today)
+    _seed_message(db_path, "c2", "user", "theirs", today, user_id=other_user)
+    _seed_message(db_path, "c2", "user", "theirs2", today, user_id=other_user)
+
+    out = asyncio.run(env["dashboard"]._query_volume_7d(_TEST_USER_ID))
+    today_key = today.date().isoformat()
+    today_row = next(r for r in out if r["date"] == today_key)
+    assert today_row["queries"] == 1  # mine only, not the two from other_user
 
 
 @pytest.mark.unit
@@ -145,7 +178,7 @@ def test_recent_activity_real(env):
     _seed_message(db_path, "c1", "user", "third", base)
     _seed_message(db_path, "c1", "assistant", "ignored", base)
 
-    out = asyncio.run(env["dashboard"]._recent_activity(limit=8))
+    out = asyncio.run(env["dashboard"]._recent_activity(_TEST_USER_ID, limit=8))
     assert len(out) == 3
     assert out[0]["file"] == "Project Phoenix"
     assert out[0]["folder"] == "Chat"
@@ -205,7 +238,7 @@ def test_messenger_active_overlay_toggles(env, monkeypatch):
 
 @pytest.mark.unit
 def test_avg_retrieval_latency_returns_none_without_data(env):
-    out = asyncio.run(env["dashboard"]._avg_retrieval_latency())
+    out = asyncio.run(env["dashboard"]._avg_retrieval_latency(_TEST_USER_ID))
     assert out is None
 
 
@@ -224,7 +257,7 @@ def test_avg_retrieval_latency_pairs_user_assistant(env):
             base + timedelta(seconds=i * 10 + 2),
         )
 
-    out = asyncio.run(env["dashboard"]._avg_retrieval_latency())
+    out = asyncio.run(env["dashboard"]._avg_retrieval_latency(_TEST_USER_ID))
     assert out is not None
     assert 1.5 <= out <= 2.5
 
@@ -249,7 +282,7 @@ def test_stats_payload_shape_no_mocks(env, monkeypatch):
     monkeypatch.setattr(dashboard_mod, "_ping_qdrant", _no_qdrant)
     monkeypatch.setattr(dashboard_mod, "_qdrant_chunk_count", _no_chunks)
 
-    payload = asyncio.run(dashboard_mod.stats())
+    payload = asyncio.run(dashboard_mod.stats(_FakeUser()))
 
     assert set(payload["kpis"].keys()) == {
         "total_notes",

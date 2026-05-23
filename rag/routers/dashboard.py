@@ -1,11 +1,17 @@
 """Dashboard observability endpoint — live telemetry, zero mocks.
 
 Surfaces real metrics aggregated at request time from:
-    * SQLite (conversations, messages, integrations)
+    * SQLite (conversations, messages, integrations) — scoped to the calling
+      user for any per-row aggregate; vault- / process-wide counters stay
+      global.
     * Qdrant (collection point count, /healthz ping)
     * Filesystem (vault note count, inbox, mtime histogram)
     * Messenger overlay (token presence)
     * Process uptime (monotonic clock since module import)
+
+Phase 28 Part 2 — every SQLite read against ``conversations`` /  ``messages``
+now filters by ``user_id``. The legacy ``require_auth`` dep is replaced with
+``current_active_user`` so we have the fastapi-users UUID available.
 """
 
 from __future__ import annotations
@@ -22,9 +28,11 @@ from qdrant_client import AsyncQdrantClient
 
 import messenger_overlay
 from database import DB_PATH
-from routers.deps import require_auth
 
-router = APIRouter(tags=["dashboard"], dependencies=[Depends(require_auth)])
+from rag.auth import current_active_user
+from rag.database.models import User
+
+router = APIRouter(tags=["dashboard"])
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY") or None
@@ -104,14 +112,20 @@ async def _qdrant_chunk_count() -> int:
         return 0
 
 
-async def _count_messages() -> tuple[int, int]:
-    """Return (total_messages, total_conversations)."""
+async def _count_messages(user_id: str) -> tuple[int, int]:
+    """Return (total_messages, total_conversations) for ``user_id``."""
     try:
         async with aiosqlite.connect(DB_PATH) as db:
-            cur = await db.execute("SELECT COUNT(*) FROM messages")
+            cur = await db.execute(
+                "SELECT COUNT(*) FROM messages WHERE user_id = ?",
+                (user_id,),
+            )
             row = await cur.fetchone()
             msgs = int(row[0]) if row else 0
-            cur = await db.execute("SELECT COUNT(*) FROM conversations")
+            cur = await db.execute(
+                "SELECT COUNT(*) FROM conversations WHERE user_id = ?",
+                (user_id,),
+            )
             row = await cur.fetchone()
             convs = int(row[0]) if row else 0
         return msgs, convs
@@ -120,7 +134,7 @@ async def _count_messages() -> tuple[int, int]:
 
 
 async def _count_integrations() -> tuple[int, int]:
-    """Return (active, total). Missing table → (0, 0)."""
+    """Return (active, total). Integrations stay global — admin-level state."""
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             cur = await db.execute(
@@ -134,8 +148,8 @@ async def _count_integrations() -> tuple[int, int]:
         return 0, 0
 
 
-async def _query_volume_7d() -> list[dict]:
-    """Zero-filled daily user-message counts for the trailing 7 days."""
+async def _query_volume_7d(user_id: str) -> list[dict]:
+    """Daily user-message counts for ``user_id`` across the trailing 7 days."""
     today = datetime.now(timezone.utc).date()
     bins: dict[str, int] = {
         (today - timedelta(days=i)).isoformat(): 0 for i in range(6, -1, -1)
@@ -147,10 +161,12 @@ async def _query_volume_7d() -> list[dict]:
                 """
                 SELECT substr(created_at, 1, 10) AS day, COUNT(*)
                 FROM messages
-                WHERE role = 'user' AND substr(created_at, 1, 10) >= ?
+                WHERE role = 'user'
+                  AND user_id = ?
+                  AND substr(created_at, 1, 10) >= ?
                 GROUP BY day
                 """,
-                (cutoff,),
+                (user_id, cutoff),
             )
             for day, count in await cur.fetchall():
                 if day in bins:
@@ -181,8 +197,8 @@ def _ingestion_7d() -> list[dict]:
     return [{"date": d, "chunks": n} for d, n in bins.items()]
 
 
-async def _recent_activity(limit: int = 8) -> list[dict]:
-    """Last N user messages joined to conversation titles."""
+async def _recent_activity(user_id: str, limit: int = 8) -> list[dict]:
+    """Last N user messages owned by ``user_id`` joined to conversation titles."""
     try:
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
@@ -192,10 +208,11 @@ async def _recent_activity(limit: int = 8) -> list[dict]:
                 FROM messages m
                 JOIN conversations c ON c.id = m.conversation_id
                 WHERE m.role = 'user'
+                  AND m.user_id = ?
                 ORDER BY m.created_at DESC
                 LIMIT ?
                 """,
-                (limit,),
+                (user_id, limit),
             )
             rows = await cur.fetchall()
     except Exception:
@@ -211,12 +228,12 @@ async def _recent_activity(limit: int = 8) -> list[dict]:
     ]
 
 
-async def _avg_retrieval_latency() -> float | None:
-    """Mean seconds between user message and immediate assistant reply.
+async def _avg_retrieval_latency(user_id: str) -> float | None:
+    """Mean seconds between user msg and reply for ``user_id``.
 
-    Pairs the latest 100 messages by `(conversation_id, created_at)` and
-    only counts deltas inside `_LATENCY_WINDOW_S` to filter out user-think
-    gaps. Returns None when fewer than 3 valid pairs exist.
+    Pairs the latest 200 messages by ``(conversation_id, created_at)`` for
+    the caller; only counts deltas inside ``_LATENCY_WINDOW_S`` to filter
+    out user-think gaps. Returns None when fewer than 3 valid pairs exist.
     """
     try:
         async with aiosqlite.connect(DB_PATH) as db:
@@ -224,9 +241,11 @@ async def _avg_retrieval_latency() -> float | None:
                 """
                 SELECT conversation_id, role, created_at
                 FROM messages
+                WHERE user_id = ?
                 ORDER BY created_at DESC
                 LIMIT 200
-                """
+                """,
+                (user_id,),
             )
             rows = list(await cur.fetchall())
     except Exception:
@@ -259,14 +278,15 @@ async def _avg_retrieval_latency() -> float | None:
 
 
 @router.get("/stats")
-async def stats() -> dict:
+async def stats(user: User = Depends(current_active_user)) -> dict:
+    user_id = str(user.id)
     qdrant_ok = await _ping_qdrant()
     total_chunks = await _qdrant_chunk_count() if qdrant_ok else 0
-    total_messages, total_conversations = await _count_messages()
+    total_messages, total_conversations = await _count_messages(user_id)
     active_integrations, total_integrations = await _count_integrations()
     messenger_active = _messenger_active()
     groq_ok = bool(os.environ.get("GROQ_API_KEY"))
-    avg_latency = await _avg_retrieval_latency()
+    avg_latency = await _avg_retrieval_latency(user_id)
 
     return {
         "kpis": {
@@ -303,9 +323,9 @@ async def stats() -> dict:
             "model": GROQ_MODEL,
         },
         "charts": {
-            "query_volume": await _query_volume_7d(),
+            "query_volume": await _query_volume_7d(user_id),
             "ingestion": _ingestion_7d(),
         },
-        "recent_activity": await _recent_activity(),
+        "recent_activity": await _recent_activity(user_id),
         "last_indexed": _last_indexed(),
     }
