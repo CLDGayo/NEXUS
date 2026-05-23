@@ -60,22 +60,23 @@ def client(db, monkeypatch, tmp_path):
     from fastapi.testclient import TestClient
     import app as app_module
 
-    # Phase 27 Part 1.1 — patch the legacy login's superuser lookup +
-    # current_active_user / get_async_session so the existing single-password
-    # flow keeps working without a real Postgres + provisioned admin row.
-    from tests._phase27_helpers import install_legacy_login_shim_override
+    # Phase 27 Part 2 — the legacy /api/auth/login shim is gone (410). We
+    # bypass the auth round-trip entirely: install dependency overrides so
+    # current_active_user resolves to a fake superuser, then mint a legacy
+    # admin JWT for the require_auth_or_token guard on /api/chat/upload.
+    from tests._phase27_helpers import install_chat_test_overrides
 
-    install_legacy_login_shim_override(monkeypatch, app_module.app)
+    install_chat_test_overrides(app_module.app)
 
     with TestClient(app_module.app) as c:
         yield c
     app_module.app.dependency_overrides.clear()
 
 
-def _login(client) -> str:
-    r = client.post("/api/auth/login", json={"password": "test-password-1234"})
-    assert r.status_code == 200, r.text
-    return r.json()["token"]
+def _login(client) -> str:  # noqa: ARG001 — kept for call-site compatibility
+    from tests._phase27_helpers import mint_legacy_admin_jwt
+
+    return mint_legacy_admin_jwt()
 
 
 def _auth(token: str) -> dict:

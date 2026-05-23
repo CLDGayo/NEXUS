@@ -10,6 +10,9 @@ Two layers:
   asyncpg DSN) at ``TEST_POSTGRES_DSN``. They exercise the full register
   → login → chat-session-ownership flow. Skipped cleanly when the DSN is
   missing or the engine cannot connect.
+
+Phase 27 Part 2 retired the legacy ``POST /api/auth/login`` shim — the
+``410`` contract test lives in ``test_phase27_shim_removed.py``.
 """
 
 from __future__ import annotations
@@ -81,52 +84,6 @@ def test_chat_feedback_unauthenticated_returns_401(client: TestClient) -> None:
         json={"question": "q", "answer": "a", "rating": "up"},
     )
     assert response.status_code == 401, response.text
-
-
-def test_legacy_login_wrong_password_returns_401(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Phase 27 Part 1.1 — bad password short-circuits before DB lookup."""
-    import routers.auth as legacy_auth
-
-    monkeypatch.setattr(legacy_auth, "verify_password", lambda _pw: False)
-    response = client.post("/api/auth/login", json={"password": "wrong"})
-    assert response.status_code == 401, response.text
-
-
-def test_legacy_login_no_superuser_returns_503(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Phase 27 Part 1.1 — verified password + no superuser row → 503."""
-    import routers.auth as legacy_auth
-
-    monkeypatch.setattr(legacy_auth, "verify_password", lambda _pw: True)
-
-    async def _no_superuser(_db):
-        return None
-
-    monkeypatch.setattr(
-        legacy_auth, "_load_designated_superuser", _no_superuser
-    )
-
-    # Inject a stub session so the dependency doesn't try to open asyncpg.
-    from unittest.mock import AsyncMock
-
-    from rag.database.engine import get_async_session
-    from rag.main import app
-
-    async def _stub_session():
-        session = AsyncMock()
-        yield session
-
-    app.dependency_overrides[get_async_session] = _stub_session
-    try:
-        response = client.post("/api/auth/login", json={"password": "anything"})
-    finally:
-        app.dependency_overrides.pop(get_async_session, None)
-
-    assert response.status_code == 503, response.text
-    assert "not provisioned" in response.json()["detail"].lower()
 
 
 # -----------------------------------------------------------------------

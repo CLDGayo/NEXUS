@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS conversations (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    user_id TEXT
 )
 """
 
@@ -39,7 +40,8 @@ CREATE TABLE IF NOT EXISTS messages (
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     sources TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    user_id TEXT
 )
 """
 
@@ -75,12 +77,19 @@ CREATE TABLE IF NOT EXISTS api_tokens (
     scopes_csv TEXT NOT NULL,
     created_at TEXT NOT NULL,
     last_used_at TEXT,
-    revoked_at TEXT
+    revoked_at TEXT,
+    user_id TEXT
 )
 """
 
 _INDEX_TOKEN_HASH = (
     "CREATE INDEX IF NOT EXISTS idx_api_tokens_hash ON api_tokens(token_hash)"
+)
+_INDEX_CONVERSATIONS_USER = (
+    "CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id)"
+)
+_INDEX_MESSAGES_USER = (
+    "CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)"
 )
 
 
@@ -93,6 +102,8 @@ async def init_db() -> None:
         await db.execute(_CREATE_INTEGRATIONS)
         await db.execute(_CREATE_API_TOKENS)
         await db.execute(_INDEX_TOKEN_HASH)
+        await db.execute(_INDEX_CONVERSATIONS_USER)
+        await db.execute(_INDEX_MESSAGES_USER)
         await db.commit()
 
 

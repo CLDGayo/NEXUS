@@ -245,21 +245,23 @@ def client(db, monkeypatch, tmp_path):
     from fastapi.testclient import TestClient
     import app as app_module
 
-    # Phase 27 Part 1.1 — patch the legacy login's superuser lookup so
-    # the single-password flow keeps minting valid tokens in tests.
-    from tests._phase27_helpers import install_legacy_login_shim_override
+    # Phase 27 Part 2 — the legacy /api/auth/login shim is gone (410). The
+    # routes under test all guard on `require_auth` / `require_auth_or_token`,
+    # which accept any JWT signed with the overlay secret. Mint one directly
+    # via the test helper to avoid the dead login round-trip.
+    from tests._phase27_helpers import install_chat_test_overrides
 
-    install_legacy_login_shim_override(monkeypatch, app_module.app)
+    install_chat_test_overrides(app_module.app)
 
     with TestClient(app_module.app) as c:
         yield c
     app_module.app.dependency_overrides.clear()
 
 
-def _login(client) -> str:
-    r = client.post("/api/auth/login", json={"password": "test-password-1234"})
-    assert r.status_code == 200, r.text
-    return r.json()["token"]
+def _login(client) -> str:  # noqa: ARG001 — kept for call-site compatibility
+    from tests._phase27_helpers import mint_legacy_admin_jwt
+
+    return mint_legacy_admin_jwt()
 
 
 def _auth(token: str) -> dict:
@@ -409,7 +411,12 @@ def test_resources_seed_and_activate(client):
 
 
 @pytest.mark.integration
-def test_password_change_invalidates_old(client):
+def test_password_change_rotates_overlay(client):
+    """Phase 27 Part 2 — the legacy ``/api/auth/login`` shim is gone (410);
+    the overlay password rotation endpoint still rotates the secret in-place
+    for any future surface that consumes ``auth_overlay.verify_password``."""
+    import auth_overlay
+
     t = _login(client)
     r = client.post(
         "/api/settings/password",
@@ -417,7 +424,9 @@ def test_password_change_invalidates_old(client):
         json={"old": "test-password-1234", "new": "another-secret-12345"},
     )
     assert r.status_code == 204
-    bad = client.post("/api/auth/login", json={"password": "test-password-1234"})
-    assert bad.status_code == 401
-    ok = client.post("/api/auth/login", json={"password": "another-secret-12345"})
-    assert ok.status_code == 200
+    assert auth_overlay.verify_password("another-secret-12345") is True
+    assert auth_overlay.verify_password("test-password-1234") is False
+
+    # The shim is permanently 410 regardless of the rotated password.
+    gone = client.post("/api/auth/login", json={"password": "another-secret-12345"})
+    assert gone.status_code == 410

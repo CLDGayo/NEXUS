@@ -2,11 +2,11 @@
 
 Phase 27 swapped ``/api/chat/stream`` from legacy admin JWTs to
 ``current_active_user`` (fastapi-users). The legacy integration tests that
-log in via ``POST /api/auth/login`` and reuse the bearer token can't be
+used to log in via ``POST /api/auth/login`` (now removed in Part 2) can't be
 updated to a full register→jwt-login flow without standing up Postgres in
 the unit-test environment. We instead override the two FastAPI dependencies
 for the duration of those tests so they exercise the routing + persistence
-behavior they care about, not the auth wiring (which is covered separately
+behaviour they care about, not the auth wiring (which is covered separately
 by ``test_phase27_auth.py``).
 """
 
@@ -64,26 +64,17 @@ def install_chat_test_overrides(app: FastAPI, *, user: _FakeUser | None = None) 
     return fake_user
 
 
-def install_legacy_login_shim_override(
-    monkeypatch, app: FastAPI, *, user: _FakeUser | None = None
-) -> _FakeUser:
-    """Phase 27 Part 1.1 — make the legacy ``POST /api/auth/login`` shim
-    succeed in tests without a real Postgres.
+def mint_legacy_admin_jwt() -> str:
+    """Phase 27 Part 2 — replace the dead ``/api/auth/login`` shim.
 
-    Monkeypatches ``routers.auth._load_designated_superuser`` to return a
-    canned superuser row and pins the same fake user on the app's
-    ``current_active_user`` + ``get_async_session`` dependency overrides so
-    downstream calls (e.g. ``/api/chat/stream``) accept the JWT the shim
-    mints.
+    Hand-craft a legacy admin JWT (``sub="admin"``, no audience) signed with
+    the overlay's current secret. ``routers.deps.require_auth`` and
+    ``require_auth_or_token`` both accept this shape, so any route guarded by
+    those deps treats the test client as the admin without needing a real
+    fastapi-users login round-trip (which would require Postgres).
     """
-    fake = install_chat_test_overrides(app, user=user)
+    from jose import jwt
 
-    async def _fake_superuser_lookup(_db):  # noqa: ANN001
-        return fake
+    from auth_overlay import current_jwt_secret
 
-    import routers.auth as legacy_auth
-
-    monkeypatch.setattr(
-        legacy_auth, "_load_designated_superuser", _fake_superuser_lookup
-    )
-    return fake
+    return jwt.encode({"sub": "admin"}, current_jwt_secret(), algorithm="HS256")

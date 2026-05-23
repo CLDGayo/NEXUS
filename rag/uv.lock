@@ -498,7 +498,7 @@ wheels = [
 
 [[package]]
 name = "fastapi-users"
-version = "13.0.0"
+version = "15.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "email-validator" },
@@ -508,9 +508,9 @@ dependencies = [
     { name = "pyjwt", extra = ["crypto"] },
     { name = "python-multipart" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/3b/58398a5d55b146d08c329c01140ffbb026e481b4fbb290723efe4fee2477/fastapi_users-13.0.0.tar.gz", hash = "sha256:b397c815b7051c8fd4b560fbeee707acd28e00bd3e8f25c292ad158a1e47e884", size = 120081, upload-time = "2024-03-11T13:23:45.527Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/79/98b9d733274cfe0c776fde637dc53b421a0142f51a9e3e9fecd72741f7c1/fastapi_users-15.0.5.tar.gz", hash = "sha256:097f69701894e650c346df89b1cdb0a09cf139234f4cb9a8ece275af4e98e202", size = 121394, upload-time = "2026-03-27T09:01:17.161Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/21/39/d9edc2c7bf2a9489a8d233fcf2f3de24464a916e1494c21c955fa7e0244b/fastapi_users-13.0.0-py3-none-any.whl", hash = "sha256:e6246529e3080a5b50e5afeed1e996663b661f1dc791a1ac478925cb5bfc0fa0", size = 38714, upload-time = "2024-03-11T13:23:43.279Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/8e/1ed6bbe36c486b98217c4be6769d61fcb98c38b334fb39706de661a905b6/fastapi_users-15.0.5-py3-none-any.whl", hash = "sha256:10fd4f3e85ed66f694a6ca2ecac609af4e59d1f9ec64d1557f5912dccfd87c7f", size = 39038, upload-time = "2026-03-27T09:01:16.158Z" },
 ]
 
 [package.optional-dependencies]
@@ -1159,7 +1159,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.29.0,<0.31" },
     { name = "email-validator", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
-    { name = "fastapi-users", extras = ["sqlalchemy"], specifier = ">=13.0.0,<14" },
+    { name = "fastapi-users", extras = ["sqlalchemy"], specifier = ">=14.0.0,<16" },
     { name = "fastembed", specifier = ">=0.4.0,<1.0.0" },
     { name = "groq", specifier = ">=0.13.0" },
     { name = "pymupdf", specifier = ">=1.24.0" },
@@ -1417,11 +1417,11 @@ wheels = [
 
 [[package]]
 name = "pwdlib"
-version = "0.2.0"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/d1/65/ab2cd5ba3c46b3aeed6dd45f414ad475680e9446254f536a3532f6c8662e/pwdlib-0.2.0.tar.gz", hash = "sha256:b1bdafc064310eb6d3d07144a210267063ab4f45ac73a97be948e6589f74e861", size = 11480, upload-time = "2024-03-11T12:47:07.987Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/41/a7c0d8a003c36ce3828ae3ed0391fe6a15aad65f082dbd6bec817ea95c0b/pwdlib-0.3.0.tar.gz", hash = "sha256:6ca30f9642a1467d4f5d0a4d18619de1c77f17dfccb42dd200b144127d3c83fc", size = 215810, upload-time = "2025-10-25T12:44:24.395Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/08/5a/d2aa0f51379aff843983cf96b837261e39e3891578d1e5dfb5d57123ce86/pwdlib-0.2.0-py3-none-any.whl", hash = "sha256:be53812012ab66795a57ac9393a59716ae7c2b60841ed453eb1262017fdec144", size = 8077, upload-time = "2024-03-11T12:47:06.999Z" },
+    { url = "https://files.pythonhosted.org/packages/62/0c/9086a357d02a050fbb3270bf5043ac284dbfb845670e16c9389a41defc9e/pwdlib-0.3.0-py3-none-any.whl", hash = "sha256:f86c15c138858c09f3bba0a10984d4f9178158c55deaa72eac0210849b1a140d", size = 8633, upload-time = "2025-10-25T12:44:23.406Z" },
 ]
 
 [package.optional-dependencies]
@@ -1616,11 +1616,11 @@ wheels = [
 
 [[package]]
 name = "pyjwt"
-version = "2.8.0"
+version = "2.13.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/30/72/8259b2bccfe4673330cea843ab23f86858a419d8f1493f66d413a76c7e3b/PyJWT-2.8.0.tar.gz", hash = "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de", size = 78313, upload-time = "2023-07-18T20:02:22.594Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/81/58d0ac84e1ef3a3843791d6954d94c0b33d526c75eeb1efbce9d0a4c4077/pyjwt-2.13.0.tar.gz", hash = "sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423", size = 107515, upload-time = "2026-05-21T19:54:36.618Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2b/4f/e04a8067c7c96c364cef7ef73906504e2f40d690811c021e1a1901473a19/PyJWT-2.8.0-py3-none-any.whl", hash = "sha256:59127c392cc44c2da5bb3192169a91f429924e17aff6534d70fdc02ab3e04320", size = 22591, upload-time = "2023-07-18T20:02:21.561Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/5e/ecf12fdb62546d64385c158514e9b2b671f7832108ef2ecd2020ce0af2d1/pyjwt-2.13.0-py3-none-any.whl", hash = "sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728", size = 31274, upload-time = "2026-05-21T19:54:35.362Z" },
 ]
 
 [package.optional-dependencies]
@@ -1695,11 +1695,11 @@ cryptography = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.9"
+version = "0.0.29"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5c/0f/9c55ac6c84c0336e22a26fa84ca6c51d58d7ac3a2d78b0dfa8748826c883/python_multipart-0.0.9.tar.gz", hash = "sha256:03f54688c663f1b7977105f021043b0793151e4cb1c1a9d4a11fc13d622c4026", size = 31516, upload-time = "2024-02-10T13:32:04.684Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/fe/70bd71a6738b09a0bdf6480ca6436b167469ca4578b2a0efbe390b4b0e70/python_multipart-0.0.29.tar.gz", hash = "sha256:643e93849196645e2dbdd81a0f8829a23123ad7f797a84a364c6fb3563f18904", size = 45678, upload-time = "2026-05-17T17:29:47.654Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/47/444768600d9e0ebc82f8e347775d24aef8f6348cf00e9fa0e81910814e6d/python_multipart-0.0.9-py3-none-any.whl", hash = "sha256:97ca7b8ea7b05f977dc3849c3ba99d51689822fab725c3703af7c866a0c2b215", size = 22299, upload-time = "2024-02-10T13:32:02.969Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/cb/769cfc37177252872a45a71f3fbdde9d51b471a3f3c14bfe95dde3407386/python_multipart-0.0.29-py3-none-any.whl", hash = "sha256:2ddcc971cef266225f54f552d8fa10bcfbb1f14446caec199060daac59ff2d69", size = 29640, upload-time = "2026-05-17T17:29:45.69Z" },
 ]
 
 [[package]]
