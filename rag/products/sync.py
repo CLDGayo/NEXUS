@@ -54,10 +54,23 @@ def product_point_id(product_id: uuid.UUID) -> str:
 
 
 def _payload(product: Product, tenant_slug: str) -> dict[str, Any]:
+    description = (product.description or "").strip()
+    body_text = f"{product.name}\n\n{description}" if description else product.name
     return {
         "kind": "product",
         "product_id": str(product.id),
         "tenant_id": tenant_slug,
+        # Document-compatible keys so ``_qdrant_index_summary`` and the
+        # citation renderer treat products as first-class documents. The
+        # ``file`` path mirrors ``_product_to_doc_dict`` in the documents
+        # router, which the SPA already keys ``indexSummary`` on.
+        "file": f"/products/{product.slug}",
+        "title": product.name,
+        "text": body_text,
+        "heading_path": [product.name],
+        "folder": "/products",
+        "source_kind": "product",
+        # Carousel filter fields (Phase 32 contract).
         "name": product.name,
         "price_cents": int(product.price_cents),
         "currency": product.currency,

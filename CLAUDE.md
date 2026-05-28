@@ -215,6 +215,7 @@ A change to `rag/` is **done** when:
 - [ ] Health endpoints return green.
 - [ ] If user-facing: E2E (Playwright) covers the new flow.
 - [ ] Dev log written to `Dev Logs/YYYY-MM-DD — <Title>.md`.
+- [ ] **Changelog entry written.** Any user-visible change appends to `CHANGELOG.md` under the next pending version section, using the existing Keep-a-Changelog structure (`### Added` / `### Changed` / `### Fixed` / `### Removed` / `### Security`). Internal-only refactors get a one-liner under `### Changed`. Skip only for pure formatting, comments, or test-only changes. The What's New page (`/changelog`) is the user surface — treat it as part of "done", not a follow-up task.
 
 ---
 

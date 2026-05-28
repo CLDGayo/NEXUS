@@ -30,6 +30,7 @@ def test_payload_carries_required_fields() -> None:
     product = SimpleNamespace(
         id=uuid.UUID("11111111-2222-3333-4444-555555555555"),
         name="Glow Serum 30ml",
+        slug="glow-serum-30ml",
         description="Brightens skin overnight",
         price_cents=4500,
         currency="USD",
