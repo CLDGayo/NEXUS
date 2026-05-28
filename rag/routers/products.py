@@ -34,6 +34,7 @@ from fastapi import (
     File,
     HTTPException,
     Query,
+    Response,
     UploadFile,
 )
 from PIL import Image, UnidentifiedImageError
@@ -345,12 +346,14 @@ async def update_product(
     return _serialize_product(product).model_dump(mode="json")
 
 
-@router.delete("/products/{product_id}", status_code=204)
+@router.delete(
+    "/products/{product_id}", status_code=204, response_class=Response
+)
 async def delete_product(
     product_id: uuid.UUID,
     tenant: Tenant = Depends(require_owner),
     db: AsyncSession = Depends(get_async_session),
-) -> None:
+) -> Response:
     product = await _get_product_or_404(db, tenant.id, product_id)
 
     # MinIO cleanup first — the DB cascade deletes the image rows after.
@@ -370,6 +373,7 @@ async def delete_product(
     await db.commit()
 
     await delete_product_from_qdrant(product_id)
+    return Response(status_code=204)
 
 
 # ─── Product image management ───────────────────────────────────────────────
@@ -482,14 +486,16 @@ async def reorder_product_images(
 
 
 @router.delete(
-    "/products/{product_id}/images/{image_id}", status_code=204
+    "/products/{product_id}/images/{image_id}",
+    status_code=204,
+    response_class=Response,
 )
 async def delete_product_image(
     product_id: uuid.UUID,
     image_id: uuid.UUID,
     tenant: Tenant = Depends(require_owner),
     db: AsyncSession = Depends(get_async_session),
-) -> None:
+) -> Response:
     product = await _get_product_or_404(db, tenant.id, product_id)
     images = list(product.images or [])
     target = next((im for im in images if im.id == image_id), None)
@@ -520,3 +526,4 @@ async def delete_product_image(
     for idx, im in enumerate(remaining):
         im.display_order = idx
     await db.commit()
+    return Response(status_code=204)
