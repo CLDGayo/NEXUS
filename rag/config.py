@@ -84,6 +84,14 @@ class Settings(BaseSettings):
     # directly without going through the FastAPI process. When empty the
     # avatar router returns presigned URLs instead.
     minio_public_base_url: str = Field(default="")
+    # Phase 32.4 — Public absolute origin for the running FastAPI app
+    # (e.g. ``https://chat.nexus.gayo-sphere.cloud``). The messenger
+    # carousel writes product image URLs that Meta's Send API has to
+    # fetch from a public host; we mint signed ``object_proxy`` tokens
+    # under ``/api/objects/{token}`` and prefix them with this base so
+    # the URL is absolute. Empty in dev — the SPA hits same-origin and
+    # the carousel branch logs + drops the image.
+    nexus_public_base_url: str = Field(default="")
     # Avatar uploads: max bytes BEFORE Pillow normalisation. We resize down
     # to 256×256 WebP server-side, so this caps the raw client payload.
     avatar_max_upload_bytes: int = Field(
@@ -243,7 +251,9 @@ class Settings(BaseSettings):
     def outbound_backoff_seconds(self) -> list[int]:
         """Parse the CSV into ordered backoff intervals."""
 
-        parts = [p.strip() for p in self.outbound_backoff_seconds_csv.split(",") if p.strip()]
+        parts = [
+            p.strip() for p in self.outbound_backoff_seconds_csv.split(",") if p.strip()
+        ]
         out: list[int] = []
         for part in parts:
             try:

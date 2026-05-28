@@ -114,3 +114,87 @@ def test_ctx_url_from_template(url_template, expected_prefix, monkeypatch) -> No
         assert result is None
     else:
         assert result is not None and result.startswith(expected_prefix)
+
+
+# ---- Phase 32.4 — Messenger-fetchable image_url ----
+
+
+def _stub_image(image_url: str | None = None, storage_key: str | None = "k.webp"):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(image_url=image_url, storage_key=storage_key)
+
+
+def test_image_url_returns_cdn_when_image_url_set() -> None:
+    """Cached absolute CDN URL short-circuits the proxy path."""
+    image = _stub_image(image_url="https://cdn.example.com/x.webp")
+    result = asyncio.run(product_branch._image_url_for(image))
+    assert result == "https://cdn.example.com/x.webp"
+
+
+def test_image_url_uses_object_proxy_when_nexus_public_base_url_set(
+    monkeypatch,
+) -> None:
+    """Cache miss + public base set → absolute SPA-proxy URL."""
+    from rag.config import settings as cfg
+    from rag.services import object_proxy
+
+    monkeypatch.setattr(
+        cfg, "nexus_public_base_url", "https://chat.nexus.gayo-sphere.cloud"
+    )
+    monkeypatch.setattr(object_proxy, "proxy_url", lambda **_kw: "/api/objects/SIGNED")
+
+    image = _stub_image(image_url=None, storage_key="products/x.webp")
+    result = asyncio.run(product_branch._image_url_for(image))
+    assert result == "https://chat.nexus.gayo-sphere.cloud/api/objects/SIGNED"
+
+
+def test_image_url_strips_trailing_slash_on_base(monkeypatch) -> None:
+    """Base with trailing slash must not produce a double slash."""
+    from rag.config import settings as cfg
+    from rag.services import object_proxy
+
+    monkeypatch.setattr(
+        cfg, "nexus_public_base_url", "https://chat.nexus.gayo-sphere.cloud/"
+    )
+    monkeypatch.setattr(object_proxy, "proxy_url", lambda **_kw: "/api/objects/TOK")
+
+    image = _stub_image(image_url=None)
+    result = asyncio.run(product_branch._image_url_for(image))
+    assert result == "https://chat.nexus.gayo-sphere.cloud/api/objects/TOK"
+
+
+def test_image_url_returns_none_when_no_public_base_and_no_cdn(
+    monkeypatch,
+) -> None:
+    """No CDN URL, no NEXUS_PUBLIC_BASE_URL → drop the image (None)."""
+    from rag.config import settings as cfg
+
+    monkeypatch.setattr(cfg, "nexus_public_base_url", "")
+    monkeypatch.setattr(cfg, "minio_public_base_url", "")
+
+    image = _stub_image(image_url=None)
+    result = asyncio.run(product_branch._image_url_for(image))
+    assert result is None
+
+
+def test_image_url_returns_none_when_storage_key_missing() -> None:
+    image = _stub_image(image_url=None, storage_key=None)
+    result = asyncio.run(product_branch._image_url_for(image))
+    assert result is None
+
+
+def test_image_url_returns_none_when_proxy_url_raises(monkeypatch) -> None:
+    """Defensive: object_proxy failure must not raise into the webhook."""
+    from rag.config import settings as cfg
+    from rag.services import object_proxy
+
+    monkeypatch.setattr(cfg, "nexus_public_base_url", "https://x.example.com")
+
+    def boom(**_kw):
+        raise ValueError("synthetic")
+
+    monkeypatch.setattr(object_proxy, "proxy_url", boom)
+    image = _stub_image(image_url=None)
+    result = asyncio.run(product_branch._image_url_for(image))
+    assert result is None
