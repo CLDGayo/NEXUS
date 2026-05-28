@@ -134,41 +134,47 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     _setup_logging(args.verbose)
 
-    try:
-        if args.list_tenants:
-            rows = asyncio.run(list_tenants())
-            if not rows:
-                print("(no tenants)")
-                return 0
-            slug_w = max(len(slug) for slug, _ in rows)
-            for slug, name in rows:
-                print(f"  {slug:<{slug_w}}  {name}")
+    if args.list_tenants:
+
+        async def _list() -> list[tuple[str, str]]:
+            try:
+                return await list_tenants()
+            finally:
+                await dispose_engine()
+
+        rows = asyncio.run(_list())
+        if not rows:
+            print("(no tenants)")
             return 0
-
-        if not args.tenant_slug or not args.page_id:
-            parser.error(
-                "--tenant-slug and --page-id are required (or use --list-tenants)"
-            )
-
-        try:
-            result = asyncio.run(
-                seed(
-                    facebook_page_id=args.page_id,
-                    tenant_slug=args.tenant_slug,
-                )
-            )
-        except LookupError as exc:
-            print(f"ERROR: {exc}", file=sys.stderr)
-            return 2
-
-        action = "rebound" if result.rebind else "bound"
-        print(
-            f"{action} facebook_page_id={result.facebook_page_id} "
-            f"tenant_slug={result.tenant_slug}"
-        )
+        slug_w = max(len(slug) for slug, _ in rows)
+        for slug, name in rows:
+            print(f"  {slug:<{slug_w}}  {name}")
         return 0
-    finally:
-        asyncio.run(dispose_engine())
+
+    if not args.tenant_slug or not args.page_id:
+        parser.error("--tenant-slug and --page-id are required (or use --list-tenants)")
+
+    async def _seed() -> SeedResult:
+        try:
+            return await seed(
+                facebook_page_id=args.page_id,
+                tenant_slug=args.tenant_slug,
+            )
+        finally:
+            await dispose_engine()
+
+    try:
+        result = asyncio.run(_seed())
+    except LookupError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    action = "rebound" if result.rebind else "bound"
+    print(
+        f"{action} facebook_page_id={result.facebook_page_id} "
+        f"tenant_slug={result.tenant_slug}"
+    )
+    return 0
 
 
 if __name__ == "__main__":

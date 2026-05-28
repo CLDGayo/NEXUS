@@ -145,10 +145,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     _setup_logging(args.verbose)
 
-    try:
-        summary = asyncio.run(reupsert_all(tenant_slug=args.tenant_slug))
-    finally:
-        asyncio.run(dispose_engine())
+    async def _run() -> ReupsertSummary:
+        try:
+            return await reupsert_all(tenant_slug=args.tenant_slug)
+        finally:
+            await dispose_engine()
+
+    summary = asyncio.run(_run())
 
     print("phase32.3 reupsert summary:")
     print(f"  scope                {args.tenant_slug or 'all-tenants'}")
