@@ -1,9 +1,11 @@
 """Phase 32 — orchestrator product-carousel branch unit tests.
 
-The branch is messenger-only by design; SPA queries must not pay any
-product-search latency. ``_truncate`` / ``_format_price`` are pure
-helpers worth covering directly so a future refactor doesn't drift past
-Meta's hard limits.
+Phase 32.5 — the single ``enrich_with_products_node`` is split into
+``inject_product_context_node`` (pre-generate, all surfaces) and
+``build_carousel_node`` (post-respond, messenger only). Tests for the
+new nodes live in ``test_phase32_5_product_context_injection.py``;
+this file keeps coverage for the pure helpers (``_truncate``,
+``_format_price``, ``_ctx_url_for``, ``_image_url_for``).
 """
 
 from __future__ import annotations
@@ -13,72 +15,6 @@ import asyncio
 import pytest
 
 from rag.orchestrator import product_branch
-
-
-def test_enrich_node_skips_non_messenger_surface(monkeypatch) -> None:
-    """SPA surface must not trigger a Qdrant call or DB hit."""
-    called = {"qdrant": 0, "enrich": 0}
-
-    async def boom_qdrant(*_args, **_kwargs):  # pragma: no cover
-        called["qdrant"] += 1
-        return []
-
-    async def boom_enrich(*_args, **_kwargs):  # pragma: no cover
-        called["enrich"] += 1
-        return []
-
-    monkeypatch.setattr(product_branch, "_candidate_product_ids", boom_qdrant)
-    monkeypatch.setattr(product_branch, "_enrich", boom_enrich)
-
-    state = {
-        "query": "anything",
-        "thread_key": "tk",
-        "correlation_id": "cid",
-        "surface": "spa",
-        "tenant_id": "hunter",
-    }
-    result = asyncio.run(product_branch.enrich_with_products_node(state))
-    assert result == {}
-    assert called == {"qdrant": 0, "enrich": 0}
-
-
-def test_enrich_node_skips_when_no_query() -> None:
-    state = {
-        "query": "",
-        "thread_key": "tk",
-        "correlation_id": "cid",
-        "surface": "messenger",
-        "tenant_id": "hunter",
-    }
-    result = asyncio.run(product_branch.enrich_with_products_node(state))
-    assert result == {}
-
-
-def test_enrich_node_skips_when_no_tenant() -> None:
-    state = {
-        "query": "scarf",
-        "thread_key": "tk",
-        "correlation_id": "cid",
-        "surface": "messenger",
-    }
-    result = asyncio.run(product_branch.enrich_with_products_node(state))
-    assert result == {}
-
-
-def test_enrich_node_empty_when_no_qdrant_candidates(monkeypatch) -> None:
-    async def empty_candidates(*_a, **_kw):
-        return []
-
-    monkeypatch.setattr(product_branch, "_candidate_product_ids", empty_candidates)
-    state = {
-        "query": "scarf",
-        "thread_key": "tk",
-        "correlation_id": "cid",
-        "surface": "messenger",
-        "tenant_id": "hunter",
-    }
-    result = asyncio.run(product_branch.enrich_with_products_node(state))
-    assert result == {}
 
 
 def test_truncate_ellipsis_within_limit() -> None:

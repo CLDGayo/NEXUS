@@ -38,7 +38,10 @@ from rag.orchestrator.nodes import (
     route_decision,
     route_query_node,
 )
-from rag.orchestrator.product_branch import enrich_with_products_node
+from rag.orchestrator.product_branch import (
+    build_carousel_node,
+    inject_product_context_node,
+)
 from rag.orchestrator.state import NexusState
 
 _log = logging.getLogger(__name__)
@@ -108,16 +111,21 @@ def build_graph() -> Any:
     graph.add_node("retrieve_graph", retrieve_graph_node)
     graph.add_node("fuse", fuse_node)
     graph.add_node("rerank", rerank_node)
+    # Phase 32.5 — inject live Postgres catalog rows as synthetic
+    # ``ScoredChunk``\s onto ``state["reranked"]`` BEFORE generate, so
+    # both messenger and SPA can quote price / stock / availability
+    # with a real ``[n]`` citation instead of abstaining.
+    graph.add_node("inject_product_context", inject_product_context_node)
     graph.add_node("accumulate_context", accumulate_context_node)
     graph.add_node("generate", generate_node)
     graph.add_node("guardrails", guardrails_node)
     graph.add_node("respond", respond_node)
     graph.add_node("abstain", abstain_node)
-    # Phase 32 — Messenger surface only: enrich the reply with a product
-    # carousel before the webhook dispatches it. SPA surface skips this
-    # node entirely (the node returns {} early for any non-messenger
-    # surface), so the doc-citation flow is unchanged for /chat.
-    graph.add_node("enrich_with_products", enrich_with_products_node)
+    # Phase 32 — Messenger surface only: build the Generic Template
+    # carousel payload after the text answer is finalised. Reads the
+    # ``_enriched_products`` cache populated by ``inject_product_context``
+    # so we don't re-query Qdrant + Postgres here.
+    graph.add_node("build_carousel", build_carousel_node)
 
     graph.add_edge(START, "rewrite_query")
     graph.add_edge("rewrite_query", "preprocess_vision")
@@ -151,7 +159,8 @@ def build_graph() -> Any:
     graph.add_edge("retrieve_sparse", "fuse")
     graph.add_edge("retrieve_graph", "fuse")
     graph.add_edge("fuse", "rerank")
-    graph.add_edge("rerank", "accumulate_context")
+    graph.add_edge("rerank", "inject_product_context")
+    graph.add_edge("inject_product_context", "accumulate_context")
 
     # Cycle: loop back into ``next_subquery`` while sub-queries remain and
     # the iteration cap has not been reached, else proceed to generation.
@@ -167,8 +176,8 @@ def build_graph() -> Any:
         guardrails_router,
         {"respond": "respond", "abstain": "abstain"},
     )
-    graph.add_edge("respond", "enrich_with_products")
-    graph.add_edge("enrich_with_products", END)
+    graph.add_edge("respond", "build_carousel")
+    graph.add_edge("build_carousel", END)
     graph.add_edge("abstain", END)
 
     return graph.compile(checkpointer=_build_checkpointer())

@@ -43,6 +43,7 @@ from rag.messenger.payloads import (
 from rag.orchestrator.state import NexusState
 from rag.products.sync import product_point_id
 from rag.retrieval.dense import embed_text, get_qdrant_client
+from rag.retrieval.types import ScoredChunk
 from rag.services import object_proxy
 
 _log = logging.getLogger(__name__)
@@ -251,11 +252,45 @@ async def _format_carousel(
     return ProductCarouselBlock(elements=elements)
 
 
-async def enrich_with_products_node(state: NexusState) -> dict[str, Any]:
-    """LangGraph node — attach a product carousel for messenger surface."""
-    surface = state.get("surface")
-    if surface != "messenger":
-        return {}
+def _product_chunk(product: Product, tenant_slug: str) -> ScoredChunk:
+    """Build a synthetic ``ScoredChunk`` carrying the structured Postgres
+    catalog row so the LLM can quote price / stock / availability with a
+    real ``[n]`` citation. Phase 32.5 — fixes the "Amnesiac AI" gap
+    where Qdrant chunks only carried name + description and the prompt
+    abstained on any pricing question.
+    """
+    description = (product.description or "").strip() or "—"
+    text = (
+        f"[Product Catalog Match] "
+        f"Name: {product.name} | "
+        f"Price: {_format_price(int(product.price_cents), product.currency)} | "
+        f"Stock: {int(product.quantity)} available | "
+        f"Description: {description}"
+    )
+    return ScoredChunk(
+        id=f"product:{product.id}",
+        text=text,
+        score=1.0,
+        metadata={
+            "title": product.name,
+            "file": f"catalog://{product.id}",
+            "source_kind": "product_catalog",
+            "product_id": str(product.id),
+            "tenant_id": tenant_slug,
+        },
+    )
+
+
+async def inject_product_context_node(state: NexusState) -> dict[str, Any]:
+    """Pre-``generate`` node that prepends live catalog rows as synthetic
+    ``ScoredChunk``\\s onto ``state["reranked"]``.
+
+    Runs for **all surfaces** (messenger + SPA) — the SPA was previously
+    blind to Postgres rows and abstained on price questions, even when
+    Qdrant returned the product chunk. Caches the enriched product list
+    under the private ``_enriched_products`` key so the downstream
+    carousel builder reuses the rows without a second Qdrant + DB hit.
+    """
     query = (state.get("query") or "").strip()
     tenant_slug = state.get("tenant_id")
     if not query or not tenant_slug:
@@ -263,22 +298,47 @@ async def enrich_with_products_node(state: NexusState) -> dict[str, Any]:
 
     candidate_ids = await _candidate_product_ids(query, tenant_slug)
     if not candidate_ids:
-        _log.info(
-            "product_branch.no_candidates tenant=%s query_len=%d",
-            tenant_slug,
-            len(query),
-        )
         return {}
 
     products = await _enrich(candidate_ids, tenant_slug)
     if not products:
-        _log.info(
-            "product_branch.no_in_stock_matches tenant=%s candidates=%d",
-            tenant_slug,
-            len(candidate_ids),
-        )
         return {}
 
+    product_chunks = [_product_chunk(p, tenant_slug) for p in products]
+    existing = list(state.get("reranked") or [])
+    merged = product_chunks + existing
+
+    _log.info(
+        "product_branch.context_injected tenant=%s products=%d existing_chunks=%d",
+        tenant_slug,
+        len(product_chunks),
+        len(existing),
+    )
+    return {
+        "reranked": merged,
+        "_enriched_products": products,
+    }
+
+
+async def build_carousel_node(state: NexusState) -> dict[str, Any]:
+    """Post-``respond`` node — attach the Messenger product carousel UI.
+
+    Phase 32.5 — renamed from ``enrich_with_products_node``. Splits the
+    "fetch products" responsibility (now in
+    :func:`inject_product_context_node`, runs before generate) from the
+    "build Generic Template payload" responsibility (here, runs after
+    respond, messenger-only). Reads the cached ``_enriched_products``
+    list to avoid a second Qdrant + Postgres round-trip per turn.
+    """
+    surface = state.get("surface")
+    if surface != "messenger":
+        return {}
+
+    products: list[Product] = list(state.get("_enriched_products") or [])
+    if not products:
+        return {}
+
+    tenant_slug = state.get("tenant_id")
     carousel = await _format_carousel(products)
     if carousel is None:
         return {}
@@ -292,6 +352,7 @@ async def enrich_with_products_node(state: NexusState) -> dict[str, Any]:
 
 
 __all__ = [
-    "enrich_with_products_node",
+    "build_carousel_node",
+    "inject_product_context_node",
     "product_point_id",
 ]

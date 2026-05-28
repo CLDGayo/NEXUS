@@ -328,7 +328,20 @@ class OutboundSender:
     def _format_generic_template(
         carousel: ProductCarouselBlock, recipient_id: str
     ) -> dict:
-        """Translate a ProductCarouselBlock into the Send API Generic Template body."""
+        """Translate a ProductCarouselBlock into the Send API Generic Template body.
+
+        Phase 32.5 — drop the ``buttons`` key when the list is empty.
+        Pydantic's ``exclude_none=True`` only strips ``None`` fields;
+        an empty list survives. Meta rejects ``"buttons": []`` with
+        ``(#194) too few elements`` (and occasionally surfaces the same
+        validation under ``(#100) image_url … valid URL``), 400-DLQ.
+        """
+        elements: list[dict] = []
+        for el in carousel.elements:
+            payload = el.model_dump(mode="json", exclude_none=True)
+            if not payload.get("buttons"):
+                payload.pop("buttons", None)
+            elements.append(payload)
         return {
             "recipient": {"id": recipient_id},
             "messaging_type": "RESPONSE",
@@ -337,10 +350,7 @@ class OutboundSender:
                     "type": "template",
                     "payload": {
                         "template_type": "generic",
-                        "elements": [
-                            el.model_dump(mode="json", exclude_none=True)
-                            for el in carousel.elements
-                        ],
+                        "elements": elements,
                     },
                 }
             },

@@ -155,6 +155,38 @@ def test_graph_message_bodies_carousel_only() -> None:
     assert "attachment" in bodies[0]["message"]
 
 
+# ── Phase 32.5 — empty buttons must be omitted before send ─────────────────
+
+
+def test_format_generic_template_omits_empty_buttons_key() -> None:
+    """Meta rejects `"buttons": []` with (#194)/(#100). When _format_carousel
+    builds an element with no buttons (e.g. product.url is NULL and no CTA
+    template configured), the dispatched JSON must drop the key entirely."""
+    element = GenericTemplateElement(
+        title="Luffy Gear 4 Bound man",
+        subtitle="JPY 2,100.00 · 2 in stock",
+        image_url="https://chat.nexus.gayo-sphere.cloud/api/objects/TOK",
+        buttons=[],
+    )
+    carousel = ProductCarouselBlock(elements=[element])
+    body = OutboundSender._format_generic_template(carousel, "PSID-123")
+
+    el = body["message"]["attachment"]["payload"]["elements"][0]
+    assert "buttons" not in el
+    assert el["title"] == "Luffy Gear 4 Bound man"
+    assert el["image_url"] == "https://chat.nexus.gayo-sphere.cloud/api/objects/TOK"
+
+
+def test_format_generic_template_keeps_buttons_when_present() -> None:
+    """Sanity: non-empty buttons must still ship."""
+    carousel = _carousel(n=1)
+    body = OutboundSender._format_generic_template(carousel, "PSID-9")
+    el = body["message"]["attachment"]["payload"]["elements"][0]
+    assert "buttons" in el
+    assert len(el["buttons"]) == 1
+    assert el["buttons"][0]["type"] == "web_url"
+
+
 def test_graph_message_bodies_strips_citation_brackets() -> None:
     sender = OutboundSender()
     payload = OutboundPayload(
