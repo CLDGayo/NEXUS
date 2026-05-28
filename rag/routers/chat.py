@@ -23,6 +23,7 @@ from typing import Any, AsyncIterator
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import settings_service
@@ -103,9 +104,32 @@ async def _resolve_session(
     The returned string is what we pass to LangGraph as ``thread_id``.
     """
     if session_id:
+        # Phase 32.2 — the SPA owns the correlation id (`crypto.randomUUID()`),
+        # so the first turn arrives with a session_id whose row does not yet
+        # exist. Lazy-create rather than 404 so the FE-owned lifecycle works
+        # end-to-end. A concurrent insert race on the PK is recovered by
+        # rolling back and re-reading the row the winner just persisted.
         row = await db.get(ChatSession, session_id)
         if row is None:
-            raise HTTPException(status_code=404, detail="session not found")
+            row = ChatSession(
+                session_id=session_id,
+                user_id=user.id,
+                tenant_id=tenant.id,
+            )
+            db.add(row)
+            try:
+                await db.commit()
+            except IntegrityError:
+                await db.rollback()
+                row = await db.get(ChatSession, session_id)
+                if row is None:
+                    # Pathological: the conflicting row vanished between the
+                    # failed insert and the re-read. Treat as a hard error.
+                    raise HTTPException(
+                        status_code=409, detail="session_id conflict"
+                    )
+            else:
+                await db.refresh(row)
         if row.user_id != user.id or row.tenant_id != tenant.id:
             raise HTTPException(status_code=403, detail="session not owned")
         # ``last_used_at`` advances automatically via the ``onupdate`` server

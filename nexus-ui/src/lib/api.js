@@ -57,6 +57,13 @@ export function setTenantIdProvider(fn) {
   _tenantIdProvider = fn;
 }
 
+// Phase 32.1 — expose the active tenant id so non-apiFetch callers
+// (notably the SSE stream in sse.js, which manages its own fetch to
+// keep the response body raw) can inject `X-Tenant-ID` themselves.
+export function getActiveTenantId() {
+  return _tenantIdProvider ? _tenantIdProvider() : null;
+}
+
 class HTTPError extends Error {
   constructor(message, status, body) {
     super(message);

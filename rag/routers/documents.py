@@ -39,7 +39,7 @@ from inbox import delete_vectors_for_file
 
 from rag.auth import current_active_user, get_current_tenant
 from rag.database.engine import get_async_session
-from rag.database.models import Document, Tenant, User
+from rag.database.models import Document, Product, Tenant, User
 
 log = logging.getLogger(__name__)
 
@@ -105,6 +105,21 @@ def _document_to_dict(doc: Document) -> dict:
             if doc.modified_at is not None
             else doc.indexed_at.timestamp()
         ),
+        "source_kind": doc.source_kind or "note",
+    }
+
+
+def _product_to_doc_dict(product: Product) -> dict:
+    """Phase 32.2 — surface products in the Documents list under a synthetic
+    ``/products`` folder. Same row shape as a Document so the SPA renders
+    them without any frontend change."""
+    return {
+        "path": f"/products/{product.slug}",
+        "title": product.name,
+        "folder": "/products",
+        "tags": ["product"],
+        "modified": product.updated_at.timestamp(),
+        "source_kind": "product",
     }
 
 
@@ -141,17 +156,49 @@ async def list_documents(
             )
         )
 
-    total = (
+    docs_total = (
         await db.execute(select(func.count()).select_from(base.subquery()))
     ).scalar_one()
 
-    stmt = (
-        base.order_by(Document.indexed_at.desc())
-        .offset((page - 1) * limit)
-        .limit(limit)
+    # Phase 32.2 — surface products (the e-commerce catalogue) alongside
+    # vault notes so the Documents view reflects every artifact the tenant
+    # has registered. Both queries are tenant-scoped; we union the row
+    # dicts in Python and paginate after concatenation. Catalogue sizes
+    # stay small enough (≤ a few hundred per tenant) that this is fine;
+    # if it grows, swap for a proper SQL UNION ALL + window pagination.
+    products_query = select(Product).where(Product.tenant_id == tenant.id)
+    if search:
+        needle = f"%{search}%"
+        products_query = products_query.where(
+            or_(
+                Product.name.ilike(needle),
+                Product.description.ilike(needle),
+            )
+        )
+
+    products_total = (
+        await db.execute(
+            select(func.count()).select_from(products_query.subquery())
+        )
+    ).scalar_one()
+
+    total = int(docs_total) + int(products_total)
+
+    docs_rows = (
+        await db.execute(base.order_by(Document.indexed_at.desc()))
+    ).scalars().all()
+    product_rows = (
+        await db.execute(products_query.order_by(Product.updated_at.desc()))
+    ).scalars().all()
+
+    combined: list[dict] = (
+        [_document_to_dict(d) for d in docs_rows]
+        + [_product_to_doc_dict(p) for p in product_rows]
     )
-    docs = (await db.execute(stmt)).scalars().all()
-    items = [_document_to_dict(d) for d in docs]
+    combined.sort(key=lambda r: r.get("modified") or 0.0, reverse=True)
+
+    start = (page - 1) * limit
+    items = combined[start : start + limit]
     pages = max(1, (total + limit - 1) // limit)
     return {"items": items, "total": total, "pages": pages}
 

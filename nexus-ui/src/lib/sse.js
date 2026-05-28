@@ -14,6 +14,7 @@
 // partial JSON across chunk boundaries.
 
 import { authHeaders, clearToken } from './auth.js';
+import { getActiveTenantId } from './api.js';
 
 const DECODER = new TextDecoder();
 
@@ -28,9 +29,17 @@ const DECODER = new TextDecoder();
  * AuthProvider to handle), AbortError on user cancel.
  */
 export async function* chatStream({ question, sessionId, history, attachments, signal }) {
+  // Phase 32.1 — the chat-stream endpoint is tenant-scoped (Phase 31
+  // strict gate). apiFetch normally injects `X-Tenant-ID` for tenant
+  // routes; this stream is a hand-rolled fetch (we keep the raw body
+  // for SSE) so we read the same provider directly and add the header.
+  const headers = authHeaders({ Accept: 'text/event-stream' });
+  const tid = getActiveTenantId();
+  if (tid) headers['X-Tenant-ID'] = tid;
+
   const res = await fetch('/api/chat/stream', {
     method: 'POST',
-    headers: authHeaders({ Accept: 'text/event-stream' }),
+    headers,
     body: JSON.stringify({
       question,
       session_id: sessionId,

@@ -22,6 +22,7 @@ Image pipeline:
 
 from __future__ import annotations
 
+import asyncio
 import io
 import logging
 import re
@@ -50,7 +51,7 @@ from rag.products.sync import (
     delete_product_from_qdrant,
     upsert_product_to_qdrant,
 )
-from rag.services import object_store
+from rag.services import object_proxy, object_store
 from routers.deps import require_owner
 
 _log = logging.getLogger(__name__)
@@ -146,17 +147,53 @@ async def _next_unique_slug(
 
 
 def _resolve_image_url(storage_key: str) -> str | None:
-    """CDN URL when configured, otherwise let the carousel format mint a presigned."""
+    """CDN URL when configured, otherwise let the serializer mint a presigned."""
     return object_store.public_url_for(
         storage_key, bucket=settings.minio_bucket_products
     )
 
 
-def _serialize_image(img: ProductImage) -> ProductImageRead:
-    return ProductImageRead.model_validate(img, from_attributes=True)
+async def _mint_image_url(img: ProductImage) -> str | None:
+    """Return a usable HTTP URL for ``img``.
+
+    Phase 32.2 — production MinIO is internal-only (no public host
+    mapping, no DNS entry for ``minio.nexus.gayo-sphere.cloud``), so
+    presigned URLs embed ``http://nexus-minio:9000/...`` and never load
+    in a browser. Instead, hand back a SPA-relative URL backed by the
+    ``GET /api/objects/{token}`` proxy. When a CDN is later configured
+    via ``MINIO_PUBLIC_BASE_URL``, ``_resolve_image_url`` short-circuits
+    and the proxy becomes a no-op fallback.
+    """
+    cdn = _resolve_image_url(img.storage_key)
+    if cdn is not None:
+        return cdn
+    return object_proxy.proxy_url(
+        bucket=settings.minio_bucket_products,
+        key=img.storage_key,
+        expires_in=3600,
+    )
 
 
-def _serialize_product(product: Product) -> ProductRead:
+async def _serialize_image(img: ProductImage) -> ProductImageRead:
+    url = await _mint_image_url(img)
+    return ProductImageRead(
+        id=img.id,
+        storage_key=img.storage_key,
+        image_url=url,
+        display_order=int(img.display_order),
+        width=img.width,
+        height=img.height,
+        content_type=img.content_type,
+    )
+
+
+async def _serialize_product(product: Product) -> ProductRead:
+    images_in = list(product.images or [])
+    images_out = (
+        await asyncio.gather(*[_serialize_image(im) for im in images_in])
+        if images_in
+        else []
+    )
     return ProductRead(
         id=product.id,
         tenant_id=product.tenant_id,
@@ -169,7 +206,7 @@ def _serialize_product(product: Product) -> ProductRead:
         is_active=bool(product.is_active),
         url=product.url,
         extra_metadata=dict(product.extra_metadata or {}),
-        images=[_serialize_image(im) for im in (product.images or [])],
+        images=list(images_out),
     )
 
 
@@ -250,8 +287,13 @@ async def list_products(
         .limit(limit)
     )
     products = (await db.execute(stmt)).scalars().unique().all()
+    serialized = (
+        await asyncio.gather(*[_serialize_product(p) for p in products])
+        if products
+        else []
+    )
     return {
-        "items": [_serialize_product(p).model_dump(mode="json") for p in products],
+        "items": [p.model_dump(mode="json") for p in serialized],
         "total": int(total),
         "page": page,
         "limit": limit,
@@ -289,7 +331,8 @@ async def create_product(
     await db.refresh(product, attribute_names=["images"])
 
     await upsert_product_to_qdrant(product, tenant_slug=tenant.slug)
-    return _serialize_product(product).model_dump(mode="json")
+    serialized = await _serialize_product(product)
+    return serialized.model_dump(mode="json")
 
 
 @router.get("/products/{product_id}")
@@ -299,7 +342,8 @@ async def get_product(
     db: AsyncSession = Depends(get_async_session),
 ) -> dict[str, Any]:
     product = await _get_product_or_404(db, tenant.id, product_id)
-    return _serialize_product(product).model_dump(mode="json")
+    serialized = await _serialize_product(product)
+    return serialized.model_dump(mode="json")
 
 
 @router.patch("/products/{product_id}")
@@ -343,7 +387,8 @@ async def update_product(
     else:
         await upsert_product_to_qdrant(product, tenant_slug=tenant.slug)
 
-    return _serialize_product(product).model_dump(mode="json")
+    serialized = await _serialize_product(product)
+    return serialized.model_dump(mode="json")
 
 
 @router.delete(
@@ -445,7 +490,8 @@ async def upload_product_image(
     await db.commit()
     await db.refresh(image)
 
-    return _serialize_image(image).model_dump(mode="json")
+    serialized = await _serialize_image(image)
+    return serialized.model_dump(mode="json")
 
 
 @router.patch("/products/{product_id}/images/order")
@@ -482,7 +528,12 @@ async def reorder_product_images(
             .order_by(ProductImage.display_order)
         )
     ).scalars().all()
-    return {"images": [_serialize_image(im).model_dump(mode="json") for im in refreshed]}
+    serialized = (
+        await asyncio.gather(*[_serialize_image(im) for im in refreshed])
+        if refreshed
+        else []
+    )
+    return {"images": [im.model_dump(mode="json") for im in serialized]}
 
 
 @router.delete(
