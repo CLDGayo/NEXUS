@@ -90,7 +90,7 @@ async def test_abstain_text_streamed_when_generate_returned_empty(
     from routers.chat import _stream_graph_events
 
     yielded = await _drain(
-        _stream_graph_events("conceptual question", "tk", None, None)
+        _stream_graph_events("conceptual question", "tk", None, None, None)
     )
 
     token_events = [e for e in yielded if e["type"] == "token"]
@@ -127,7 +127,7 @@ async def test_generate_token_not_duplicated_when_abstain_silent(
     from routers.chat import _stream_graph_events
 
     yielded = await _drain(
-        _stream_graph_events("real question", "tk", None, None)
+        _stream_graph_events("real question", "tk", None, None, None)
     )
 
     token_events = [e for e in yielded if e["type"] == "token"]
@@ -160,7 +160,7 @@ async def test_respond_branch_emits_token_when_no_generate_token(
     from routers.chat import _stream_graph_events
 
     yielded = await _drain(
-        _stream_graph_events("q", "tk", None, None)
+        _stream_graph_events("q", "tk", None, None, None)
     )
 
     token_events = [e for e in yielded if e["type"] == "token"]
@@ -199,7 +199,7 @@ async def test_abstain_with_same_text_as_generate_does_not_double_emit(
     from routers.chat import _stream_graph_events
 
     yielded = await _drain(
-        _stream_graph_events("q", "tk", None, None)
+        _stream_graph_events("q", "tk", None, None, None)
     )
 
     token_events = [e for e in yielded if e["type"] == "token"]

@@ -80,6 +80,24 @@ async def put_object(
         )
 
 
+async def ensure_bucket(bucket: str) -> bool:
+    """Create ``bucket`` if it does not exist. Idempotent.
+
+    Returns True if the bucket was created in this call, False if it was
+    already present. Used by Phase 32 product setup and any future
+    bucket-bootstrap path so the runtime does not need pre-provisioning
+    when running in a fresh environment.
+    """
+    async with s3_client() as client:
+        try:
+            await client.head_bucket(Bucket=bucket)
+            return False
+        except Exception:  # noqa: BLE001 — head_bucket raises ClientError on 404
+            pass
+        await client.create_bucket(Bucket=bucket)
+        return True
+
+
 async def delete_object(*, bucket: str, key: str) -> None:
     """Delete ``s3://{bucket}/{key}``. Idempotent: no error if the key is absent."""
     async with s3_client() as client:
@@ -102,15 +120,17 @@ async def presigned_get_url(
         return str(url)
 
 
-def public_url_for(key: str) -> str | None:
+def public_url_for(key: str, *, bucket: str | None = None) -> str | None:
     """Return a stable public URL for ``key`` or ``None`` when no CDN is set.
 
     Composes ``{minio_public_base_url}/{bucket}/{key}``. The bootstrap script
     sets the bucket's anonymous-read policy when ``--public`` is passed so
-    the resulting URL renders without a presigned signature.
+    the resulting URL renders without a presigned signature. Defaults to the
+    avatar bucket for backwards compatibility; Phase 32 callers pass the
+    products bucket explicitly.
     """
     base = settings.minio_public_base_url.rstrip("/")
     if not base:
         return None
-    bucket = settings.minio_bucket_avatars
-    return f"{base}/{bucket}/{key}"
+    bucket_name = bucket if bucket is not None else settings.minio_bucket_avatars
+    return f"{base}/{bucket_name}/{key}"

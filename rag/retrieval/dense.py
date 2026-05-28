@@ -48,6 +48,23 @@ def _encode_query(query: str) -> list[float]:
     return vector.tolist()
 
 
+def embed_text(text: str) -> list[float]:
+    """Encode ``text`` as a passage embedding for storage.
+
+    Phase 32 — product catalog uses the same fastembed encoder as the
+    live retrieval arm so product vectors land in the same dim/space the
+    customer query is encoded with. Uses ``embed`` (passage mode) rather
+    than ``query_embed`` so the asymmetric-encoder semantics line up:
+    products are stored as documents, customer DMs are stored as queries.
+    """
+
+    if not text or not text.strip():
+        raise ValueError("embed_text requires a non-empty string")
+    embedder = get_embedder()
+    vector = next(iter(embedder.embed([text])))
+    return vector.tolist()
+
+
 def _chunk_text(payload: dict[str, Any] | None) -> str:
     if not payload:
         return ""

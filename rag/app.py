@@ -11,7 +11,6 @@ from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
-from database import init_db  # noqa: E402 — must come after load_dotenv
 from integrations import dispatcher as integrations_dispatcher  # noqa: E402
 from routers import (  # noqa: E402
     api_tokens,
@@ -35,7 +34,6 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
     integrations_dispatcher.register()
     yield
 

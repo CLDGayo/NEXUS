@@ -25,7 +25,7 @@ from typing import Literal
 import httpx
 
 from rag.config import settings
-from rag.messenger.payloads import OutboundPayload
+from rag.messenger.payloads import OutboundPayload, ProductCarouselBlock
 from rag.messenger.queue import QueuedItem, RedisOutboundQueue, get_queue
 from rag.messenger_overlay import current_page_access_token
 from rag.observability.decorators import traced
@@ -218,65 +218,133 @@ class OutboundSender:
             )
 
         url = f"{_GRAPH_API_BASE}?access_token={token}"
-        # Phase 18 — strip [\d+] citation brackets from Messenger outbound only.
-        # Guardrail pipeline + SPA SSE stream still see the cited answer.
-        clean_text = re.sub(r"\[\d+\]", "", payload.reply.text).strip()
-
-        graph_body = {
-            "recipient": {"id": payload.user_id},
-            "messaging_type": "RESPONSE",
-            "message": {"text": clean_text},
-        }
-
-        try:
-            async with self._client_factory() as client:
-                response = await client.post(url, json=graph_body)
-        except httpx.HTTPError as exc:
-            return await self._on_failure(
-                payload=payload,
-                target_url=_GRAPH_API_BASE,
-                attempts_so_far=0,
-                error=f"transport: {exc.__class__.__name__}: {exc}",
-                retryable=True,
-                target="graph_api",
-            )
-
-        if response.status_code < 400:
-            # Log only the last 4 chars of the token for verification.
-            _log.info(
-                "outbound.graph_api delivered correlation_id=%s status=%d token_tail=%s",
+        bodies = self._graph_message_bodies(payload)
+        if not bodies:
+            _log.error(
+                "outbound.graph_api: empty reply correlation_id=%s",
                 payload.correlation_id,
-                response.status_code,
-                token[-4:] if len(token) >= 4 else "????",
             )
             return SendResult(
-                outcome="delivered",
-                status_code=response.status_code,
+                outcome="dead_letter",
+                status_code=None,
                 attempts=1,
+                error="empty reply (no text, no carousel)",
                 target="graph_api",
             )
 
-        # Parse FB error body for code / subcode classification.
-        try:
-            err_body = response.json()
-        except ValueError:
-            err_body = None
-        retryable, summary = _classify_graph_error(response.status_code, err_body)
-        _log.warning(
-            "outbound.graph_api error correlation_id=%s retryable=%s %s",
+        last_status: int | None = None
+        for graph_body in bodies:
+            try:
+                async with self._client_factory() as client:
+                    response = await client.post(url, json=graph_body)
+            except httpx.HTTPError as exc:
+                return await self._on_failure(
+                    payload=payload,
+                    target_url=_GRAPH_API_BASE,
+                    attempts_so_far=0,
+                    error=f"transport: {exc.__class__.__name__}: {exc}",
+                    retryable=True,
+                    target="graph_api",
+                )
+
+            if response.status_code >= 400:
+                try:
+                    err_body = response.json()
+                except ValueError:
+                    err_body = None
+                retryable, summary = _classify_graph_error(
+                    response.status_code, err_body
+                )
+                _log.warning(
+                    "outbound.graph_api error correlation_id=%s retryable=%s %s",
+                    payload.correlation_id,
+                    retryable,
+                    summary,
+                )
+                return await self._on_failure(
+                    payload=payload,
+                    target_url=_GRAPH_API_BASE,
+                    attempts_so_far=0,
+                    error=summary,
+                    retryable=retryable,
+                    status_code=response.status_code,
+                    target="graph_api",
+                )
+            last_status = response.status_code
+
+        _log.info(
+            "outbound.graph_api delivered correlation_id=%s status=%s "
+            "messages=%d token_tail=%s",
             payload.correlation_id,
-            retryable,
-            summary,
+            last_status,
+            len(bodies),
+            token[-4:] if len(token) >= 4 else "????",
         )
-        return await self._on_failure(
-            payload=payload,
-            target_url=_GRAPH_API_BASE,
-            attempts_so_far=0,
-            error=summary,
-            retryable=retryable,
-            status_code=response.status_code,
+        return SendResult(
+            outcome="delivered",
+            status_code=last_status,
+            attempts=1,
             target="graph_api",
         )
+
+    # ------------------------------------------------------------------
+    # Graph API body composition
+    # ------------------------------------------------------------------
+
+    def _graph_message_bodies(self, payload: OutboundPayload) -> list[dict]:
+        """Build the ordered list of Send API bodies for this reply.
+
+        Phase 32 — when ``reply.carousel`` is set the carousel goes out
+        FIRST (so the cards land at the top of the thread), then the
+        optional preamble text follows. Pure-text replies skip the
+        carousel and produce a single body matching the pre-Phase-32
+        shape.
+        """
+        bodies: list[dict] = []
+        reply = payload.reply
+        recipient_id = payload.user_id
+
+        if reply.carousel is not None:
+            bodies.append(
+                self._format_generic_template(reply.carousel, recipient_id)
+            )
+
+        text = reply.text or ""
+        # Phase 18 — strip [\d+] citation brackets from Messenger outbound
+        # only. Guardrail pipeline + SPA SSE stream still see the cited
+        # answer.
+        clean_text = re.sub(r"\[\d+\]", "", text).strip()
+        if clean_text:
+            bodies.append(
+                {
+                    "recipient": {"id": recipient_id},
+                    "messaging_type": "RESPONSE",
+                    "message": {"text": clean_text},
+                }
+            )
+        return bodies
+
+    @staticmethod
+    def _format_generic_template(
+        carousel: ProductCarouselBlock, recipient_id: str
+    ) -> dict:
+        """Translate a ProductCarouselBlock into the Send API Generic Template body."""
+        return {
+            "recipient": {"id": recipient_id},
+            "messaging_type": "RESPONSE",
+            "message": {
+                "attachment": {
+                    "type": "template",
+                    "payload": {
+                        "template_type": "generic",
+                        "elements": [
+                            el.model_dump(mode="json", exclude_none=True)
+                            for el in carousel.elements
+                        ],
+                    },
+                }
+            },
+        }
 
     # ------------------------------------------------------------------
     # Failure path (shared)

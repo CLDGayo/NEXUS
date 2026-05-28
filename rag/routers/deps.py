@@ -1,19 +1,24 @@
-"""Shared FastAPI dependencies — JWT-only and JWT-or-API-token auth."""
+"""Shared FastAPI dependencies — JWT-only, JWT-or-API-token, and Phase 31
+``require_owner`` (tenant-membership + ``role == 'owner'``)."""
 
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 from typing import Callable
 
-import aiosqlite
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
+from sqlalchemy import select
 
 from auth_overlay import current_jwt_secret
-from database import DB_PATH, now_iso
 
+from rag.auth.config import current_active_user
+from rag.auth.tenant import get_current_tenant
 from rag.config import settings
+from rag.database.engine import get_sessionmaker
+from rag.database.models import ApiToken, Tenant, User
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -68,26 +73,59 @@ def require_auth(
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
+async def require_owner(
+    request: Request,
+    user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> Tenant:
+    """Phase 31 — Owner-role RBAC gate for admin-class endpoints.
+
+    ``get_current_tenant`` already validated tenant membership and stashed
+    ``request.state.tenant_role``; we only need to confirm the role is
+    ``owner`` before letting the handler run. Returns the resolved tenant
+    so route handlers can chain ``Depends(require_owner)`` and read
+    ``tenant.id`` / ``tenant.slug`` without re-resolving.
+
+    A non-owner member receives 403 ``owner_role_required`` so the
+    frontend can show a precise toast instead of a generic ``Forbidden``.
+    """
+
+    _ = user  # auth side-effect only — get_current_tenant did membership check.
+    role = getattr(request.state, "tenant_role", None)
+    if role != "owner":
+        raise HTTPException(status_code=403, detail="owner_role_required")
+    return tenant
+
+
 async def _lookup_token(raw: str, scope: str) -> dict:
     token_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        cur = await db.execute(
-            "SELECT id, name, scopes_csv, revoked_at FROM api_tokens WHERE token_hash = ?",
-            (token_hash,),
-        )
-        row = await cur.fetchone()
-        if not row or row["revoked_at"] is not None:
-            raise HTTPException(status_code=401, detail="Invalid or revoked token")
-        scopes = {s.strip() for s in (row["scopes_csv"] or "").split(",") if s.strip()}
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        token = (
+            await db.execute(
+                select(ApiToken).where(ApiToken.token_hash == token_hash)
+            )
+        ).scalar_one_or_none()
+        if token is None or token.revoked_at is not None:
+            raise HTTPException(
+                status_code=401, detail="Invalid or revoked token"
+            )
+        scopes = {
+            s.strip()
+            for s in (token.scopes_csv or "").split(",")
+            if s.strip()
+        }
         if scope not in scopes:
-            raise HTTPException(status_code=403, detail=f"Token missing scope: {scope}")
-        await db.execute(
-            "UPDATE api_tokens SET last_used_at = ? WHERE id = ?",
-            (now_iso(), row["id"]),
-        )
+            raise HTTPException(
+                status_code=403, detail=f"Token missing scope: {scope}"
+            )
+        token.last_used_at = datetime.now(timezone.utc)
         await db.commit()
-    return {"sub": f"token:{row['id']}", "via": "token", "name": row["name"]}
+        return {
+            "sub": f"token:{token.id}",
+            "via": "token",
+            "name": token.name,
+        }
 
 
 def require_auth_or_token(scope: str) -> Callable[..., object]:

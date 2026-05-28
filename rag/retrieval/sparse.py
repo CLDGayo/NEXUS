@@ -18,6 +18,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from qdrant_client.models import FieldCondition, Filter, MatchValue
 from rank_bm25 import BM25Okapi
 
 from rag.config import settings
@@ -55,7 +56,10 @@ class BM25Corpus:
         return (time.time() - self.built_at) < ttl
 
 
-_corpus: BM25Corpus | None = None
+# Phase 29 — per-tenant corpus cache. Key is the tenant slug; ``None`` is
+# reserved for the legacy "everything" corpus (unfiltered) which retrieval
+# code no longer uses but tests can opt into via ``build_corpus(None)``.
+_corpora: dict[str | None, BM25Corpus] = {}
 
 
 def _payload_text(payload: dict[str, Any] | None) -> str:
@@ -68,12 +72,32 @@ def _payload_text(payload: dict[str, Any] | None) -> str:
     return ""
 
 
-async def _scroll_corpus() -> list[ScoredChunk]:
-    """Pull every chunk from Qdrant in batches. Empty list on failure."""
+def _tenant_scroll_filter(tenant_slug: str | None) -> Filter | None:
+    if tenant_slug is None:
+        return None
+    return Filter(
+        must=[
+            FieldCondition(
+                key="tenant_id", match=MatchValue(value=tenant_slug)
+            )
+        ]
+    )
+
+
+async def _scroll_corpus(
+    tenant_slug: str | None,
+) -> list[ScoredChunk]:
+    """Pull every chunk owned by ``tenant_slug`` from Qdrant in batches.
+
+    ``tenant_slug=None`` scrolls the entire collection — kept as an escape
+    hatch for diagnostics and the legacy path. Production retrieval always
+    passes a slug. Empty list on failure.
+    """
 
     client = get_qdrant_client()
     chunks: list[ScoredChunk] = []
     offset = None
+    scroll_filter = _tenant_scroll_filter(tenant_slug)
     try:
         while True:
             batch, next_offset = await client.scroll(
@@ -82,6 +106,7 @@ async def _scroll_corpus() -> list[ScoredChunk]:
                 offset=offset,
                 with_payload=True,
                 with_vectors=False,
+                scroll_filter=scroll_filter,
             )
             for point in batch:
                 payload = dict(point.payload or {})
@@ -98,47 +123,71 @@ async def _scroll_corpus() -> list[ScoredChunk]:
             offset = next_offset
     except Exception as exc:
         _log.warning(
-            "bm25 corpus scroll failed against %s: %s",
+            "bm25 corpus scroll failed against %s (tenant=%s): %s",
             settings.qdrant_collection,
+            tenant_slug,
             exc,
         )
     return chunks
 
 
-async def build_corpus() -> BM25Corpus | None:
-    """Rebuild the in-memory BM25 index from the live Qdrant collection."""
+async def build_corpus(
+    tenant_slug: str | None = None,
+) -> BM25Corpus | None:
+    """Rebuild the in-memory BM25 index for ``tenant_slug`` from Qdrant.
 
-    global _corpus
-    chunks = await _scroll_corpus()
+    Per-tenant corpus — each tenant gets its own ``BM25Okapi`` instance so
+    BM25 idf statistics are computed over the tenant's own chunks instead
+    of the global mix. The cache is keyed by slug.
+    """
+
+    chunks = await _scroll_corpus(tenant_slug)
     chunks = [c for c in chunks if c.text]
     if not chunks:
-        _corpus = None
+        _corpora.pop(tenant_slug, None)
         return None
 
     tokens = [tokenize(c.text) for c in chunks]
     index = BM25Okapi(tokens)
-    _corpus = BM25Corpus(
+    corpus = BM25Corpus(
         built_at=time.time(), index=index, chunks=chunks, tokens=tokens
     )
-    _log.info("bm25 corpus rebuilt: %d chunks", len(chunks))
-    return _corpus
+    _corpora[tenant_slug] = corpus
+    _log.info(
+        "bm25 corpus rebuilt: tenant=%s chunks=%d", tenant_slug, len(chunks)
+    )
+    return corpus
 
 
-async def get_corpus() -> BM25Corpus | None:
-    if _corpus is not None and _corpus.is_fresh():
-        return _corpus
-    return await build_corpus()
+async def get_corpus(
+    tenant_slug: str | None = None,
+) -> BM25Corpus | None:
+    cached = _corpora.get(tenant_slug)
+    if cached is not None and cached.is_fresh():
+        return cached
+    return await build_corpus(tenant_slug)
 
 
 def clear_corpus() -> None:
-    """Test hook — drop the cached corpus."""
+    """Test hook — drop every cached corpus (all tenants)."""
 
-    global _corpus
-    _corpus = None
+    _corpora.clear()
 
 
-async def sparse_search(query: str, *, k: int = 50) -> list[ScoredChunk]:
-    """Score the live corpus against the query and return the top-``k``.
+async def sparse_search(
+    query: str,
+    *,
+    k: int = 50,
+    filters: Filter | None = None,
+) -> list[ScoredChunk]:
+    """Score the per-tenant corpus against the query and return the top-``k``.
+
+    ``filters`` carries the Qdrant ``Filter`` produced by the retrieval
+    node. We extract the ``tenant_id`` ``MatchValue`` from it to pick the
+    right per-tenant corpus. Other predicates (file path, folder, etc.)
+    are intentionally NOT honoured here — BM25 doesn't index payload, so
+    a richer filter would silently be ignored and produce results outside
+    the caller's intent. Today only the tenant predicate is required.
 
     Returns an empty list if the corpus is empty or cannot be built. Never
     raises so the orchestrator can rely on the dense arm in degraded mode.
@@ -147,7 +196,8 @@ async def sparse_search(query: str, *, k: int = 50) -> list[ScoredChunk]:
     if not query.strip():
         return []
 
-    corpus = await get_corpus()
+    tenant_slug = _extract_tenant_slug(filters)
+    corpus = await get_corpus(tenant_slug)
     if corpus is None:
         return []
 
@@ -166,3 +216,27 @@ async def sparse_search(query: str, *, k: int = 50) -> list[ScoredChunk]:
         for idx, score in top
         if score > 0
     ]
+
+
+def _extract_tenant_slug(filters: Filter | None) -> str | None:
+    """Pull the ``tenant_id`` slug out of a Qdrant ``Filter``.
+
+    The retrieval nodes build the filter as
+    ``Filter(must=[FieldCondition(key='tenant_id', match=MatchValue(value=<slug>))])``,
+    so we walk ``filter.must`` looking for that shape. Returns ``None`` if
+    no tenant predicate is present — the caller then operates on the
+    legacy "all tenants" corpus (test/diagnostics only)."""
+
+    if filters is None:
+        return None
+    must = getattr(filters, "must", None) or []
+    for condition in must:
+        if not isinstance(condition, FieldCondition):
+            continue
+        if condition.key != "tenant_id":
+            continue
+        match = getattr(condition, "match", None)
+        value = getattr(match, "value", None)
+        if isinstance(value, str):
+            return value
+    return None

@@ -1,7 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthProvider.jsx';
+import { TenantProvider } from './context/TenantProvider.jsx';
 import RequireAuth from './components/auth/RequireAuth.jsx';
+import RequireOwner from './components/auth/RequireOwner.jsx';
 import RequireSuperuser from './components/auth/RequireSuperuser.jsx';
+import RequireTenant from './components/auth/RequireTenant.jsx';
 import LoginScreen from './components/auth/LoginScreen.jsx';
 import AppShell from './components/layout/AppShell.jsx';
 
@@ -12,7 +15,10 @@ import ConversationsPage from './pages/ConversationsPage.jsx';
 import LogsPage from './pages/LogsPage.jsx';
 import IntegrationsPage from './pages/IntegrationsPage.jsx';
 import ResourcesPage from './pages/ResourcesPage.jsx';
+import ProductsDashboardPage from './pages/ProductsDashboardPage.jsx';
+import ProductEditPage from './pages/ProductEditPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import SettingsWorkspacesPage from './pages/SettingsWorkspacesPage.jsx';
 import ChangelogPage from './pages/ChangelogPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
@@ -20,37 +26,49 @@ import AdminUsersPage from './pages/AdminUsersPage.jsx';
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/login" element={<LoginScreen />} />
-        <Route
-          element={
-            <RequireAuth>
-              <AppShell />
-            </RequireAuth>
-          }
-        >
-          <Route path="/" element={<Navigate to="/chat" replace />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
-          <Route path="/conversations" element={<ConversationsPage />} />
-          <Route path="/logs" element={<LogsPage />} />
-          <Route path="/integrations" element={<IntegrationsPage />} />
-          <Route path="/resources" element={<ResourcesPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/changelog" element={<ChangelogPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+      <TenantProvider>
+        <Routes>
+          <Route path="/login" element={<LoginScreen />} />
           <Route
-            path="/admin/users"
             element={
-              <RequireSuperuser>
-                <AdminUsersPage />
-              </RequireSuperuser>
+              <RequireAuth>
+                <RequireTenant>
+                  <AppShell />
+                </RequireTenant>
+              </RequireAuth>
             }
-          />
-        </Route>
-        <Route path="*" element={<Navigate to="/chat" replace />} />
-      </Routes>
+          >
+            <Route path="/" element={<Navigate to="/chat" replace />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/documents" element={<DocumentsPage />} />
+            <Route path="/conversations" element={<ConversationsPage />} />
+            <Route path="/logs" element={<LogsPage />} />
+            <Route path="/integrations" element={<IntegrationsPage />} />
+            <Route path="/resources" element={<ResourcesPage />} />
+            <Route element={<RequireOwner />}>
+              <Route path="/products" element={<ProductsDashboardPage />} />
+              <Route path="/products/:id" element={<ProductEditPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route
+                path="/settings/workspaces"
+                element={<SettingsWorkspacesPage />}
+              />
+            </Route>
+            <Route path="/changelog" element={<ChangelogPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route
+              path="/admin/users"
+              element={
+                <RequireSuperuser>
+                  <AdminUsersPage />
+                </RequireSuperuser>
+              }
+            />
+          </Route>
+          <Route path="*" element={<Navigate to="/chat" replace />} />
+        </Routes>
+      </TenantProvider>
     </AuthProvider>
   );
 }

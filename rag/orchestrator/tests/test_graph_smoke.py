@@ -76,6 +76,7 @@ async def test_graph_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
         thread_key="psid_test",
         correlation_id="corr_test",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert "[1]" in result["answer"]
@@ -122,6 +123,7 @@ async def test_graph_abstains_when_llm_fails(monkeypatch: pytest.MonkeyPatch) ->
         thread_key="psid_test_2",
         correlation_id="corr_2",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert result["abstained"] is True
@@ -171,6 +173,7 @@ async def test_graph_abstains_on_fabricated_facts(
         thread_key="psid_test_3",
         correlation_id="corr_3",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert result["guardrail_passed"] is False
@@ -212,6 +215,7 @@ async def test_graph_abstains_on_uncited_claim(
         thread_key="psid_test_4",
         correlation_id="corr_4",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert result["guardrail_passed"] is False
@@ -260,6 +264,7 @@ async def test_graph_three_arm_fusion(monkeypatch: pytest.MonkeyPatch) -> None:
         thread_key="psid_3arm",
         correlation_id="corr_3arm",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert captured_for_rerank, "rerank should be called"
@@ -312,6 +317,7 @@ async def test_graph_threads_attachments_to_generate(
         thread_key="psid_mm",
         correlation_id="corr_mm",
         surface="messenger",
+        tenant_id="hunter",
         attachments=[{"type": "image", "url": "data:image/png;base64,AA"}],
     )
 
@@ -386,6 +392,7 @@ async def test_graph_orders_rewrite_before_vision_on_multimodal_followup(
         thread_key="thread_phase22_1",
         correlation_id="corr_22_1_t1",
         surface="messenger",
+        tenant_id="hunter",
     )
     turn1_call_count = len(calls)
     assert turn1_call_count >= 1, "turn 1 must hit at least the generate model"
@@ -396,6 +403,7 @@ async def test_graph_orders_rewrite_before_vision_on_multimodal_followup(
         thread_key="thread_phase22_1",
         correlation_id="corr_22_1_t2",
         surface="messenger",
+        tenant_id="hunter",
         attachments=[{"type": "image", "url": "https://example.test/img.png"}],
     )
 
@@ -498,6 +506,7 @@ async def test_graph_query_contextualization_and_history(
         thread_key="thread_context_test",
         correlation_id="corr_c1",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert result1["guardrail_passed"] is True
@@ -520,6 +529,7 @@ async def test_graph_query_contextualization_and_history(
         thread_key="thread_context_test",
         correlation_id="corr_c2",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     # Verify that query contextualization was called and LLM reformulated the query
@@ -556,15 +566,15 @@ async def test_graph_separates_search_query_from_user_query(
     retriever_queries: list[str] = []
     rerank_queries: list[str] = []
 
-    async def capture_dense(q, *, k):
+    async def capture_dense(q, *, k, **_kwargs):
         retriever_queries.append(q)
         return _stub_chunks("d")
 
-    async def capture_sparse(q, *, k):
+    async def capture_sparse(q, *, k, **_kwargs):
         retriever_queries.append(q)
         return _stub_chunks("s")
 
-    async def capture_graph(q, *, k):
+    async def capture_graph(q, *, k, **_kwargs):
         retriever_queries.append(q)
         return []
 
@@ -601,6 +611,7 @@ async def test_graph_separates_search_query_from_user_query(
         thread_key="thread_phase22_2",
         correlation_id="corr_22_2_t1",
         surface="messenger",
+        tenant_id="hunter",
     )
     turn1_calls = len(chat_calls)
     retriever_queries.clear()
@@ -614,6 +625,7 @@ async def test_graph_separates_search_query_from_user_query(
         thread_key="thread_phase22_2",
         correlation_id="corr_22_2_t2",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     turn2 = chat_calls[turn1_calls:]
@@ -655,7 +667,7 @@ async def test_graph_first_turn_retrieves_with_original_query(
 
     retriever_queries: list[str] = []
 
-    async def capture_dense(q, *, k):
+    async def capture_dense(q, *, k, **_kwargs):
         retriever_queries.append(q)
         return _stub_chunks("d")
 
@@ -684,6 +696,7 @@ async def test_graph_first_turn_retrieves_with_original_query(
         thread_key="thread_phase22_2_first",
         correlation_id="corr_22_2_first",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert retriever_queries == ["pricing?"]

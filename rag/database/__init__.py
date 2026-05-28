@@ -1,110 +1,30 @@
 """Database package.
 
-The legacy aiosqlite tables (``conversations``, ``messages``, ``settings``,
-``integrations``, ``api_tokens``) live here directly so existing flat imports
-(``from database import DB_PATH, init_db, ...``) and ``monkeypatch.setattr(
-database, "DB_PATH", ...)`` calls in tests keep working without modification.
+Phase 30.1 retired the aiosqlite-backed ``conversations``, ``messages``,
+``settings``, ``integrations`` and ``api_tokens`` tables. Every reader
+and writer now goes through SQLAlchemy 2.0 async sessions
+(``rag.database.engine``) against the Postgres ``app`` schema.
 
-The SQLAlchemy ``Base`` (``rag.database.base``), the async engine
-(``rag.database.engine``), and the ORM models (``rag.database.models``) are
-sibling sub-modules pulled in lazily by the auth + chat surfaces.
+The ORM models live in ``rag.database.models``; the declarative ``Base``
+in ``rag.database.base``; the async engine + ``get_async_session``
+dependency in ``rag.database.engine``. Schema bootstrap is owned
+exclusively by Alembic — there is no application-startup DDL.
+
+This module retains only small process-wide helpers (``new_id``,
+``now_iso``, ``DEFAULT_TENANT_SLUG``) that pre-existing call sites
+import flat.
 """
 
 from __future__ import annotations
 
-import os
 import uuid
 from datetime import datetime, timezone
 
-import aiosqlite
-
-# Phase 9 path: ``rag/data/nexus.db`` (one level above this package
-# directory, so the file lives next to ``rag/main.py`` exactly as before
-# the Phase 27 package promotion).
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "nexus.db")
-
-_CREATE_CONVERSATIONS = """
-CREATE TABLE IF NOT EXISTS conversations (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    user_id TEXT
-)
-"""
-
-_CREATE_MESSAGES = """
-CREATE TABLE IF NOT EXISTS messages (
-    id TEXT PRIMARY KEY,
-    conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    sources TEXT,
-    created_at TEXT NOT NULL,
-    user_id TEXT
-)
-"""
-
-_CREATE_SETTINGS = """
-CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-)
-"""
-
-_CREATE_INTEGRATIONS = """
-CREATE TABLE IF NOT EXISTS integrations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL,
-    name TEXT NOT NULL,
-    config_json TEXT NOT NULL,
-    events_csv TEXT NOT NULL DEFAULT '',
-    enabled INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    last_fired_at TEXT,
-    last_status TEXT
-)
-"""
-
-_CREATE_API_TOKENS = """
-CREATE TABLE IF NOT EXISTS api_tokens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    token_hash TEXT NOT NULL UNIQUE,
-    prefix TEXT NOT NULL,
-    scopes_csv TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    last_used_at TEXT,
-    revoked_at TEXT,
-    user_id TEXT
-)
-"""
-
-_INDEX_TOKEN_HASH = (
-    "CREATE INDEX IF NOT EXISTS idx_api_tokens_hash ON api_tokens(token_hash)"
-)
-_INDEX_CONVERSATIONS_USER = (
-    "CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id)"
-)
-_INDEX_MESSAGES_USER = (
-    "CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id)"
-)
-
-
-async def init_db() -> None:
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(_CREATE_CONVERSATIONS)
-        await db.execute(_CREATE_MESSAGES)
-        await db.execute(_CREATE_SETTINGS)
-        await db.execute(_CREATE_INTEGRATIONS)
-        await db.execute(_CREATE_API_TOKENS)
-        await db.execute(_INDEX_TOKEN_HASH)
-        await db.execute(_INDEX_CONVERSATIONS_USER)
-        await db.execute(_INDEX_MESSAGES_USER)
-        await db.commit()
+# Phase 29 — the slug used by legacy SQLite rows. Retained because the
+# Phase 30.1 Alembic migration ``0004_phase30_sqlite_to_pg`` rewrites
+# this string into the canonical Postgres tenant slug during the
+# one-shot data transfer.
+DEFAULT_TENANT_SLUG = "hunter"
 
 
 def now_iso() -> str:
@@ -115,4 +35,4 @@ def new_id() -> str:
     return str(uuid.uuid4())
 
 
-__all__ = ["DB_PATH", "init_db", "new_id", "now_iso"]
+__all__ = ["DEFAULT_TENANT_SLUG", "new_id", "now_iso"]

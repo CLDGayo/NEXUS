@@ -1,22 +1,28 @@
-"""Typed settings service over the `settings` SQLite table.
+"""Typed settings service over the ``app.settings`` Postgres table.
 
-Settings are stored as JSON-serialized scalars keyed by name. Values fall back
-to environment variables (or hard-coded defaults) when not set in the DB.
+Settings are stored as JSONB values keyed by name. Values fall back to
+environment variables (or hard-coded defaults) when not set in the DB.
 
-The allow-list `SETTING_KEYS` is the only set of keys the API will accept on
-PATCH; anything else returns 400.
+The allow-list ``SETTING_KEYS`` is the only set of keys the API will
+accept on PATCH; anything else returns 400.
+
+Phase 30.1 — the legacy aiosqlite path is gone. ``get`` / ``set_value``
+open a one-shot async session against the engine sessionmaker (the same
+pool the rest of the API uses).
 """
 
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Literal
 
-import aiosqlite
+from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from database import DB_PATH, now_iso
+from rag.database.engine import get_sessionmaker
+from rag.database.models import Setting
 
 SettingType = Literal["int", "float", "str", "bool"]
 
@@ -115,14 +121,23 @@ async def get(key: str) -> Any:
     if spec is None:
         raise KeyError(f"Unknown setting: {key}")
 
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute("SELECT value FROM settings WHERE key = ?", (key,))
-        row = await cur.fetchone()
+    try:
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            row = (
+                await db.execute(
+                    select(Setting.value).where(Setting.key == key)
+                )
+            ).scalar_one_or_none()
         if row is not None:
             try:
-                return _coerce(spec, json.loads(row[0]))
-            except (TypeError, ValueError, json.JSONDecodeError):
+                return _coerce(spec, row)
+            except (TypeError, ValueError):
                 pass
+    except Exception:
+        # Postgres unreachable — fall through to env/default so the SPA
+        # boot path doesn't die on settings reads.
+        pass
 
     env_val = _from_env(spec)
     if env_val is not None:
@@ -136,16 +151,18 @@ async def set_value(key: str, value: Any) -> Any:
     if spec is None:
         raise KeyError(f"Unknown setting: {key}")
     coerced = _coerce(spec, value)
-    serialized = json.dumps(coerced)
 
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            """
-            INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
-            """,
-            (key, serialized, now_iso()),
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        now = datetime.now(timezone.utc)
+        stmt = pg_insert(Setting).values(
+            key=key, value=coerced, updated_at=now
         )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[Setting.key],
+            set_={"value": coerced, "updated_at": now},
+        )
+        await db.execute(stmt)
         await db.commit()
     return coerced
 

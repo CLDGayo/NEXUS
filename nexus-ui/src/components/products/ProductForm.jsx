@@ -1,0 +1,200 @@
+// Phase 32 — Etsy-style product editor.
+//
+// Submits to POST /products (new) or PATCH /products/:id (edit). Inline
+// error/success per the existing SettingsWorkspacesPage pattern.
+import { useEffect, useState } from 'react';
+import { createProduct, updateProduct } from '../../lib/products.js';
+import ImageCarouselEditor from './ImageCarouselEditor.jsx';
+
+const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'JPY', 'PHP', 'CAD', 'AUD'];
+
+function dollarsToCents(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.round(n * 100);
+}
+
+function centsToDollars(cents) {
+  const n = Number(cents) || 0;
+  return (n / 100).toFixed(2);
+}
+
+export default function ProductForm({ product, onSaved, onDelete }) {
+  const isEditing = Boolean(product?.id);
+  const [name, setName] = useState(product?.name || '');
+  const [description, setDescription] = useState(product?.description || '');
+  const [priceDollars, setPriceDollars] = useState(centsToDollars(product?.price_cents));
+  const [currency, setCurrency] = useState(product?.currency || 'USD');
+  const [quantity, setQuantity] = useState(product?.quantity ?? 0);
+  const [isActive, setIsActive] = useState(product?.is_active ?? true);
+  const [url, setUrl] = useState(product?.url || '');
+  const [images, setImages] = useState(product?.images || []);
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    setImages(product?.images || []);
+  }, [product?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setStatus(null);
+    setBusy(true);
+    try {
+      const body = {
+        name: name.trim(),
+        description: description.trim(),
+        price_cents: dollarsToCents(priceDollars),
+        currency: (currency || 'USD').toUpperCase(),
+        quantity: Number(quantity) || 0,
+        is_active: Boolean(isActive),
+        url: url.trim() || null,
+      };
+      const saved = isEditing
+        ? await updateProduct(product.id, body)
+        : await createProduct(body);
+      setStatus({ kind: 'ok', message: isEditing ? 'Saved.' : 'Created.' });
+      onSaved?.(saved);
+    } catch (err) {
+      const detail = err?.body || err?.message || 'Save failed.';
+      setStatus({ kind: 'err', message: String(detail) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium">Name</label>
+        <input
+          required
+          maxLength={200}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Description</label>
+        <textarea
+          rows={6}
+          maxLength={10_000}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm font-mono focus:border-nexus-accent focus:ring-nexus-accent"
+          placeholder="What is it? Who's it for? Why does it matter?"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-sm font-medium">Price</label>
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="0.01"
+            value={priceDollars}
+            onChange={(e) => setPriceDollars(e.target.value)}
+            className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Currency</label>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
+          >
+            {CURRENCY_OPTIONS.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Quantity</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            min="0"
+            step="1"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Product URL (optional)</label>
+        <input
+          type="url"
+          placeholder="https://shop.example.com/product/abc"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Used as the “View” button target in Messenger carousels.
+        </p>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={isActive}
+          onChange={(e) => setIsActive(e.target.checked)}
+        />
+        Active (visible in catalogue + carousel)
+      </label>
+
+      {isEditing && (
+        <ImageCarouselEditor
+          productId={product.id}
+          images={images}
+          onImagesChange={setImages}
+        />
+      )}
+
+      {!isEditing && (
+        <p className="text-xs text-slate-500">
+          Save once to upload images.
+        </p>
+      )}
+
+      {status && (
+        <div
+          className={[
+            'rounded border px-3 py-2 text-sm',
+            status.kind === 'ok'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-red-200 bg-red-50 text-red-700',
+          ].join(' ')}
+        >
+          {status.message}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-3 pt-2">
+        <button
+          type="submit"
+          disabled={busy || !name.trim()}
+          className="rounded-md bg-nexus-accent px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+        >
+          {busy ? 'Saving…' : isEditing ? 'Save changes' : 'Create product'}
+        </button>
+        {isEditing && onDelete && (
+          <button
+            type="button"
+            onClick={() => onDelete(product.id)}
+            className="text-sm text-red-600 hover:text-red-700"
+          >
+            Delete product
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}

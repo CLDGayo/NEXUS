@@ -91,15 +91,15 @@ def _is_rewriter_prompt(text: str) -> bool:
 async def test_direct_mode_skips_plan(monkeypatch: pytest.MonkeyPatch) -> None:
     retriever_call_count = {"dense": 0, "sparse": 0, "graph": 0}
 
-    async def dense(q, *, k):
+    async def dense(q, *, k, **_kwargs):
         retriever_call_count["dense"] += 1
         return _stub_chunks("d", "only")
 
-    async def sparse(q, *, k):
+    async def sparse(q, *, k, **_kwargs):
         retriever_call_count["sparse"] += 1
         return _stub_chunks("s", "only")
 
-    async def graph(q, *, k):
+    async def graph(q, *, k, **_kwargs):
         retriever_call_count["graph"] += 1
         return _stub_chunks("g", "only")
 
@@ -136,6 +136,7 @@ async def test_direct_mode_skips_plan(monkeypatch: pytest.MonkeyPatch) -> None:
         thread_key="direct_mode_t1",
         correlation_id="corr_direct",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert plan_call_count["n"] == 0, "planner LLM must not fire in direct mode"
@@ -157,14 +158,14 @@ async def test_research_mode_runs_three_iterations(
 ) -> None:
     retriever_queries: list[str] = []
 
-    async def dense(q, *, k):
+    async def dense(q, *, k, **_kwargs):
         retriever_queries.append(q)
         return _stub_chunks("d", q.replace(" ", "_"))
 
-    async def sparse(q, *, k):
+    async def sparse(q, *, k, **_kwargs):
         return _stub_chunks("s", q.replace(" ", "_"))
 
-    async def graph(q, *, k):
+    async def graph(q, *, k, **_kwargs):
         return []
 
     async def rerank(q, candidates, top_k=8):
@@ -197,6 +198,7 @@ async def test_research_mode_runs_three_iterations(
         thread_key="research_mode_t1",
         correlation_id="corr_research",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert result["is_research_mode"] is True
@@ -225,14 +227,14 @@ async def test_research_loop_hard_cap(
 
     dense_calls: list[str] = []
 
-    async def dense(q, *, k):
+    async def dense(q, *, k, **_kwargs):
         dense_calls.append(q)
         return _stub_chunks("d", q.replace(" ", "_"))
 
-    async def sparse(q, *, k):
+    async def sparse(q, *, k, **_kwargs):
         return []
 
-    async def graph(q, *, k):
+    async def graph(q, *, k, **_kwargs):
         return []
 
     async def rerank(q, candidates, top_k=8):
@@ -264,6 +266,7 @@ async def test_research_loop_hard_cap(
         thread_key="research_cap_t1",
         correlation_id="corr_cap",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert result["research_iterations"] == 2
@@ -281,13 +284,13 @@ async def test_research_loop_per_iteration_top_k(
 ) -> None:
     rerank_calls: list[int] = []
 
-    async def dense(q, *, k):
+    async def dense(q, *, k, **_kwargs):
         return _stub_chunks("d", q.replace(" ", "_"))
 
-    async def sparse(q, *, k):
+    async def sparse(q, *, k, **_kwargs):
         return []
 
-    async def graph(q, *, k):
+    async def graph(q, *, k, **_kwargs):
         return []
 
     async def rerank(q, candidates, top_k=8):
@@ -319,6 +322,7 @@ async def test_research_loop_per_iteration_top_k(
         thread_key="research_topk_t1",
         correlation_id="corr_topk",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert rerank_calls, "rerank must fire at least once"
@@ -334,13 +338,13 @@ async def test_research_loop_per_iteration_top_k(
 async def test_research_generate_reads_accumulated_context(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    async def dense(q, *, k):
+    async def dense(q, *, k, **_kwargs):
         return _stub_chunks("d", q.replace(" ", "_"))
 
-    async def sparse(q, *, k):
+    async def sparse(q, *, k, **_kwargs):
         return []
 
-    async def graph(q, *, k):
+    async def graph(q, *, k, **_kwargs):
         return []
 
     async def rerank(q, candidates, top_k=8):
@@ -378,6 +382,7 @@ async def test_research_generate_reads_accumulated_context(
         thread_key="research_acc_t1",
         correlation_id="corr_acc",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     rendered = captured.get("system", "")
@@ -396,13 +401,13 @@ async def test_research_generate_reads_accumulated_context(
 async def test_router_classifies_against_rewritten_search_query(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    async def dense(q, *, k):
+    async def dense(q, *, k, **_kwargs):
         return _stub_chunks("d", "only")
 
-    async def sparse(q, *, k):
+    async def sparse(q, *, k, **_kwargs):
         return []
 
-    async def graph(q, *, k):
+    async def graph(q, *, k, **_kwargs):
         return []
 
     async def rerank(q, candidates, top_k=8):
@@ -442,6 +447,7 @@ async def test_router_classifies_against_rewritten_search_query(
         thread_key="router_rewrite_t1",
         correlation_id="corr_rrt1",
         surface="messenger",
+        tenant_id="hunter",
     )
     router_user_msgs.clear()
 
@@ -452,6 +458,7 @@ async def test_router_classifies_against_rewritten_search_query(
         thread_key="router_rewrite_t1",
         correlation_id="corr_rrt2",
         surface="messenger",
+        tenant_id="hunter",
     )
 
     assert router_user_msgs, "router must have fired on turn 2"

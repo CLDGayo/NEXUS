@@ -54,6 +54,11 @@ CHUNK_OVERLAP = 50
 # travel over the public HTTPS endpoint. Raise it (env-overridable for ops).
 QDRANT_TIMEOUT = int(os.environ.get("QDRANT_TIMEOUT", "60"))
 
+# Phase 29 — default tenant the CLI ingests against when ``--tenant`` is
+# absent. Must match ``DEFAULT_TENANT_SLUG`` in rag.database (SQLite) and
+# the seed slug in the Alembic migration ``0002_phase29_multi_tenancy``.
+DEFAULT_TENANT_SLUG = os.environ.get("DEFAULT_TENANT_SLUG", "hunter")
+
 
 # ── Markdown chunker ──────────────────────────────────────────────────────────
 
@@ -121,7 +126,11 @@ def extract_wikilinks(text: str) -> list[str]:
     return re.findall(r"\[\[([^\]|#]+)(?:[|\#][^\]]*)?\]\]", text)
 
 
-def chunks_from_file(file_path: Path) -> list[dict]:
+def chunks_from_file(
+    file_path: Path,
+    *,
+    tenant_slug: str = DEFAULT_TENANT_SLUG,
+) -> list[dict]:
     try:
         post = frontmatter.load(str(file_path))
     except Exception:
@@ -151,11 +160,18 @@ def chunks_from_file(file_path: Path) -> list[dict]:
     result: list[dict] = []
     for heading, section_text in sections:
         for i, chunk_text in enumerate(chunk_section(heading, section_text)):
-            uid = hashlib.sha256(f"{rel_path}::{heading}::{i}".encode()).hexdigest()[:16]
+            # Phase 29 — make point ids tenant-unique so two tenants
+            # ingesting the same relative path do not collide on the
+            # int(hash) % 2**63 reduction (which would silently overwrite
+            # one tenant's chunks with the other's).
+            uid = hashlib.sha256(
+                f"{tenant_slug}::{rel_path}::{heading}::{i}".encode()
+            ).hexdigest()[:16]
             result.append({
                 "id": uid,
                 "text": chunk_text,
                 "metadata": {
+                    "tenant_id": tenant_slug,
                     "file": rel_path,
                     "folder": folder,
                     "title": meta.get("title", file_path.stem),
@@ -188,15 +204,19 @@ def ensure_collection(client: QdrantClient) -> None:
     else:
         console.print(f"[dim]Collection exists:[/dim] {COLLECTION}")
 
-    # Idempotent payload index — required for fast filter-delete by `file`.
-    try:
-        client.create_payload_index(
-            collection_name=COLLECTION,
-            field_name="file",
-            field_schema="keyword",
-        )
-    except Exception:  # noqa: BLE001 — already exists is the common case
-        pass
+    # Idempotent payload indexes. `file` is required for fast filter-delete
+    # by file path; `tenant_id` is required for strict tenancy filtering
+    # on every retrieval call (Phase 29). Both wrapped in try/except — the
+    # client raises on duplicate index creation.
+    for field in ("file", "tenant_id"):
+        try:
+            client.create_payload_index(
+                collection_name=COLLECTION,
+                field_name=field,
+                field_schema="keyword",
+            )
+        except Exception:  # noqa: BLE001 — already exists is the common case
+            pass
 
 
 def load_state() -> dict:
@@ -211,7 +231,9 @@ def save_state(state: dict) -> None:
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 
-def collect_files(changed_only: bool, single_file: str | None) -> list[Path]:
+def collect_files(
+    changed_only: bool, single_file: str | None
+) -> list[Path]:
     if single_file:
         p = VAULT_PATH / single_file
         if not p.exists():
@@ -257,19 +279,42 @@ def upsert_batch(client: QdrantClient, embedder: TextEmbedding, chunks: list[dic
 # the Qdrant ``file`` payload key used by ``retrieve_graph_node``'s
 # filtered chunk fetch.
 
-async def _index_graph_for_files(file_paths: list[Path]) -> tuple[int, int]:
-    """Upsert one ``vault_notes`` row + outbound ``vault_links`` per file,
-    then resolve every ``dst_target`` against known note titles/aliases.
+async def _index_graph_for_files(
+    file_paths: list[Path], *, tenant_slug: str
+) -> tuple[int, int]:
+    """Upsert one ``app.documents`` row + outbound ``app.document_links``
+    per file (scoped to the active tenant), then resolve every
+    ``dst_target`` against known titles/aliases inside that tenant.
 
-    Returns ``(notes_indexed, edges_resolved)``. Skips files that fail to
-    parse — they are already absent from Qdrant for the same reason, so
-    the graph and the vector store stay consistent.
+    Phase 31 — replaces the legacy ``vault_notes`` / ``vault_links``
+    SQLite writes. The tenant uuid is resolved via ``app.tenants`` once
+    per run; missing tenants abort the graph step (but Qdrant writes
+    already completed).
+
+    Returns ``(documents_indexed, edges_resolved)``. Files that fail to
+    parse are skipped — they were also absent from Qdrant for the same
+    reason, so the graph and the vector store stay consistent.
     """
 
     if not file_paths:
         return 0, 0
+
+    from sqlalchemy import select
+    from rag.database.models import Tenant
+
     indexed = 0
-    async with graph_connect() as conn:
+    async with graph_connect() as session:
+        tenant_row = (
+            await session.execute(
+                select(Tenant).where(Tenant.slug == tenant_slug)
+            )
+        ).scalar_one_or_none()
+        if tenant_row is None:
+            raise RuntimeError(
+                f"phase31: tenant slug {tenant_slug!r} not found in "
+                "app.tenants; graph indexing aborted."
+            )
+        tenant_id = tenant_row.id
         for fp in file_paths:
             try:
                 post = frontmatter.load(str(fp))
@@ -279,15 +324,28 @@ async def _index_graph_for_files(file_paths: list[Path]) -> tuple[int, int]:
             fm = dict(post.metadata)
             rel = Path(str(fp.relative_to(VAULT_PATH)))
             await index_file_links(
-                conn, path=rel, body=body, frontmatter=fm
+                session,
+                tenant_id=tenant_id,
+                path=rel,
+                body=body,
+                frontmatter=fm,
+                vault_root=Path(VAULT_PATH),
             )
             indexed += 1
-        resolved = await resolve_link_targets(conn)
+        resolved = await resolve_link_targets(session, tenant_id=tenant_id)
     return indexed, resolved
 
 
-def run(changed_only: bool = False, single_file: str | None = None) -> None:
-    console.rule("[bold blue]NEXUS Ingestion Pipeline[/bold blue]")
+def run(
+    changed_only: bool = False,
+    single_file: str | None = None,
+    *,
+    tenant_slug: str = DEFAULT_TENANT_SLUG,
+) -> None:
+    console.rule(
+        f"[bold blue]NEXUS Ingestion Pipeline[/bold blue] "
+        f"[dim](tenant={tenant_slug})[/dim]"
+    )
     t0 = time.time()
 
     client = get_client()
@@ -328,7 +386,7 @@ def run(changed_only: bool = False, single_file: str | None = None) -> None:
             progress.update(task, description=f"[dim]{file_path.name}[/dim]")
             file_t0 = time.time()
             try:
-                chunks = chunks_from_file(file_path)
+                chunks = chunks_from_file(file_path, tenant_slug=tenant_slug)
             except Exception as exc:  # noqa: BLE001
                 publish_sync(
                     "ingest.failed",
@@ -379,7 +437,9 @@ def run(changed_only: bool = False, single_file: str | None = None) -> None:
     # orchestrator's retrieval pipeline has neighbors to expand to. Best
     # effort: the chat path degrades gracefully when graph_hits is empty.
     try:
-        notes, edges = asyncio.run(_index_graph_for_files(graph_inputs))
+        notes, edges = asyncio.run(
+            _index_graph_for_files(graph_inputs, tenant_slug=tenant_slug)
+        )
         console.print(
             f"[green]Graph indexed:[/green] {notes} notes, "
             f"{edges} resolved edges"
@@ -394,6 +454,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Index NEXUS vault into Qdrant")
     parser.add_argument("--changed", action="store_true", help="Only index files changed since last run")
     parser.add_argument("--file", type=str, default=None, help="Index a single file (relative to vault root)")
+    parser.add_argument(
+        "--tenant",
+        type=str,
+        default=DEFAULT_TENANT_SLUG,
+        help="Tenant slug stamped on every chunk payload (default: %(default)s)",
+    )
     args = parser.parse_args()
 
-    run(changed_only=args.changed, single_file=args.file)
+    run(
+        changed_only=args.changed,
+        single_file=args.file,
+        tenant_slug=args.tenant,
+    )

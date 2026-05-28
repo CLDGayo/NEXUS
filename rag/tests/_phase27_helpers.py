@@ -13,6 +13,7 @@ by ``test_phase27_auth.py``).
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from typing import AsyncIterator
 from unittest.mock import AsyncMock
 
@@ -34,19 +35,45 @@ class _FakeUser:
         self.is_verified = True
 
 
-def install_chat_test_overrides(app: FastAPI, *, user: _FakeUser | None = None) -> _FakeUser:
-    """Inject fake auth + DB session into the app's dependency overrides.
+class _FakeTenant:
+    """Minimal stand-in for ``rag.database.models.Tenant``.
+
+    Phase 29 — every data-bearing route depends on ``get_current_tenant``
+    which normally hits Postgres. Tests override it to return this stub
+    so they exercise the routing/persistence behaviour without standing
+    up the tenants table.
+    """
+
+    def __init__(self) -> None:
+        self.id = uuid.UUID("4e15a5c0-7b9f-4f8e-9e30-1d000000beef")
+        self.name = "Hunter"
+        self.slug = "hunter"
+        self.created_at = datetime(2026, 5, 25, tzinfo=timezone.utc)
+
+
+def install_chat_test_overrides(
+    app: FastAPI,
+    *,
+    user: _FakeUser | None = None,
+    tenant: _FakeTenant | None = None,
+) -> _FakeUser:
+    """Inject fake auth + DB session + tenant into the app's dependency
+    overrides.
 
     Returns the user object so tests can inspect it (or assert it was used).
     Re-installable: calling this twice replaces the previous overrides.
     """
-    from rag.auth import current_active_user
+    from rag.auth import current_active_user, get_current_tenant
     from rag.database.engine import get_async_session
 
     fake_user = user or _FakeUser()
+    fake_tenant = tenant or _FakeTenant()
 
     async def _override_user() -> _FakeUser:
         return fake_user
+
+    async def _override_tenant() -> _FakeTenant:
+        return fake_tenant
 
     async def _override_session() -> AsyncIterator[AsyncMock]:
         session = AsyncMock()
@@ -60,6 +87,7 @@ def install_chat_test_overrides(app: FastAPI, *, user: _FakeUser | None = None) 
         yield session
 
     app.dependency_overrides[current_active_user] = _override_user
+    app.dependency_overrides[get_current_tenant] = _override_tenant
     app.dependency_overrides[get_async_session] = _override_session
     return fake_user
 

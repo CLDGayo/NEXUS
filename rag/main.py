@@ -26,12 +26,13 @@ Routing summary:
     /api/resources/*      -> v1 prompt library
 
 Lifespan order:
-    1. ``init_db`` — v1 SQLite tables (conversations, settings, integrations,
-       tokens).
-    2. ``integrations_dispatcher.register`` — v1 event bus subscribers.
-    3. (optional) ``AsyncPostgresSaver.setup`` — LangGraph checkpoint schema
+    1. ``integrations_dispatcher.register`` — event bus subscribers.
+    2. (optional) ``AsyncPostgresSaver.setup`` — LangGraph checkpoint schema
        when ``LANGGRAPH_CHECKPOINT=postgres``. The async context is held
        for the lifetime of the app via ``AsyncExitStack``.
+
+Phase 30.1 retired the SQLite bootstrap step; every legacy table now
+lives in Postgres and the schema is owned exclusively by Alembic.
 
 v1 modules use flat imports (``from database import …``). They resolve at
 runtime because the Dockerfile sets ``PYTHONPATH=/app/rag`` and copies the
@@ -70,9 +71,9 @@ from rag.messenger.routers import webhook as v2_webhook  # noqa: E402
 from rag.observability.tracing import init_tracing  # noqa: E402
 from rag.routers import admin_users as v2_admin_users  # noqa: E402
 from rag.routers import profile as v2_profile  # noqa: E402
+from rag.routers import v2_tenants  # noqa: E402
 
 # v1 imports (flat — resolved via PYTHONPATH=/app/rag).
-from database import init_db  # noqa: E402
 from integrations import dispatcher as integrations_dispatcher  # noqa: E402
 from routers import (  # noqa: E402
     api_tokens,
@@ -85,6 +86,7 @@ from routers import (  # noqa: E402
     documents,
     integrations,
     logs,
+    products,
     resources,
     settings as v1_settings,
     uploads,
@@ -123,7 +125,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Boot v1 state, then optionally bring up the LangGraph Postgres saver."""
 
     _enforce_jwt_secret()
-    await init_db()
     integrations_dispatcher.register()
 
     # Phase 21 — background-task registry. The Messenger webhook scheduler
@@ -243,6 +244,10 @@ app.include_router(
 app.include_router(v2_profile.router, prefix="/api/users", tags=["profile"])
 app.include_router(v2_admin_users.router, prefix="/api/admin", tags=["admin"])
 
+# Phase 29 — tenant CRUD + membership. Router declares its own /api/tenants
+# prefix; mount with no extra prefix here.
+app.include_router(v2_tenants.router)
+
 app.include_router(chat.router,          prefix="/api/chat")
 app.include_router(chat_uploads.router,  prefix="/api/chat")
 app.include_router(dashboard.router,     prefix="/api/dashboard")
@@ -255,6 +260,7 @@ app.include_router(changelog.router,     prefix="/api/changelog")
 app.include_router(integrations.router,  prefix="/api/integrations")
 app.include_router(api_tokens.router,    prefix="/api/tokens")
 app.include_router(resources.router,     prefix="/api/resources")
+app.include_router(products.router,      prefix="/api")
 
 # React SPA assets + widget mounts. The catch-all must be registered last so
 # that named API/asset routes win the match. Vite emits hashed bundles under

@@ -1,277 +1,350 @@
-"""SQLite-backed wikilink graph for Phase 7 GraphRAG arm.
+"""Postgres-backed wikilink graph for the Phase 7 GraphRAG arm.
 
-Two tables:
+Phase 31 eradicates the legacy ``rag/data/nexus_graph.db`` SQLite store
+that had no tenant column. The vault_notes table is collapsed into
+``app.documents`` and the vault_links table moves to
+``app.document_links``. Every read and write is now tenant-scoped — the
+graph arm cannot accidentally cross workspace boundaries even if two
+tenants happen to ingest a note with the same relative path.
 
-* ``vault_notes(path, title, aliases_json, updated_at)`` — one row per
-  ingested note. ``title`` and ``aliases`` feed the entity-resolution
-  step at query time.
-* ``vault_links(src_path, dst_target, dst_path, anchor, alias)`` — one
-  row per outbound wikilink. ``dst_target`` is the raw bracket text
-  (``"Project Alpha"``); ``dst_path`` is the resolved file path, filled
-  in by :func:`resolve_link_targets` after all notes are indexed.
-
-The DB lives at ``rag/data/nexus_graph.db`` — separate from the existing
-``nexus.db`` so the graph schema can evolve without colliding with the
-conversation/auth tables.
+Public API kept stable so callers in :mod:`rag.ingest_v2.graph_index`
+and :mod:`rag.retrieval.graph` continue to work after a one-line import
+change. Every helper now takes ``tenant_id`` as a required keyword arg
+so a missed callsite fails at import / first call rather than silently
+running an unscoped query.
 """
 
 from __future__ import annotations
 
 import json
-import os
-import time
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from pathlib import Path
+from datetime import datetime, timezone
 from typing import Any
 
-import aiosqlite
+from sqlalchemy import and_, delete, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
-_DEFAULT_DB_PATH = Path(__file__).resolve().parents[1] / "data" / "nexus_graph.db"
-
-
-_SCHEMA_STATEMENTS: tuple[str, ...] = (
-    """
-    CREATE TABLE IF NOT EXISTS vault_notes (
-        path TEXT PRIMARY KEY,
-        title TEXT,
-        aliases_json TEXT NOT NULL DEFAULT '[]',
-        updated_at INTEGER NOT NULL
-    )
-    """,
-    "CREATE INDEX IF NOT EXISTS idx_vault_notes_title ON vault_notes(title)",
-    """
-    CREATE TABLE IF NOT EXISTS vault_links (
-        src_path TEXT NOT NULL,
-        dst_target TEXT NOT NULL,
-        dst_path TEXT,
-        anchor TEXT,
-        alias TEXT,
-        PRIMARY KEY (src_path, dst_target, anchor)
-    )
-    """,
-    "CREATE INDEX IF NOT EXISTS idx_vault_links_dst_path ON vault_links(dst_path)",
-    "CREATE INDEX IF NOT EXISTS idx_vault_links_dst_target ON vault_links(dst_target)",
-    "CREATE INDEX IF NOT EXISTS idx_vault_links_src_path ON vault_links(src_path)",
-)
-
-
-def graph_db_path() -> str:
-    """Resolve the on-disk path. Honors ``NEXUS_GRAPH_DB`` for tests."""
-
-    override = os.environ.get("NEXUS_GRAPH_DB")
-    if override:
-        return override
-    return str(_DEFAULT_DB_PATH)
-
-
-async def init_schema(conn: aiosqlite.Connection) -> None:
-    """Create tables + indexes if missing. Safe to call repeatedly."""
-
-    for statement in _SCHEMA_STATEMENTS:
-        await conn.execute(statement)
-    await conn.commit()
+from rag.database.engine import get_sessionmaker
+from rag.database.models import Document, DocumentLink
 
 
 @asynccontextmanager
-async def connect(path: str | None = None) -> AsyncIterator[aiosqlite.Connection]:
-    """Open a connection with FK + WAL enabled and the schema initialized."""
+async def connect() -> AsyncIterator[AsyncSession]:
+    """Yield an async SQLAlchemy session pointed at the ``app`` schema.
 
-    target = path or graph_db_path()
-    parent = Path(target).parent
-    if not parent.exists():
-        parent.mkdir(parents=True, exist_ok=True)
-    async with aiosqlite.connect(target) as conn:
-        await conn.execute("PRAGMA foreign_keys = ON")
-        await conn.execute("PRAGMA journal_mode = WAL")
-        await init_schema(conn)
-        yield conn
+    Kept under the legacy name so :func:`async with graph_connect() as conn`
+    callsites in the ingest pipeline and retrieval arm do not need to be
+    rewritten — only the underlying engine changed.
+    """
+
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
-async def upsert_note(
-    conn: aiosqlite.Connection,
+async def upsert_document(
+    session: AsyncSession,
     *,
-    path: str,
+    tenant_id: uuid.UUID,
+    file: str,
     title: str | None,
-    aliases: tuple[str, ...],
-) -> None:
-    """Insert or replace one note row. ``aliases`` stored as JSON list."""
+    folder: str | None = None,
+    tags: tuple[str, ...] = (),
+    aliases: tuple[str, ...] = (),
+    source_kind: str = "note",
+    content_hash: str | None = None,
+    chunk_total: int = 0,
+    modified_at: datetime | None = None,
+) -> uuid.UUID:
+    """Insert or update the Document row for ``(tenant_id, file)``.
 
-    await conn.execute(
-        """
-        INSERT INTO vault_notes(path, title, aliases_json, updated_at)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(path) DO UPDATE SET
-            title=excluded.title,
-            aliases_json=excluded.aliases_json,
-            updated_at=excluded.updated_at
-        """,
-        (path, title, json.dumps(list(aliases)), int(time.time())),
+    Returns the document UUID — callers need this to insert
+    ``DocumentLink`` rows. ON CONFLICT (tenant_id, file) DO UPDATE keeps
+    re-ingest idempotent.
+    """
+
+    stmt = pg_insert(Document).values(
+        id=uuid.uuid4(),
+        tenant_id=tenant_id,
+        file=file,
+        title=title,
+        folder=folder,
+        tags=list(tags),
+        aliases=list(aliases),
+        source_kind=source_kind,
+        content_hash=content_hash,
+        chunk_total=chunk_total,
+        modified_at=modified_at,
     )
+    update_cols: dict[str, Any] = {
+        "title": stmt.excluded.title,
+        "folder": stmt.excluded.folder,
+        "tags": stmt.excluded.tags,
+        "aliases": stmt.excluded.aliases,
+        "source_kind": stmt.excluded.source_kind,
+        "content_hash": stmt.excluded.content_hash,
+        "chunk_total": stmt.excluded.chunk_total,
+        "modified_at": stmt.excluded.modified_at,
+        "indexed_at": datetime.now(timezone.utc),
+        # Re-ingesting an archived file un-archives it so it shows up in
+        # /documents again. The user explicitly chose to re-index.
+        "archived_at": None,
+    }
+    stmt = stmt.on_conflict_do_update(
+        constraint="uq_app_documents_tenant_file",
+        set_=update_cols,
+    ).returning(Document.id)
+
+    result = await session.execute(stmt)
+    return result.scalar_one()
 
 
 async def replace_links_for(
-    conn: aiosqlite.Connection,
+    session: AsyncSession,
     *,
-    src_path: str,
+    tenant_id: uuid.UUID,
+    src_document_id: uuid.UUID,
     links: tuple[tuple[str, str | None, str | None], ...],
 ) -> None:
-    """Replace all outbound links for ``src_path``.
+    """Replace every outbound link from ``src_document_id`` with ``links``.
 
-    Each entry in ``links`` is ``(dst_target, anchor, alias)``. ``anchor``
-    is the empty string (NOT NULL) when absent so the composite primary
-    key behaves predictably.
+    Each entry is ``(dst_target, anchor, alias)``. ``anchor`` defaults to
+    the empty string so the composite unique key (tenant, src, target,
+    anchor) is deterministic. ``dst_document_id`` is filled in later by
+    :func:`resolve_link_targets` once every file in the batch has been
+    upserted.
     """
 
-    await conn.execute("DELETE FROM vault_links WHERE src_path = ?", (src_path,))
-    rows: list[tuple[str, str, str | None, str, str | None]] = []
+    await session.execute(
+        delete(DocumentLink).where(
+            DocumentLink.tenant_id == tenant_id,
+            DocumentLink.src_document_id == src_document_id,
+        )
+    )
+
     seen: set[tuple[str, str]] = set()
+    rows: list[dict[str, Any]] = []
     for dst_target, anchor, alias in links:
         anchor_norm = anchor or ""
         key = (dst_target, anchor_norm)
         if key in seen:
             continue
         seen.add(key)
-        rows.append((src_path, dst_target, None, anchor_norm, alias))
+        rows.append(
+            {
+                "id": uuid.uuid4(),
+                "tenant_id": tenant_id,
+                "src_document_id": src_document_id,
+                "dst_target": dst_target,
+                "dst_document_id": None,
+                "anchor": anchor_norm,
+                "alias": alias,
+            }
+        )
 
     if rows:
-        await conn.executemany(
-            """
-            INSERT INTO vault_links(src_path, dst_target, dst_path, anchor, alias)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            rows,
-        )
+        await session.execute(pg_insert(DocumentLink), rows)
 
 
-async def resolve_link_targets(conn: aiosqlite.Connection) -> int:
-    """Populate ``vault_links.dst_path`` by joining ``dst_target`` against
-    ``vault_notes.title`` and the JSON aliases. Returns rows updated."""
+async def resolve_link_targets(
+    session: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
+) -> int:
+    """Populate ``DocumentLink.dst_document_id`` by joining ``dst_target``
+    against ``Document.title`` (and JSONB aliases) for this tenant only.
 
-    # Reset all dst_path values so a renamed note doesn't keep its stale
-    # resolution forever.
-    await conn.execute("UPDATE vault_links SET dst_path = NULL")
+    Returns the number of edges newly resolved. Safe to call repeatedly —
+    edges that already have a ``dst_document_id`` are left alone so a
+    renamed-then-renamed-again note doesn't lose its history.
+    """
 
-    # Title-based resolution — exact match against vault_notes.title.
-    cur = await conn.execute(
-        """
-        UPDATE vault_links
-        SET dst_path = (
-            SELECT path FROM vault_notes
-            WHERE vault_notes.title = vault_links.dst_target
-            LIMIT 1
-        )
-        WHERE dst_path IS NULL
-        """
+    # Reset stale resolutions inside this tenant — a note renamed since
+    # the last pass should not keep its old dst_id.
+    await session.execute(
+        update(DocumentLink)
+        .where(DocumentLink.tenant_id == tenant_id)
+        .values(dst_document_id=None)
     )
-    title_resolved = cur.rowcount or 0
 
-    # Alias-based resolution — scan only unresolved rows.
-    aliases_rows = await conn.execute_fetchall(
-        "SELECT path, aliases_json FROM vault_notes WHERE aliases_json != '[]'"
+    # Title-based resolution.
+    docs_stmt = select(Document.id, Document.title, Document.aliases).where(
+        Document.tenant_id == tenant_id
     )
-    alias_to_path: dict[str, str] = {}
-    for row in aliases_rows:
-        try:
-            for alias in json.loads(row[1]):
-                if isinstance(alias, str) and alias and alias not in alias_to_path:
-                    alias_to_path[alias] = row[0]
-        except (TypeError, ValueError, json.JSONDecodeError):
+    docs = (await session.execute(docs_stmt)).all()
+    title_to_id: dict[str, uuid.UUID] = {}
+    alias_to_id: dict[str, uuid.UUID] = {}
+    for doc_id, title, aliases in docs:
+        if title:
+            title_to_id.setdefault(title, doc_id)
+        for alias in aliases or []:
+            if isinstance(alias, str) and alias:
+                alias_to_id.setdefault(alias, doc_id)
+
+    if not title_to_id and not alias_to_id:
+        return 0
+
+    unresolved_stmt = select(DocumentLink.id, DocumentLink.dst_target).where(
+        DocumentLink.tenant_id == tenant_id,
+        DocumentLink.dst_document_id.is_(None),
+    )
+    rows = (await session.execute(unresolved_stmt)).all()
+
+    resolved = 0
+    for link_id, dst_target in rows:
+        target_id = title_to_id.get(dst_target) or alias_to_id.get(dst_target)
+        if target_id is None:
             continue
-
-    alias_resolved = 0
-    if alias_to_path:
-        unresolved = await conn.execute_fetchall(
-            """
-            SELECT rowid, dst_target FROM vault_links
-            WHERE dst_path IS NULL
-            """
+        await session.execute(
+            update(DocumentLink)
+            .where(DocumentLink.id == link_id)
+            .values(dst_document_id=target_id)
         )
-        updates: list[tuple[str, int]] = []
-        for rowid, dst_target in unresolved:
-            path = alias_to_path.get(dst_target)
-            if path:
-                updates.append((path, rowid))
-        if updates:
-            await conn.executemany(
-                "UPDATE vault_links SET dst_path = ? WHERE rowid = ?",
-                updates,
-            )
-            alias_resolved = len(updates)
-
-    await conn.commit()
-    return title_resolved + alias_resolved
+        resolved += 1
+    return resolved
 
 
 async def fetch_note_titles(
-    conn: aiosqlite.Connection,
+    session: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
 ) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
-    """Return ``(path, title, aliases)`` for every indexed note."""
+    """Return ``(file, title, aliases)`` for every Document in this tenant.
 
-    rows = await conn.execute_fetchall(
-        "SELECT path, title, aliases_json FROM vault_notes"
+    Feeds the entity-resolution step in :mod:`rag.retrieval.graph`. The
+    output shape matches the SQLite version so the retriever's tokeniser
+    + scoring code is unchanged.
+    """
+
+    stmt = select(Document.file, Document.title, Document.aliases).where(
+        Document.tenant_id == tenant_id,
+        Document.archived_at.is_(None),
     )
+    rows = (await session.execute(stmt)).all()
     out: list[tuple[str, str, tuple[str, ...]]] = []
-    for path, title, aliases_json in rows:
-        try:
-            aliases = tuple(
-                a for a in json.loads(aliases_json) if isinstance(a, str)
-            )
-        except (TypeError, ValueError, json.JSONDecodeError):
-            aliases = ()
-        out.append((path, title or "", aliases))
+    for file, title, aliases in rows:
+        normalised: tuple[str, ...] = tuple(
+            a for a in (aliases or []) if isinstance(a, str)
+        )
+        out.append((file, title or "", normalised))
     return tuple(out)
 
 
 async def neighbors_of(
-    conn: aiosqlite.Connection,
-    path: str,
+    session: AsyncSession,
+    file: str,
     *,
+    tenant_id: uuid.UUID,
     include_unresolved: bool = False,
 ) -> tuple[str, ...]:
-    """Return paths linked to ``path`` (both directions), deduplicated.
+    """Return paths linked to ``file`` (forward + reverse) inside the
+    active tenant. Deduplicates, never returns ``file`` itself.
 
-    Forward edges: ``src_path = path AND dst_path IS NOT NULL``.
-    Reverse edges: ``dst_path = path``.
+    Backward-compatible signature: callers pass the file path string, we
+    resolve it to a document id under the hood.
     """
 
-    forward_clause = "AND dst_path IS NOT NULL"
-    if include_unresolved:
-        forward_clause = ""
-
-    rows = await conn.execute_fetchall(
-        f"""
-        SELECT dst_path FROM vault_links
-        WHERE src_path = ? {forward_clause}
-        UNION
-        SELECT src_path FROM vault_links WHERE dst_path = ?
-        """,
-        (path, path),
+    seed_id_stmt = select(Document.id).where(
+        Document.tenant_id == tenant_id,
+        Document.file == file,
     )
+    seed_id = (await session.execute(seed_id_stmt)).scalar_one_or_none()
+    if seed_id is None:
+        return ()
+
+    if include_unresolved:
+        forward_clause = and_(
+            DocumentLink.tenant_id == tenant_id,
+            DocumentLink.src_document_id == seed_id,
+        )
+    else:
+        forward_clause = and_(
+            DocumentLink.tenant_id == tenant_id,
+            DocumentLink.src_document_id == seed_id,
+            DocumentLink.dst_document_id.is_not(None),
+        )
+
+    forward_stmt = (
+        select(Document.file)
+        .join(
+            DocumentLink,
+            DocumentLink.dst_document_id == Document.id,
+        )
+        .where(forward_clause)
+    )
+    reverse_stmt = (
+        select(Document.file)
+        .join(
+            DocumentLink,
+            DocumentLink.src_document_id == Document.id,
+        )
+        .where(
+            DocumentLink.tenant_id == tenant_id,
+            DocumentLink.dst_document_id == seed_id,
+        )
+    )
+    forward = (await session.execute(forward_stmt)).scalars().all()
+    reverse = (await session.execute(reverse_stmt)).scalars().all()
+
     seen: dict[str, None] = {}
-    for (value,) in rows:
-        if value and value != path:
+    for value in (*forward, *reverse):
+        if value and value != file:
             seen.setdefault(value, None)
     return tuple(seen.keys())
 
 
-# ---------------------------------------------------------------------------
-# Convenience accessors for tests + integration
-# ---------------------------------------------------------------------------
-
 async def all_links(
-    conn: aiosqlite.Connection,
+    session: AsyncSession,
+    *,
+    tenant_id: uuid.UUID,
 ) -> tuple[dict[str, Any], ...]:
-    rows = await conn.execute_fetchall(
-        "SELECT src_path, dst_target, dst_path, anchor, alias FROM vault_links"
+    """Inspection helper for tests. Returns every link row for the tenant
+    in a shape that mirrors the legacy SQLite ``all_links`` output."""
+
+    stmt = (
+        select(
+            DocumentLink.id,
+            DocumentLink.src_document_id,
+            DocumentLink.dst_target,
+            DocumentLink.dst_document_id,
+            DocumentLink.anchor,
+            DocumentLink.alias,
+        )
+        .where(DocumentLink.tenant_id == tenant_id)
     )
+    rows = (await session.execute(stmt)).all()
     return tuple(
         {
-            "src_path": r[0],
-            "dst_target": r[1],
-            "dst_path": r[2],
-            "anchor": r[3],
-            "alias": r[4],
+            "id": str(r[0]),
+            "src_document_id": str(r[1]),
+            "dst_target": r[2],
+            "dst_document_id": str(r[3]) if r[3] else None,
+            "anchor": r[4],
+            "alias": r[5],
         }
         for r in rows
     )
+
+
+__all__ = [
+    "all_links",
+    "connect",
+    "fetch_note_titles",
+    "neighbors_of",
+    "replace_links_for",
+    "resolve_link_targets",
+    "upsert_document",
+]
+
+
+# Re-export json so older tests that imported it from this module keep
+# working.
+_ = json

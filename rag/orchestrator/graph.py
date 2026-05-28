@@ -38,6 +38,7 @@ from rag.orchestrator.nodes import (
     route_decision,
     route_query_node,
 )
+from rag.orchestrator.product_branch import enrich_with_products_node
 from rag.orchestrator.state import NexusState
 
 _log = logging.getLogger(__name__)
@@ -112,6 +113,11 @@ def build_graph() -> Any:
     graph.add_node("guardrails", guardrails_node)
     graph.add_node("respond", respond_node)
     graph.add_node("abstain", abstain_node)
+    # Phase 32 — Messenger surface only: enrich the reply with a product
+    # carousel before the webhook dispatches it. SPA surface skips this
+    # node entirely (the node returns {} early for any non-messenger
+    # surface), so the doc-citation flow is unchanged for /chat.
+    graph.add_node("enrich_with_products", enrich_with_products_node)
 
     graph.add_edge(START, "rewrite_query")
     graph.add_edge("rewrite_query", "preprocess_vision")
@@ -161,7 +167,8 @@ def build_graph() -> Any:
         guardrails_router,
         {"respond": "respond", "abstain": "abstain"},
     )
-    graph.add_edge("respond", END)
+    graph.add_edge("respond", "enrich_with_products")
+    graph.add_edge("enrich_with_products", END)
     graph.add_edge("abstain", END)
 
     return graph.compile(checkpointer=_build_checkpointer())
@@ -190,6 +197,7 @@ async def run_graph(
     correlation_id: str,
     surface: str = "messenger",
     attachments: list[dict] | None = None,
+    tenant_id: str | None = None,
 ) -> dict[str, Any]:
     """Public entrypoint used by surface adapters (webhook, SPA).
 
@@ -198,6 +206,12 @@ async def run_graph(
     surfaced on the returned dict as ``_persistence_error``. Surface
     adapters log this at WARNING but still dispatch the answer — the
     user has the right reply; only memory is degraded.
+
+    Phase 29.2 — ``tenant_id`` is the tenant SLUG (matching
+    ``NexusState.tenant_id`` and the value stamped on every Qdrant
+    payload at ingest time). Adapters that hold a UUID must convert via
+    ``Tenant.slug`` before calling. Omitting it makes the retrieval
+    nodes raise — see ``rag.orchestrator.nodes._tenant_filter``.
     """
 
     state: NexusState = {
@@ -208,6 +222,8 @@ async def run_graph(
     }
     if attachments:
         state["attachments"] = attachments
+    if tenant_id:
+        state["tenant_id"] = tenant_id
     config = {"configurable": {"thread_id": thread_key}}
 
     graph = get_graph()

@@ -8,6 +8,7 @@ downstream budget is spent.
 
 from __future__ import annotations
 
+import uuid
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -50,6 +51,14 @@ class InboundMessage(BaseModel):
     # Only "image" attachments are forwarded; sticker/file/audio/video drop
     # at the adapter so the orchestrator never sees them.
     attachments: list[dict] | None = Field(default=None)
+    # Phase 29.2 — owning tenant UUID resolved from ``page_id`` by the
+    # webhook's ``tenant_resolver`` BEFORE the background task is scheduled.
+    # The direct Meta path constructs ``InboundMessage`` server-side so an
+    # external client cannot smuggle this; the broker path is gated by
+    # ``X-Webhook-Api-Key``. Carried into ``NexusState["tenant_id"]`` (as
+    # the tenant slug) by the surface adapter.
+    tenant_id: uuid.UUID | None = Field(default=None)
+    tenant_slug: str | None = Field(default=None, max_length=120)
 
 
 class InboundAck(BaseModel):

@@ -1,7 +1,10 @@
 """Settings router — KV config GET/PATCH, JWT rotate.
 
-All endpoints require JWT auth. Settings keys are validated against the
-allow-list in `settings_service.SETTING_KEYS`.
+Phase 31 — every endpoint now requires ``owner`` role in the active
+tenant (``X-Tenant-ID`` header validated by ``get_current_tenant``).
+Standard members receive 403 ``owner_role_required``. The settings table
+itself stays globally-scoped for now per the Architect's Phase 31
+clarification — tenant-scoped settings are a Phase 31.1 follow-up.
 
 Phase 28 Part 2 — the legacy ``POST /api/settings/password`` route is gone.
 Password rotation now lives at ``POST /api/users/me/password`` (fastapi-users
@@ -18,9 +21,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 import settings_service
 from auth_overlay import rotate_jwt_secret
-from routers.deps import require_auth
+from routers.deps import require_owner
 
-router = APIRouter(tags=["settings"], dependencies=[Depends(require_auth)])
+router = APIRouter(tags=["settings"], dependencies=[Depends(require_owner)])
 
 
 @router.get("")

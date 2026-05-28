@@ -91,6 +91,15 @@ class Settings(BaseSettings):
     )
     avatar_output_size: int = Field(default=256, ge=64, le=1024)
 
+    # ---- Phase 32 — Product catalog (MinIO + Qdrant + Postgres) ----
+    minio_bucket_products: str = Field(default="nexus-products")
+    product_image_max_bytes: int = Field(
+        default=5 * 1024 * 1024, ge=1, le=20 * 1024 * 1024
+    )
+    product_image_max_dim: int = Field(default=1200, ge=64, le=4096)
+    product_max_images: int = Field(default=10, ge=1, le=50)
+    product_cta_url_template: str = Field(default="")
+
     # ---- Embedding model ----
     # Phase 3 default matches the existing v1 Qdrant collection so live
     # retrieval works today. Phase 2's ingest_v2 will land jina-v2 + late

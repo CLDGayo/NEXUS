@@ -17,9 +17,9 @@ from __future__ import annotations
 import json
 import time
 import uuid
+from datetime import datetime, timezone
 from typing import Any, AsyncIterator
 
-import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -27,14 +27,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import settings_service
 from app_logger import logger
-from database import DB_PATH, new_id, now_iso
 from events import bus
 from query import display_name, generate_followups
 from resources_store import load_active_system_prompt
 
-from rag.auth import current_active_user
+from rag.auth import current_active_user, get_current_tenant
 from rag.database.engine import get_async_session
-from rag.database.models import ChatSession, User
+from rag.database.models import ChatSession, Conversation, Message, Tenant, User
 from rag.retrieval.types import ScoredChunk
 
 router = APIRouter(tags=["chat"])
@@ -89,14 +88,17 @@ def _chunks_to_v1_sources(chunks: list[ScoredChunk]) -> list[dict]:
 async def _resolve_session(
     db: AsyncSession,
     user: User,
+    tenant: Tenant,
     session_id: str | None,
 ) -> str:
-    """Phase 27 — bind every chat turn to ``app.chat_sessions``.
+    """Phase 27/29 — bind every chat turn to ``app.chat_sessions`` and
+    enforce tenant scoping.
 
-    * If the client passes a session_id, the row must exist and be owned by
-      the authenticated user. Foreign sessions return 403; unknown ones 404.
+    * If the client passes a session_id, the row must exist, be owned by
+      the authenticated user, AND belong to the active tenant. Foreign
+      sessions return 403; unknown ones 404.
     * If no session_id is given, mint a new server-side UUID v4 and persist
-      a chat_sessions row owned by the user before returning it.
+      a chat_sessions row owned by the user under the active tenant.
 
     The returned string is what we pass to LangGraph as ``thread_id``.
     """
@@ -104,7 +106,7 @@ async def _resolve_session(
         row = await db.get(ChatSession, session_id)
         if row is None:
             raise HTTPException(status_code=404, detail="session not found")
-        if row.user_id != user.id:
+        if row.user_id != user.id or row.tenant_id != tenant.id:
             raise HTTPException(status_code=403, detail="session not owned")
         # ``last_used_at`` advances automatically via the ``onupdate`` server
         # default; force a no-op write so the timestamp moves.
@@ -113,7 +115,13 @@ async def _resolve_session(
         return row.session_id
 
     new_id_str = str(uuid.uuid4())
-    db.add(ChatSession(session_id=new_id_str, user_id=user.id))
+    db.add(
+        ChatSession(
+            session_id=new_id_str,
+            user_id=user.id,
+            tenant_id=tenant.id,
+        )
+    )
     await db.commit()
     return new_id_str
 
@@ -122,6 +130,7 @@ async def _stream_graph_events(
     question: str,
     thread_key: str,
     user_id: str,
+    tenant_slug: str,
     system_prompt: str | None,  # accepted for parity; surface-aware prompt
     # selection lives inside the graph (rag/orchestrator/nodes.py).
     attachments: list[dict] | None = None,
@@ -143,10 +152,17 @@ async def _stream_graph_events(
         "thread_key": thread_key,
         "correlation_id": correlation_id,
         "surface": "spa",
+        "tenant_id": tenant_slug,
     }
     if attachments:
         state["attachments"] = attachments
-    config = {"configurable": {"thread_id": thread_key, "user_id": user_id}}
+    config = {
+        "configurable": {
+            "thread_id": thread_key,
+            "user_id": user_id,
+            "tenant_id": tenant_slug,
+        }
+    }
 
     yield {"type": "status", "stage": "searching"}
 
@@ -228,11 +244,14 @@ async def _stream_graph_events(
 async def chat_stream(
     body: ChatRequest,
     user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_async_session),
 ) -> StreamingResponse:
-    # Phase 27 — bind the turn to an owned session BEFORE LangGraph runs.
-    thread_key = await _resolve_session(db, user, body.session_id)
+    # Phase 27/29 — bind the turn to an owned session under the active
+    # tenant BEFORE LangGraph runs.
+    thread_key = await _resolve_session(db, user, tenant, body.session_id)
     user_id = str(user.id)
+    tenant_slug = tenant.slug
 
     # Settings reads kept for SPA compatibility (UI may surface the chosen
     # models even though the graph itself reads from rag.config.settings).
@@ -256,6 +275,7 @@ async def chat_stream(
                 body.question,
                 thread_key,
                 user_id,
+                tenant_slug,
                 system_prompt,
                 attachments=body.attachments,
             ):
@@ -280,11 +300,13 @@ async def chat_stream(
 
         if full_response:
             await _save_exchange(
+                db,
                 thread_key,
                 body.question,
                 full_response,
                 sources_data,
-                user_id,
+                user,
+                tenant,
             )
 
         await bus.publish(
@@ -309,12 +331,14 @@ async def chat_stream(
 async def chat_feedback(
     body: FeedbackRequest,
     user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
     """Log a rating and publish a chat.feedback.{up,down} event.
 
-    Phase 27 — the optional ``session_id`` must exist and belong to the
-    caller. If absent, feedback is recorded as user-scoped only.
+    Phase 27/29 — the optional ``session_id`` must exist, belong to the
+    caller, AND match the active tenant. If absent, feedback is recorded
+    as user/tenant-scoped only.
     """
     if body.rating not in {"up", "down"}:
         return {"ok": False, "error": "rating must be 'up' or 'down'"}
@@ -323,18 +347,20 @@ async def chat_feedback(
         row = await db.get(ChatSession, body.session_id)
         if row is None:
             raise HTTPException(status_code=404, detail="session not found")
-        if row.user_id != user.id:
+        if row.user_id != user.id or row.tenant_id != tenant.id:
             raise HTTPException(status_code=403, detail="session not owned")
 
     logger.info(
-        f"Chat feedback: user={user.id} rating={body.rating} "
-        f"session={body.session_id} q={body.question[:60]!r}"
+        f"Chat feedback: user={user.id} tenant={tenant.slug} "
+        f"rating={body.rating} session={body.session_id} "
+        f"q={body.question[:60]!r}"
     )
     await bus.publish(
         f"chat.feedback.{body.rating}",
         {
             "session_id": body.session_id,
             "user_id": str(user.id),
+            "tenant_id": tenant.slug,
             "question": body.question[:200],
             "answer": body.answer[:500],
         },
@@ -343,37 +369,70 @@ async def chat_feedback(
 
 
 async def _save_exchange(
+    db: AsyncSession,
     session_id: str,
     question: str,
     answer: str,
-    sources: list[dict],
-    user_id: str,
+    sources: list[dict[str, Any]],
+    user: User,
+    tenant: Tenant,
 ) -> None:
-    """Persist a chat turn to SQLite, stamped with the owning user_id.
+    """Persist a chat turn to Postgres, stamped with the owning user +
+    active tenant.
 
-    Phase 28 Part 1 — every conversation/message row carries the fastapi-users
-    UUID (str-encoded) so the conversations router can scope reads by owner.
+    Phase 30.1 — the legacy aiosqlite path is gone; every write lands in
+    ``app.conversations`` / ``app.messages`` via the request-scoped
+    ``AsyncSession``. The ``session_id`` produced by ``_resolve_session``
+    is the same UUID v4 string that the front-end sends back as
+    ``conversation_id``; we cast it to a real UUID here so the FK column
+    is exact-typed.
     """
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            ts = now_iso()
-            title = question[:60]
-            await db.execute(
-                "INSERT OR IGNORE INTO conversations (id, title, created_at, updated_at, user_id) VALUES (?, ?, ?, ?, ?)",
-                (session_id, title, ts, ts, user_id),
+        conv_uuid = uuid.UUID(session_id)
+    except (TypeError, ValueError):
+        logger.error(f"_save_exchange: malformed session_id: {session_id!r}")
+        return
+
+    try:
+        existing = await db.get(Conversation, conv_uuid)
+        if existing is None:
+            db.add(
+                Conversation(
+                    id=conv_uuid,
+                    title=question[:60] or "Untitled",
+                    user_id=user.id,
+                    tenant_id=tenant.id,
+                )
             )
-            await db.execute(
-                "INSERT INTO messages (id, conversation_id, role, content, sources, created_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (new_id(), session_id, "user", question, None, ts, user_id),
+            # Force the row to materialise so the message FKs below
+            # resolve inside the same transaction.
+            await db.flush()
+        else:
+            existing.updated_at = datetime.now(timezone.utc)
+
+        db.add(
+            Message(
+                id=uuid.uuid4(),
+                conversation_id=conv_uuid,
+                user_id=user.id,
+                tenant_id=tenant.id,
+                role="user",
+                content=question,
+                sources=None,
             )
-            await db.execute(
-                "INSERT INTO messages (id, conversation_id, role, content, sources, created_at, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (new_id(), session_id, "assistant", answer, json.dumps(sources), ts, user_id),
+        )
+        db.add(
+            Message(
+                id=uuid.uuid4(),
+                conversation_id=conv_uuid,
+                user_id=user.id,
+                tenant_id=tenant.id,
+                role="assistant",
+                content=answer,
+                sources=sources or None,
             )
-            await db.execute(
-                "UPDATE conversations SET updated_at = ? WHERE id = ?",
-                (ts, session_id),
-            )
-            await db.commit()
+        )
+        await db.commit()
     except Exception as exc:
+        await db.rollback()
         logger.error(f"Failed to save conversation: {exc}")

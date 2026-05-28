@@ -1,6 +1,6 @@
 """SQLAlchemy ORM models for the ``app`` Postgres schema.
 
-Phase 27 Part 1 ships three tables:
+Phase 27 Part 1 shipped:
     * ``app.users`` — fastapi-users default columns + display_name + profile_image_url.
     * ``app.access_token`` — reserved for fastapi-users' ``DatabaseStrategy``;
       we use ``JWTStrategy`` today (stateless), but ship the table now so
@@ -8,17 +8,59 @@ Phase 27 Part 1 ships three tables:
     * ``app.chat_sessions`` — server-issued session_id PK, FK to users.id.
       Every chat turn looks up this row to enforce tenant ownership before
       LangGraph is invoked.
+
+Phase 29 adds:
+    * ``app.tenants`` — top-level workspace boundary (Hunter, Akiro, ...).
+    * ``app.tenant_users`` — many-to-many: users may belong to many tenants
+      with a per-row role (``owner`` | ``member``).
+    * ``ChatSession.tenant_id`` — every session is now tenant-scoped.
+
+Phase 29.2 adds:
+    * ``app.messenger_page_tenants`` — maps inbound Meta page ids to the
+      owning tenant so the Messenger webhook can lock each turn to the
+      correct workspace before the orchestrator runs.
+
+Phase 30.1 promotes the last five SQLite-resident tables to Postgres:
+    * ``app.conversations`` / ``app.messages`` — chat memory, UUID-keyed
+      with strict ``user_id`` / ``tenant_id`` FKs (CASCADE on user delete).
+    * ``app.api_tokens`` — programmatic bearer tokens; user-scoped only
+      (tenant scoping deferred to a later phase).
+    * ``app.integrations`` — outbound provider config with JSONB payload.
+    * ``app.settings`` — global typed KV store with JSONB values.
+
+Phase 31 closes the cross-tenant data leak:
+    * ``app.documents`` / ``app.document_links`` — per-tenant document
+      registry that replaces the global ``nexus_graph.db`` SQLite store.
+    * ``app.api_tokens.tenant_id`` / ``app.integrations.tenant_id`` —
+      now NOT NULL FKs, every admin-class row is owned by exactly one
+      tenant and the ``require_owner`` dependency enforces the access
+      check.
 """
 
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyBaseAccessTokenTableUUID
-from sqlalchemy import DateTime, ForeignKey, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    SmallInteger,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+    true,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from rag.database.base import Base
 
@@ -41,6 +83,80 @@ class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
     )
 
 
+class Tenant(Base):
+    """Top-level workspace boundary. Every data row is scoped to one tenant.
+
+    The ``slug`` is the human-readable handle used inside Qdrant payloads
+    and SQLite ``tenant_id`` columns (the UUID would bloat every chunk
+    payload by ~50 bytes). The pair (id, slug) is 1:1 and both unique.
+    """
+
+    __tablename__ = "tenants"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    slug: Mapped[str] = mapped_column(
+        String(120), nullable=False, unique=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class TenantUser(Base):
+    """Membership table — composite PK (tenant_id, user_id).
+
+    ``role`` is ``owner`` (created the tenant, full admin) or ``member``
+    (invited; today identical permissions, retained as a forward hook for
+    Phase 30 row-level ACL).
+    """
+
+    __tablename__ = "tenant_users"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    role: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="owner"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class MessengerPageTenant(Base):
+    """Phase 29.2 — bind a Facebook/Messenger page id to its owning tenant.
+
+    The inbound webhook reads this table for every coalesced event group
+    before scheduling the orchestrator background task. A missing row is
+    operational state — the event is dropped with a
+    ``messenger.event.no_tenant_mapping`` log; we never silently route
+    the message to a default tenant (that would re-open the cross-tenant
+    leak Phase 29 closes).
+    """
+
+    __tablename__ = "messenger_page_tenants"
+
+    facebook_page_id: Mapped[str] = mapped_column(
+        String(64), primary_key=True
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
@@ -50,11 +166,397 @@ class ChatSession(Base):
         index=True,
         nullable=False,
     )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
     title: Mapped[str | None] = mapped_column(String(256), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     last_used_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class Conversation(Base):
+    """Phase 30.1 — chat conversation root, replaces the legacy SQLite
+    ``conversations`` table. UUID PK so the values from the SQLite file
+    transfer 1:1 during ``0004_phase30_sqlite_to_pg``.
+    """
+
+    __tablename__ = "conversations"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    title: Mapped[str] = mapped_column(String(256), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class Message(Base):
+    """Phase 30.1 — chat message row. ``sources`` is the citation block
+    streamed alongside assistant turns; stored as JSONB so dashboard
+    aggregates can introspect without re-parsing strings.
+    """
+
+    __tablename__ = "messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.conversations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    sources: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSONB, nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ApiToken(Base):
+    """Phase 30.1 — programmatic bearer tokens. The hashed value is the
+    only authoritative form; ``prefix`` is shown in the UI for operator
+    recognition.
+
+    Phase 31 hardening:
+        * ``user_id`` is no longer optional. Pre-Phase-28 NULL rows are
+          dropped by the ``0005_phase31_security_and_docs`` migration.
+        * ``tenant_id`` is a NOT NULL FK so every token belongs to a
+          single workspace. ``require_owner`` filters every router query
+          by ``tenant_id``.
+    """
+
+    __tablename__ = "api_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    token_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, nullable=False
+    )
+    prefix: Mapped[str] = mapped_column(String(32), nullable=False)
+    scopes_csv: Mapped[str] = mapped_column(String(512), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app.users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+
+
+class Integration(Base):
+    """Phase 30.1 — outbound provider config (Slack, Discord, Messenger,
+    webhook, ...). ``config`` carries provider-specific payloads as JSONB.
+
+    Phase 31 — ``tenant_id`` is now a NOT NULL FK; every integration is
+    owned by a single workspace. ``require_owner`` filters every router
+    query by ``tenant_id``.
+    """
+
+    __tablename__ = "integrations"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    type: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    events_csv: Mapped[str] = mapped_column(
+        String(1024), nullable=False, server_default=""
+    )
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=true()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    last_fired_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_status: Mapped[str | None] = mapped_column(String(256), nullable=True)
+
+
+class Document(Base):
+    """Phase 31 — per-tenant document registry.
+
+    Replaces the filesystem walker that ``GET /api/documents`` relied on,
+    closing the horizontal data leak where every tenant could see every
+    other tenant's note paths. Rows are upserted by the ingest pipeline,
+    one per ``(tenant_id, file)`` pair; ``archived_at`` is the soft-delete
+    flag flipped by ``POST /api/documents/archive``.
+    """
+
+    __tablename__ = "documents"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "file", name="uq_app_documents_tenant_file"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    file: Mapped[str] = mapped_column(Text, nullable=False)
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    folder: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tags: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    aliases: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    source_kind: Mapped[str] = mapped_column(
+        String(32), nullable=False, server_default="note"
+    )
+    content_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+    chunk_total: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    modified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    indexed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class DocumentLink(Base):
+    """Phase 31 — per-tenant wikilink edges.
+
+    Replaces ``vault_links`` from the legacy SQLite ``nexus_graph.db``.
+    ``dst_document_id`` is resolved late (in a second pass after every
+    file in a batch has registered its title + outbound links) so a link
+    written before its target is not lost.
+    """
+
+    __tablename__ = "document_links"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    src_document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    dst_target: Mapped[str] = mapped_column(Text, nullable=False)
+    dst_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app.documents.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    anchor: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=""
+    )
+    alias: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class Product(Base):
+    """Phase 32 — tenant-scoped product catalog row.
+
+    The pair ``(tenant_id, slug)`` is unique so each workspace owns its
+    URL-friendly handle independently. ``price_cents`` is the integer
+    minor-unit price (cents for USD, sen for JPY, ...); ``currency`` is
+    the ISO-4217 alpha code. ``quantity`` is the only stock-out signal
+    consulted by the carousel formatter — a row with ``is_active=False``
+    or ``quantity=0`` is excluded by the orchestrator's ``enrich_products``
+    SQL filter and its Qdrant point is removed by ``products.sync``.
+    """
+
+    __tablename__ = "products"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "slug", name="uq_app_products_tenant_slug"),
+        CheckConstraint("price_cents >= 0", name="ck_app_products_price_nonneg"),
+        CheckConstraint("quantity >= 0", name="ck_app_products_qty_nonneg"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    slug: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=""
+    )
+    price_cents: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    currency: Mapped[str] = mapped_column(
+        String(3), nullable=False, server_default="USD"
+    )
+    quantity: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=true()
+    )
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    images: Mapped[list["ProductImage"]] = relationship(
+        "ProductImage",
+        back_populates="product",
+        cascade="all, delete-orphan",
+        order_by="ProductImage.display_order",
+        lazy="selectin",
+    )
+
+
+class ProductImage(Base):
+    """Phase 32 — ordered image attachment for a product.
+
+    ``storage_key`` is the canonical MinIO object key; ``image_url`` is
+    the optional cached public URL (filled when ``MINIO_PUBLIC_BASE_URL``
+    is set; otherwise the carousel formatter regenerates a 1h presigned
+    URL on every dispatch). The ``(product_id, display_order)`` unique
+    constraint forces gap-free ordering; the router uses a negative-offset
+    swap inside a transaction to reassign positions safely under
+    concurrent edits.
+    """
+
+    __tablename__ = "product_images"
+    __table_args__ = (
+        UniqueConstraint(
+            "product_id", "display_order", name="uq_app_product_images_order"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, default=uuid.uuid4
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.products.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    storage_key: Mapped[str] = mapped_column(Text, nullable=False)
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    display_order: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, server_default="0"
+    )
+    width: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    height: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    content_type: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default="image/webp"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    product: Mapped[Product] = relationship("Product", back_populates="images")
+
+
+class Setting(Base):
+    """Phase 30.1 — global typed KV settings store. ``value`` is JSONB
+    since legacy SQLite already stored every entry as a JSON-encoded
+    scalar; the column type matches what's read/written by
+    ``rag.settings_service``.
+    """
+
+    __tablename__ = "settings"
+
+    key: Mapped[str] = mapped_column(String(128), primary_key=True)
+    value: Mapped[Any] = mapped_column(JSONB, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),

@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 from rag.messenger.schemas import Channel, InboundMessage
 
@@ -39,11 +39,60 @@ class OutboundMetadata(BaseModel):
     surface: str = "messenger"
 
 
+class GenericTemplateButton(BaseModel):
+    """Meta Generic Template button. ``web_url`` opens an external URL;
+    ``postback`` echoes the payload back to the webhook.
+
+    Meta hard limit: button title ≤ 20 chars.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: Literal["web_url", "postback"]
+    title: str = Field(min_length=1, max_length=20)
+    url: HttpUrl | None = None
+    payload: str | None = None
+
+
+class GenericTemplateElement(BaseModel):
+    """One card in a Meta Generic Template carousel.
+
+    Meta hard limits: title ≤ 80 chars, subtitle ≤ 80 chars, ≤ 3 buttons.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=80)
+    subtitle: str | None = Field(default=None, max_length=80)
+    image_url: HttpUrl | None = None
+    default_action: dict[str, Any] | None = None
+    buttons: list[GenericTemplateButton] = Field(
+        default_factory=list, max_length=3
+    )
+
+
+class ProductCarouselBlock(BaseModel):
+    """Phase 32 — product cards rendered as a Generic Template carousel.
+
+    Meta hard limit: ≤ 10 elements per template message.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    elements: list[GenericTemplateElement] = Field(min_length=1, max_length=10)
+
+
 class ReplyBlock(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    text: str = Field(min_length=1, max_length=2000)
+    # Text became optional in Phase 32 so a pure-carousel reply (product
+    # cards only, no preamble) can be dispatched. The webhook always sends
+    # at least one of (text, carousel); the orchestrator enforces that.
+    # min_length=1 preserves the Phase 6 invariant that empty strings are
+    # rejected — pass ``None`` instead when you want no text.
+    text: str | None = Field(default=None, min_length=1, max_length=2000)
     citations: list[str] = Field(default_factory=list)
+    carousel: ProductCarouselBlock | None = None
     requires_human_handover: bool = False
     handover_reason: str | None = None
     uncertainty_score: float = Field(default=0.0, ge=0.0, le=1.0)
@@ -83,14 +132,25 @@ def build_outbound_payload(
         total=int(graph_result.get("llm_total_tokens", 0) or 0),
     )
 
+    carousel_block: ProductCarouselBlock | None = None
+    carousel = graph_result.get("product_carousel")
+    if isinstance(carousel, ProductCarouselBlock):
+        carousel_block = carousel
+    elif isinstance(carousel, dict) and carousel.get("elements"):
+        try:
+            carousel_block = ProductCarouselBlock.model_validate(carousel)
+        except Exception:  # noqa: BLE001 — defensive; fall back to text
+            carousel_block = None
+
     return OutboundPayload(
         correlation_id=correlation_id,
         user_id=inbound.user_id,
         channel=inbound.channel,
         page_id=inbound.page_id,
         reply=ReplyBlock(
-            text=reply_text,
+            text=reply_text or None,
             citations=list(graph_result.get("citations") or []),
+            carousel=carousel_block,
             requires_human_handover=bool(graph_result.get("requires_human_handover")),
             handover_reason=graph_result.get("handover_reason"),
             uncertainty_score=float(graph_result.get("uncertainty_score", 0.0) or 0.0),

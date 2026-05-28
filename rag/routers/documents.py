@@ -1,30 +1,67 @@
-"""Documents listing — walk vault, parse frontmatter, paginate.
+"""Documents listing — Postgres-backed registry + Qdrant reconciliation.
 
-Also exposes synchronized soft-delete (move to 04 - Archive/ + purge vectors)
-and vault reconciliation (drop Qdrant points whose source file no longer
-exists in the active vault).
+Phase 31 closes the horizontal data leak that the original filesystem
+walker introduced. ``GET /api/documents`` now reads ``app.documents``
+filtered by ``tenant_id``; the on-disk vault is still shared (per the
+Architect's clarification) but the registry rows are not. Two tenants
+ingesting the same file path see disjoint result sets keyed on their
+respective Document rows.
+
+The legacy ``_SKIP`` set picks up ``.venv`` and ``__pycache__`` as
+defence-in-depth — even if a future helper falls back to walking the
+filesystem, it cannot leak Python source files into the Documents tab.
+
+Archive / reconcile semantics:
+    * ``POST /documents/archive`` flips ``Document.archived_at = now()``
+      and continues to move the file into ``04 - Archive/`` and purge
+      its Qdrant chunks (tenant-scoped).
+    * ``POST /documents/reconcile`` walks Qdrant for the active tenant
+      and the active ``app.documents`` (non-archived) — orphans are
+      Qdrant points whose file no longer has a live Document row.
 """
+
+from __future__ import annotations
 
 import logging
 import os
 import shutil
+from datetime import datetime, timezone
 from pathlib import Path
 
-import frontmatter
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from qdrant_client.models import FieldCondition, Filter, MatchValue
+from sqlalchemy import Text, and_, cast, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ingest import COLLECTION, get_client
 from inbox import delete_vectors_for_file
-from routers.deps import require_auth
+
+from rag.auth import current_active_user, get_current_tenant
+from rag.database.engine import get_async_session
+from rag.database.models import Document, Tenant, User
 
 log = logging.getLogger(__name__)
 
-router = APIRouter(tags=["documents"], dependencies=[Depends(require_auth)])
+router = APIRouter(tags=["documents"])
 
 VAULT_PATH = os.environ.get("VAULT_PATH", "")
 ARCHIVE_FOLDER = "04 - Archive"
-_SKIP = {".obsidian", "_publish", "rag", ".git", "node_modules", "templates", ARCHIVE_FOLDER}
+
+# Phase 31 — `.venv`, `__pycache__`, and source-tree directories are
+# explicitly excluded so the legacy filesystem helpers (archive resolve,
+# reconcile orphan diff) never surface non-vault artifacts.
+_SKIP = {
+    ".obsidian",
+    "_publish",
+    "rag",
+    ".git",
+    "node_modules",
+    "templates",
+    ".venv",
+    "__pycache__",
+    ARCHIVE_FOLDER,
+}
 
 
 def _vault_root() -> Path:
@@ -32,6 +69,14 @@ def _vault_root() -> Path:
 
 
 def _iter_notes():
+    """Defensive filesystem walker retained from the pre-Phase-31 design.
+
+    Not consulted by the live ``/api/documents`` endpoint (that now reads
+    from ``app.documents``). Kept available so a future ad-hoc tool —
+    e.g. a one-shot vault audit — does not silently leak ``.venv`` or
+    ``__pycache__`` artifacts. ``_SKIP`` includes both defensively.
+    """
+
     root = _vault_root()
     for p in sorted(root.rglob("*.md")):
         if any(skip in p.parts for skip in _SKIP):
@@ -39,26 +84,27 @@ def _iter_notes():
         yield p
 
 
-def _parse_note(path: Path, root: Path) -> dict:
-    try:
-        post = frontmatter.load(str(path))
-        title = post.get("title") or path.stem
-        tags = post.get("tags") or []
-        if isinstance(tags, str):
-            tags = [t.strip() for t in tags.split(",")]
-    except Exception:
-        title = path.stem
-        tags = []
+def _tenant_filter(tenant_slug: str) -> Filter:
+    return Filter(
+        must=[
+            FieldCondition(
+                key="tenant_id", match=MatchValue(value=tenant_slug)
+            )
+        ]
+    )
 
-    rel = path.relative_to(root)
-    folder = rel.parts[0] if len(rel.parts) > 1 else "/"
 
+def _document_to_dict(doc: Document) -> dict:
     return {
-        "path": str(rel),
-        "title": title,
-        "folder": folder,
-        "tags": tags[:6],
-        "modified": path.stat().st_mtime,
+        "path": doc.file,
+        "title": doc.title or Path(doc.file).stem,
+        "folder": doc.folder or "/",
+        "tags": list(doc.tags or [])[:6],
+        "modified": (
+            doc.modified_at.timestamp()
+            if doc.modified_at is not None
+            else doc.indexed_at.timestamp()
+        ),
     }
 
 
@@ -67,23 +113,47 @@ async def list_documents(
     search: str = Query("", max_length=200),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
+    user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_async_session),
 ) -> dict:
-    root = _vault_root()
-    items = [_parse_note(p, root) for p in _iter_notes()]
+    """List documents for the active tenant from ``app.documents``.
 
+    Reads the per-tenant registry rather than the shared filesystem — so
+    a tenant only sees files their own ingest run has registered. The
+    search filter does a case-insensitive ILIKE against ``title``,
+    ``folder``, and a JSONB ``tags`` containment match.
+    """
+
+    _ = user  # auth side-effect; the tenant resolution already happened.
+
+    base = select(Document).where(
+        Document.tenant_id == tenant.id,
+        Document.archived_at.is_(None),
+    )
     if search:
-        q = search.lower()
-        items = [
-            d for d in items
-            if q in d["title"].lower()
-            or q in d["folder"].lower()
-            or any(q in t.lower() for t in d["tags"])
-        ]
+        needle = f"%{search}%"
+        base = base.where(
+            or_(
+                Document.title.ilike(needle),
+                Document.folder.ilike(needle),
+                cast(Document.tags, Text).ilike(needle),
+            )
+        )
 
-    total = len(items)
+    total = (
+        await db.execute(select(func.count()).select_from(base.subquery()))
+    ).scalar_one()
+
+    stmt = (
+        base.order_by(Document.indexed_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    docs = (await db.execute(stmt)).scalars().all()
+    items = [_document_to_dict(d) for d in docs]
     pages = max(1, (total + limit - 1) // limit)
-    start = (page - 1) * limit
-    return {"items": items[start : start + limit], "total": total, "pages": pages}
+    return {"items": items, "total": total, "pages": pages}
 
 
 # ── Soft-delete (archive) ──────────────────────────────────────────────────
@@ -150,15 +220,22 @@ def _archive_one(rel_path: str, root: Path) -> tuple[str, str]:
 
 
 @router.post("/documents/archive")
-async def archive_documents(req: ArchiveRequest) -> dict:
-    """Soft-delete: move each note into ``04 - Archive/`` and purge its vectors.
-
-    Per-path errors are collected into ``failed`` rather than aborting the batch.
-    """
+async def archive_documents(
+    req: ArchiveRequest,
+    user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict:
+    """Soft-delete: flip ``archived_at`` for each matching Document row in
+    the active tenant, move the file into ``04 - Archive/``, and purge
+    its Qdrant chunks. Per-path errors are collected rather than aborting
+    the batch."""
+    _ = user
     root = _vault_root()
     archived: list[dict] = []
     failed: list[dict] = []
     purged = 0
+    now = datetime.now(timezone.utc)
 
     for rel_path in req.paths:
         try:
@@ -171,22 +248,34 @@ async def archive_documents(req: ArchiveRequest) -> dict:
             failed.append({"path": rel_path, "error": str(exc)})
             continue
 
-        # Best-effort vector purge — the helper already swallows + logs.
+        # Flip archived_at on the matching Document row for this tenant.
+        stmt = select(Document).where(
+            Document.tenant_id == tenant.id,
+            Document.file == orig_rel,
+        )
+        doc = (await db.execute(stmt)).scalar_one_or_none()
+        if doc is not None:
+            doc.archived_at = now
+
+        # Best-effort vector purge — tenant-scoped so a sibling tenant
+        # ingesting the same path keeps its chunks.
         try:
-            delete_vectors_for_file(orig_rel)
+            delete_vectors_for_file(orig_rel, tenant_slug=tenant.slug)
             purged += 1
         except Exception as exc:  # noqa: BLE001 — defensive; helper itself catches
             log.warning("vector purge failed for %s: %s", orig_rel, exc)
 
         archived.append({"path": rel_path, "archived_path": new_rel})
 
+    await db.commit()
     return {"archived": archived, "failed": failed, "vectors_purged": purged}
 
 
 # ── Vault reconciliation (orphan cleanup) ──────────────────────────────────
 
-def _qdrant_indexed_files() -> set[str]:
-    """Scroll the collection and collect every unique ``payload.file`` value."""
+def _qdrant_indexed_files(tenant_slug: str) -> set[str]:
+    """Scroll the collection (tenant-filtered) and collect every unique
+    ``payload.file`` value owned by the active tenant."""
     client = get_client()
     files: set[str] = set()
     next_offset = None
@@ -197,6 +286,7 @@ def _qdrant_indexed_files() -> set[str]:
             with_payload=["file"],
             with_vectors=False,
             offset=next_offset,
+            scroll_filter=_tenant_filter(tenant_slug),
         )
         for p in points:
             payload = p.payload or {}
@@ -208,12 +298,9 @@ def _qdrant_indexed_files() -> set[str]:
     return files
 
 
-def _qdrant_index_summary() -> dict[str, dict[str, int]]:
-    """Return ``{rel_path: {"chunks": N, "est_tokens": M}}`` from a single scroll.
-
-    ``est_tokens`` sums ``len(text)//4`` over each chunk's payload — matches the
-    naive token estimate used by the chunker (``ingest.naive_token_count``).
-    """
+def _qdrant_index_summary(tenant_slug: str) -> dict[str, dict[str, int]]:
+    """Return ``{rel_path: {"chunks": N, "est_tokens": M}}`` for the active
+    tenant from a single scroll."""
     client = get_client()
     summary: dict[str, dict[str, int]] = {}
     next_offset = None
@@ -224,6 +311,7 @@ def _qdrant_index_summary() -> dict[str, dict[str, int]]:
             with_payload=["file", "text"],
             with_vectors=False,
             offset=next_offset,
+            scroll_filter=_tenant_filter(tenant_slug),
         )
         for p in points:
             payload = p.payload or {}
@@ -240,15 +328,15 @@ def _qdrant_index_summary() -> dict[str, dict[str, int]]:
 
 
 @router.get("/documents/index_summary")
-async def index_summary() -> dict:
-    """Per-file chunk count + token estimate from the live Qdrant collection.
-
-    Returns ``{"summary": {<rel_path>: {chunks, est_tokens}}, "total_chunks": N}``.
-    Best-effort — if Qdrant is unreachable the summary is empty rather than 502,
-    so the Documents page can still render the file listing.
-    """
+async def index_summary(
+    user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> dict:
+    """Per-file chunk count + token estimate for the active tenant from the
+    live Qdrant collection."""
+    _ = user
     try:
-        summary = _qdrant_index_summary()
+        summary = _qdrant_index_summary(tenant.slug)
     except Exception as exc:  # noqa: BLE001 — UI should still load if Qdrant is down
         log.warning("index_summary scroll failed: %s", exc)
         return {"summary": {}, "total_chunks": 0, "available": False}
@@ -258,34 +346,48 @@ async def index_summary() -> dict:
 
 
 @router.post("/documents/reconcile")
-async def reconcile_vault() -> dict:
-    """Find Qdrant points whose source file no longer exists in the active vault.
+async def reconcile_vault(
+    user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict:
+    """Find Qdrant points (owned by the active tenant) whose file no longer
+    has a live ``app.documents`` row in this tenant.
 
-    "Active vault" means everything ``_iter_notes`` would list — i.e. excluding
-    ``04 - Archive/`` and the other ``_SKIP`` folders.
+    "Live" means a row with ``archived_at IS NULL``. Archived files are
+    intentionally treated as orphans here — their Qdrant chunks should
+    have been purged during the archive call; reconcile is the cleanup
+    pass that catches any leaks.
     """
-    root = _vault_root()
+    _ = user
 
     try:
-        qdrant_files = _qdrant_indexed_files()
+        qdrant_files = _qdrant_indexed_files(tenant.slug)
     except Exception as exc:
         log.exception("qdrant scroll failed during reconcile")
         raise HTTPException(status_code=502, detail=f"Qdrant unreachable: {exc}") from exc
 
-    active_files = {str(p.relative_to(root)) for p in _iter_notes()}
+    stmt = select(Document.file).where(
+        and_(
+            Document.tenant_id == tenant.id,
+            Document.archived_at.is_(None),
+        )
+    )
+    rows = (await db.execute(stmt)).all()
+    live_files = {row[0] for row in rows}
 
-    orphans = sorted(qdrant_files - active_files)
+    orphans = sorted(qdrant_files - live_files)
     purged = 0
     for orphan in orphans:
         try:
-            delete_vectors_for_file(orphan)
+            delete_vectors_for_file(orphan, tenant_slug=tenant.slug)
             purged += 1
         except Exception as exc:  # noqa: BLE001 — keep going on individual failures
             log.warning("vector purge failed for orphan %s: %s", orphan, exc)
 
     return {
         "qdrant_files": len(qdrant_files),
-        "active_files": len(active_files),
+        "active_files": len(live_files),
         "orphans": orphans,
         "purged": purged,
     }

@@ -1,0 +1,182 @@
+// Phase 32 — drag-to-reorder image carousel for ProductForm.
+//
+// Uses @dnd-kit/sortable for accessible keyboard + pointer DnD.
+// Uploads use the HTML5 drop-target pattern from Dropzone.jsx (zero deps).
+// Reorder is optimistic; on settle calls PATCH /products/:id/images/order.
+import { useRef, useState } from 'react';
+import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core';
+import { SortableContext, arrayMove, useSortable, sortableKeyboardCoordinates, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, ImagePlus, Trash2 } from 'lucide-react';
+
+import { deleteProductImage, reorderProductImages, uploadProductImage } from '../../lib/products.js';
+
+const ACCEPT = 'image/jpeg,image/png,image/webp';
+
+function SortableThumb({ image, onDelete, disabled }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: image.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="relative h-28 w-28 shrink-0 rounded-lg border border-nexus-border bg-slate-100 overflow-hidden group"
+    >
+      {image.image_url ? (
+        <img src={image.image_url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
+          loading…
+        </div>
+      )}
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        disabled={disabled}
+        className="absolute top-1 left-1 rounded bg-white/80 p-1 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+        title="Drag to reorder"
+      >
+        <GripVertical size={14} />
+      </button>
+      <button
+        type="button"
+        onClick={() => onDelete(image.id)}
+        disabled={disabled}
+        className="absolute top-1 right-1 rounded bg-white/80 p-1 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Delete image"
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+}
+
+export default function ImageCarouselEditor({ productId, images, onImagesChange, maxImages = 10 }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  async function handleFiles(fileList) {
+    setError('');
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    const room = maxImages - images.length;
+    if (room <= 0) {
+      setError(`Max ${maxImages} images per product.`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const next = [...images];
+      for (const file of files.slice(0, room)) {
+        if (!ACCEPT.split(',').includes(file.type)) {
+          setError(`Skipped ${file.name} — only JPG/PNG/WEBP allowed.`);
+          continue;
+        }
+        const uploaded = await uploadProductImage(productId, file);
+        next.push(uploaded);
+      }
+      onImagesChange(next);
+    } catch (err) {
+      setError(err?.body || err?.message || 'Upload failed.');
+    } finally {
+      setBusy(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function handleDelete(imageId) {
+    setBusy(true);
+    setError('');
+    try {
+      await deleteProductImage(productId, imageId);
+      onImagesChange(images.filter((im) => im.id !== imageId));
+    } catch (err) {
+      setError(err?.body || err?.message || 'Delete failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = images.findIndex((im) => im.id === active.id);
+    const newIndex = images.findIndex((im) => im.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const next = arrayMove(images, oldIndex, newIndex);
+    onImagesChange(next);
+    try {
+      await reorderProductImages(productId, next.map((im) => im.id));
+    } catch (err) {
+      setError(err?.body || err?.message || 'Reorder failed.');
+      onImagesChange(images);
+    }
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    setDragOver(false);
+    handleFiles(e.dataTransfer.files);
+  }
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium">
+        Images ({images.length}/{maxImages})
+      </label>
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={images.map((im) => im.id)} strategy={horizontalListSortingStrategy}>
+          <div className="flex flex-wrap gap-3 items-start">
+            {images.map((im) => (
+              <SortableThumb key={im.id} image={im} onDelete={handleDelete} disabled={busy} />
+            ))}
+
+            <label
+              onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+              className={[
+                'h-28 w-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer text-xs text-slate-500',
+                dragOver ? 'border-nexus-accent bg-nexus-accent/5' : 'border-nexus-border hover:border-nexus-accent',
+                images.length >= maxImages ? 'opacity-50 pointer-events-none' : '',
+              ].join(' ')}
+            >
+              <ImagePlus size={18} />
+              <span className="mt-1">Add image</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPT}
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+                disabled={busy || images.length >= maxImages}
+              />
+            </label>
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      {busy && <p className="text-xs text-slate-500">Working…</p>}
+      {error && (
+        <div className="text-xs rounded border border-red-200 bg-red-50 text-red-700 px-2 py-1">
+          {String(error)}
+        </div>
+      )}
+    </div>
+  );
+}

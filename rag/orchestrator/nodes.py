@@ -23,6 +23,8 @@ import time
 from pathlib import Path
 from typing import Any, Literal
 
+from qdrant_client.models import FieldCondition, Filter, MatchValue
+
 from rag.config import settings
 from rag.guardrails.handover import (
     HandoverSignal,
@@ -39,6 +41,31 @@ from rag.retrieval.rerank import rerank
 from rag.retrieval.rrf import reciprocal_rank_fusion
 from rag.retrieval.sparse import sparse_search
 from rag.retrieval.types import ScoredChunk
+
+
+def _tenant_filter(state: NexusState) -> Filter:
+    """Phase 29 — build the strict-tenant Qdrant filter every retrieval
+    node uses. The state's ``tenant_id`` is the slug stamped on every
+    chunk payload during ingestion.
+
+    Raises if the slug is missing — that would be a graph-entry bug, and
+    silently degrading to "all tenants" would re-open the cross-tenant
+    leak Phase 29 closes.
+    """
+
+    tenant_id = state.get("tenant_id")
+    if not tenant_id:
+        raise RuntimeError(
+            "NexusState['tenant_id'] is empty; the surface adapter must "
+            "populate it at graph entry (Phase 29 strict tenancy)."
+        )
+    return Filter(
+        must=[
+            FieldCondition(
+                key="tenant_id", match=MatchValue(value=tenant_id)
+            )
+        ]
+    )
 
 _log = logging.getLogger(__name__)
 
@@ -141,7 +168,9 @@ def _retrieval_query(state: NexusState) -> str:
 @traced("graph.node.retrieve_dense", kind="retrieval")
 async def retrieve_dense_node(state: NexusState) -> dict:
     hits = await dense_search(
-        _retrieval_query(state), k=settings.retrieval_k_per_arm
+        _retrieval_query(state),
+        k=settings.retrieval_k_per_arm,
+        filters=_tenant_filter(state),
     )
     return {"dense_hits": hits}
 
@@ -149,7 +178,9 @@ async def retrieve_dense_node(state: NexusState) -> dict:
 @traced("graph.node.retrieve_sparse", kind="retrieval")
 async def retrieve_sparse_node(state: NexusState) -> dict:
     hits = await sparse_search(
-        _retrieval_query(state), k=settings.retrieval_k_per_arm
+        _retrieval_query(state),
+        k=settings.retrieval_k_per_arm,
+        filters=_tenant_filter(state),
     )
     return {"sparse_hits": hits}
 
@@ -159,8 +190,16 @@ async def retrieve_graph_node(state: NexusState) -> dict:
     # The graph arm is more expensive on cold queries than dense/sparse
     # because it touches both SQLite and Qdrant. Still safe to fan out
     # in parallel — langgraph awaits all three at the fuse barrier.
+    tenant_id = state.get("tenant_id")
+    if not tenant_id:
+        raise RuntimeError(
+            "NexusState['tenant_id'] is empty; the surface adapter must "
+            "populate it at graph entry (Phase 29 strict tenancy)."
+        )
     hits = await graph_search(
-        _retrieval_query(state), k=settings.retrieval_k_per_arm
+        _retrieval_query(state),
+        k=settings.retrieval_k_per_arm,
+        tenant_id=tenant_id,
     )
     return {"graph_hits": hits}
 

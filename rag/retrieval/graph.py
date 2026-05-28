@@ -1,31 +1,38 @@
-"""Graph retrieval arm.
+"""Graph retrieval arm — Phase 31 Postgres-backed.
 
 Combines two cheap signals to surface notes that pure dense/sparse miss:
 
     1. **Entity resolution** — match terms in the user's query against the
-       title + aliases of every indexed note (BM25 over a tiny corpus, no
-       Qdrant traffic). Top-N candidates become "seed" notes.
+       title + aliases of every Document the active tenant has indexed
+       (BM25-lite over a tiny corpus, no Qdrant traffic). Top-N
+       candidates become "seed" notes.
 
     2. **One-hop graph walk** — for each seed, fetch its outgoing and
-       incoming wikilink neighbors from ``vault_links``.
+       incoming wikilink neighbours from ``app.document_links``, scoped
+       by the same tenant.
 
-    3. **Best chunk per neighbor** — run a single dense-vector search
-       against Qdrant filtered to the union of seed + neighbor file
-       paths. The reranker downstream gets chunks that are both
-       graph-relevant and semantically close to the query.
+    3. **Best chunk per neighbour** — run a single dense-vector search
+       against Qdrant filtered to the union of seed + neighbour file
+       paths AND the tenant predicate. The reranker downstream gets
+       chunks that are both graph-relevant and semantically close to
+       the query.
 
-The output shape matches the dense/sparse arms so the orchestrator's
-fuse node treats it as a third ranking list.
+Phase 31 — every read from the graph DB is filtered by ``tenant_id``.
+The legacy ``rag/data/nexus_graph.db`` SQLite file is no longer
+consulted; ``connect()`` now yields a SQLAlchemy session pointed at the
+``app`` schema.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any
+import uuid
 
-import aiosqlite
+from qdrant_client.models import FieldCondition, Filter, MatchValue
+from sqlalchemy import select
 
 from rag.config import settings
+from rag.database.models import Tenant
 from rag.ingest_v2.graph_db import connect, fetch_note_titles, neighbors_of
 from rag.retrieval.dense import _encode_query, get_qdrant_client
 from rag.retrieval.sparse import tokenize
@@ -35,8 +42,7 @@ _log = logging.getLogger(__name__)
 
 
 # Tuning constants. Kept here (not in settings) because they describe the
-# retrieval algorithm rather than the deployment environment. Promote to
-# settings if production wants to A/B them.
+# retrieval algorithm rather than the deployment environment.
 SEED_CANDIDATES: int = 3
 MAX_NEIGHBOR_PATHS: int = 6
 
@@ -49,13 +55,7 @@ def _score_candidate(
     query_tokens: set[str], title: str, aliases: tuple[str, ...]
 ) -> float:
     """Cheap token-overlap score. Higher when more query tokens hit the
-    candidate's title or any of its aliases.
-
-    Pure BM25 here would mean fitting an index per query — overkill for
-    what is at most a few thousand titles. A length-normalized Jaccard
-    over tokenized title+aliases is more than enough to surface obvious
-    entity matches.
-    """
+    candidate's title or any of its aliases."""
 
     candidate_tokens: set[str] = set()
     for source in (title, *aliases):
@@ -70,21 +70,21 @@ def _score_candidate(
 
 
 async def _resolve_seeds(
-    conn: aiosqlite.Connection, query: str, *, limit: int
+    session, query: str, *, tenant_uuid: uuid.UUID, limit: int
 ) -> list[tuple[str, float]]:
-    """Return up to ``limit`` ``(path, score)`` candidate seeds for the
-    graph walk. Empty list when no titles match any query token."""
+    """Return up to ``limit`` ``(file, score)`` candidate seeds for the
+    graph walk inside the active tenant."""
 
     query_tokens = set(tokenize(query))
     if not query_tokens:
         return []
 
-    notes = await fetch_note_titles(conn)
+    notes = await fetch_note_titles(session, tenant_id=tenant_uuid)
     scored: list[tuple[str, float]] = []
-    for path, title, aliases in notes:
+    for file, title, aliases in notes:
         score = _score_candidate(query_tokens, title, aliases)
         if score > 0:
-            scored.append((path, score))
+            scored.append((file, score))
     scored.sort(key=lambda pair: pair[1], reverse=True)
     return scored[:limit]
 
@@ -93,17 +93,32 @@ async def _resolve_seeds(
 # Qdrant filtered search
 # ---------------------------------------------------------------------------
 
-def _file_filter(paths: list[str]) -> dict[str, Any]:
-    """Build a Qdrant ``Filter`` payload that ORs across ``file`` values."""
+def _compose_filter(paths: list[str], tenant_id: str) -> Filter:
+    """Build a Qdrant ``Filter`` that requires tenant_id AND (if paths
+    provided) at least one matching file path.
 
-    return {
-        "should": [
-            {"key": "file", "match": {"value": path}} for path in paths
-        ]
-    }
+    ``tenant_id`` here is the slug stamped on Qdrant payloads (kept as
+    str for backwards compat with the existing payload schema). The
+    Postgres-side reads use the tenant UUID; the slug↔uuid translation
+    happens in :func:`graph_search`.
+    """
+
+    must: list = [
+        FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id)),
+    ]
+    if paths:
+        must.append(
+            Filter(
+                should=[
+                    FieldCondition(key="file", match=MatchValue(value=p))
+                    for p in paths
+                ]
+            )
+        )
+    return Filter(must=must)
 
 
-def _chunk_text_from_payload(payload: dict[str, Any] | None) -> str:
+def _chunk_text_from_payload(payload: dict | None) -> str:
     if not payload:
         return ""
     for key in ("text", "content", "chunk_text", "body"):
@@ -114,7 +129,7 @@ def _chunk_text_from_payload(payload: dict[str, Any] | None) -> str:
 
 
 async def _fetch_chunks_by_files(
-    query: str, paths: list[str], k: int
+    query: str, paths: list[str], k: int, *, tenant_id: str
 ) -> list[ScoredChunk]:
     if not paths:
         return []
@@ -132,7 +147,7 @@ async def _fetch_chunks_by_files(
             query=vector,
             limit=k,
             with_payload=True,
-            query_filter=_file_filter(paths),
+            query_filter=_compose_filter(paths, tenant_id),
         )
     except Exception as exc:
         _log.warning("graph arm: dense filtered search failed: %s", exc)
@@ -157,15 +172,27 @@ async def _fetch_chunks_by_files(
 # ---------------------------------------------------------------------------
 
 async def graph_search(
-    query: str, *, k: int = 20
+    query: str,
+    *,
+    k: int = 20,
+    tenant_id: str,
+    tenant_uuid: uuid.UUID | None = None,
 ) -> list[ScoredChunk]:
-    """Return up to ``k`` graph-expanded chunks for ``query``.
+    """Return up to ``k`` graph-expanded chunks for ``query`` owned by
+    ``tenant_id`` (slug stamped on Qdrant payloads).
+
+    Two tenant identifiers exist by design:
+        * ``tenant_id`` — slug, used for Qdrant payload filter.
+        * ``tenant_uuid`` — Postgres ``app.tenants.id``, used for the
+          graph DB lookups. If not supplied, the function falls back to
+          resolving the slug via the orchestrator (which carries both
+          today). When neither path is wired, the graph arm degrades to
+          an empty result rather than running an unscoped query.
 
     Empty list when:
         * the query has no usable tokens,
-        * no titles match any query token,
-        * the graph DB is missing/empty,
-        * the Qdrant filtered call fails (defensive: never raises so the
+        * no titles in this tenant match any query token,
+        * the graph DB lookup fails (defensive — never raises so the
           orchestrator's other arms still produce a fused result).
     """
 
@@ -173,17 +200,38 @@ async def graph_search(
         return []
 
     try:
-        async with connect() as conn:
-            seeds = await _resolve_seeds(conn, query, limit=SEED_CANDIDATES)
+        async with connect() as session:
+            resolved_uuid = tenant_uuid
+            if resolved_uuid is None:
+                lookup = await session.execute(
+                    select(Tenant.id).where(Tenant.slug == tenant_id)
+                )
+                resolved_uuid = lookup.scalar_one_or_none()
+                if resolved_uuid is None:
+                    _log.warning(
+                        "graph arm: slug=%s does not resolve to a tenant "
+                        "uuid; returning empty rather than running unscoped.",
+                        tenant_id,
+                    )
+                    return []
+
+            seeds = await _resolve_seeds(
+                session,
+                query,
+                tenant_uuid=resolved_uuid,
+                limit=SEED_CANDIDATES,
+            )
             if not seeds:
                 return []
 
             paths: dict[str, None] = {}
-            for seed_path, _ in seeds:
+            for seed_path, _score in seeds:
                 paths.setdefault(seed_path, None)
-                neighbors = await neighbors_of(conn, seed_path)
-                for neighbor in neighbors:
-                    paths.setdefault(neighbor, None)
+                neighbours = await neighbors_of(
+                    session, seed_path, tenant_id=resolved_uuid
+                )
+                for neighbour in neighbours:
+                    paths.setdefault(neighbour, None)
                     if len(paths) >= MAX_NEIGHBOR_PATHS:
                         break
                 if len(paths) >= MAX_NEIGHBOR_PATHS:
@@ -193,4 +241,6 @@ async def graph_search(
         return []
 
     paths_list = list(paths.keys())[:MAX_NEIGHBOR_PATHS]
-    return await _fetch_chunks_by_files(query, paths_list, k=k)
+    return await _fetch_chunks_by_files(
+        query, paths_list, k=k, tenant_id=tenant_id
+    )

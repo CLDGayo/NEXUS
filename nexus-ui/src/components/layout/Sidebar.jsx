@@ -7,14 +7,17 @@ import {
   ListChecks,
   Plug,
   Library,
+  Package,
   Settings,
+  Building2,
   Sparkles,
   Shield,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
+import { useTenant } from '../../hooks/useTenant.js';
 
-const BASE_NAV = [
+const CORE_NAV = [
   { to: '/dashboard',     label: 'Dashboard',     Icon: LayoutDashboard },
   { to: '/documents',     label: 'Documents',     Icon: FileText },
   { to: '/chat',          label: 'Chat',          Icon: MessageSquare },
@@ -22,8 +25,19 @@ const BASE_NAV = [
   { to: '/logs',          label: 'Logs',          Icon: ListChecks },
   { to: '/integrations',  label: 'Integrations',  Icon: Plug },
   { to: '/resources',     label: 'Resources',     Icon: Library },
-  { to: '/settings',      label: 'Settings',      Icon: Settings },
-  { to: '/changelog',     label: "What's New",    Icon: Sparkles },
+];
+
+// Phase 31 — owner-only nav items. Rendered conditionally on
+// `activeTenantRole === 'owner'`. The backend enforces 403 on these
+// surfaces too; the FE hide is UX, not security.
+const OWNER_NAV = [
+  { to: '/products',            label: 'Products',   Icon: Package },
+  { to: '/settings',            label: 'Settings',   Icon: Settings },
+  { to: '/settings/workspaces', label: 'Workspaces', Icon: Building2 },
+];
+
+const TRAILING_NAV = [
+  { to: '/changelog',           label: "What's New", Icon: Sparkles },
 ];
 
 const ADMIN_NAV_ITEM = { to: '/admin/users', label: 'Admin', Icon: Shield };
@@ -35,9 +49,16 @@ function initialFor(user) {
 
 export default function Sidebar() {
   const { user, isSuperuser, logout } = useAuth();
-  const nav = isSuperuser ? [...BASE_NAV, ADMIN_NAV_ITEM] : BASE_NAV;
+  const { activeTenantRole } = useTenant();
+  const isOwner = activeTenantRole === 'owner';
+  const nav = [
+    ...CORE_NAV,
+    ...(isOwner ? OWNER_NAV : []),
+    ...TRAILING_NAV,
+    ...(isSuperuser ? [ADMIN_NAV_ITEM] : []),
+  ];
   const displayName = user?.display_name || user?.email || 'Account';
-  const roleLabel = isSuperuser ? 'Admin' : 'User';
+  const roleLabel = isSuperuser ? 'Admin' : isOwner ? 'Owner' : 'Member';
 
   return (
     <aside className="w-60 shrink-0 border-r border-nexus-border bg-white flex flex-col">

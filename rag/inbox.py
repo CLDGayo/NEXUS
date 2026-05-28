@@ -17,7 +17,14 @@ from fastembed import TextEmbedding
 from pypdf import PdfReader
 from qdrant_client.models import FieldCondition, Filter, FilterSelector, MatchValue
 
-from ingest import COLLECTION, chunks_from_file, ensure_collection, get_client, upsert_batch
+from ingest import (
+    COLLECTION,
+    DEFAULT_TENANT_SLUG,
+    chunks_from_file,
+    ensure_collection,
+    get_client,
+    upsert_batch,
+)
 
 log = logging.getLogger(__name__)
 
@@ -64,21 +71,44 @@ def compute_content_hash(data: bytes | str) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def delete_vectors_for_file(rel_path: str) -> None:
-    """Delete all chunks whose payload.file matches rel_path. Best-effort — never raises."""
+def delete_vectors_for_file(
+    rel_path: str,
+    *,
+    tenant_slug: str = DEFAULT_TENANT_SLUG,
+) -> None:
+    """Delete chunks whose ``payload.file`` matches ``rel_path`` AND whose
+    ``payload.tenant_id`` matches ``tenant_slug``. Best-effort — never raises.
+
+    Phase 29 — the tenant predicate is REQUIRED. Two tenants ingesting the
+    same relative path (`01 - Projects/notes.md`) would otherwise blow each
+    other away on archive.
+    """
     try:
         client = get_client()
         client.delete(
             collection_name=COLLECTION,
             points_selector=FilterSelector(
                 filter=Filter(
-                    must=[FieldCondition(key="file", match=MatchValue(value=rel_path))]
+                    must=[
+                        FieldCondition(
+                            key="file", match=MatchValue(value=rel_path)
+                        ),
+                        FieldCondition(
+                            key="tenant_id",
+                            match=MatchValue(value=tenant_slug),
+                        ),
+                    ]
                 )
             ),
             wait=True,
         )
     except Exception as exc:  # noqa: BLE001 — best-effort GC
-        log.warning("Vector GC failed for %s: %s", rel_path, exc)
+        log.warning(
+            "Vector GC failed for %s (tenant=%s): %s",
+            rel_path,
+            tenant_slug,
+            exc,
+        )
 
 
 def unique_inbox_path(target: Path) -> Path:
@@ -162,11 +192,16 @@ def save_to_inbox(
     )
 
 
-def index_note(note_path: Path) -> int:
-    """Chunk, embed, and upsert a single note into Qdrant. Returns chunk count."""
+def index_note(
+    note_path: Path,
+    *,
+    tenant_slug: str = DEFAULT_TENANT_SLUG,
+) -> int:
+    """Chunk, embed, and upsert a single note into Qdrant under the given
+    tenant. Returns chunk count."""
     client = get_client()
     ensure_collection(client)
-    chunks = chunks_from_file(note_path)
+    chunks = chunks_from_file(note_path, tenant_slug=tenant_slug)
     if chunks:
         upsert_batch(client, get_embedder(), chunks)
     return len(chunks)

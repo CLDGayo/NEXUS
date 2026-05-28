@@ -1,4 +1,5 @@
 import HealthBadge from './HealthBadge.jsx';
+import WorkspaceSwitcher from '../tenant/WorkspaceSwitcher.jsx';
 
 export default function PageHeader({ title, right }) {
   return (
@@ -6,6 +7,7 @@ export default function PageHeader({ title, right }) {
       <h1 className="text-base font-semibold tracking-tight">{title}</h1>
       <div className="flex items-center gap-3">
         {right}
+        <WorkspaceSwitcher />
         <HealthBadge />
       </div>
     </header>

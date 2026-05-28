@@ -1,17 +1,16 @@
 """Dashboard observability endpoint — live telemetry, zero mocks.
 
 Surfaces real metrics aggregated at request time from:
-    * SQLite (conversations, messages, integrations) — scoped to the calling
-      user for any per-row aggregate; vault- / process-wide counters stay
-      global.
+    * Postgres (``app.conversations`` / ``app.messages`` /
+      ``app.integrations``) — scoped to the calling user for per-row
+      aggregates; vault- / process-wide counters stay global.
     * Qdrant (collection point count, /healthz ping)
     * Filesystem (vault note count, inbox, mtime histogram)
     * Messenger overlay (token presence)
     * Process uptime (monotonic clock since module import)
 
-Phase 28 Part 2 — every SQLite read against ``conversations`` /  ``messages``
-now filters by ``user_id``. The legacy ``require_auth`` dep is replaced with
-``current_active_user`` so we have the fastapi-users UUID available.
+Phase 30.1 — every SQL helper went from ``aiosqlite`` to a one-shot
+``AsyncSession`` opened from the ``app`` schema sessionmaker.
 """
 
 from __future__ import annotations
@@ -21,16 +20,17 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import aiosqlite
 import httpx
 from fastapi import APIRouter, Depends
 from qdrant_client import AsyncQdrantClient
+from sqlalchemy import cast, func, select
+from sqlalchemy.types import Integer
 
 import messenger_overlay
-from database import DB_PATH
 
 from rag.auth import current_active_user
-from rag.database.models import User
+from rag.database.engine import get_sessionmaker
+from rag.database.models import Conversation, Integration, Message, User
 
 router = APIRouter(tags=["dashboard"])
 
@@ -115,20 +115,23 @@ async def _qdrant_chunk_count() -> int:
 async def _count_messages(user_id: str) -> tuple[int, int]:
     """Return (total_messages, total_conversations) for ``user_id``."""
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            cur = await db.execute(
-                "SELECT COUNT(*) FROM messages WHERE user_id = ?",
-                (user_id,),
-            )
-            row = await cur.fetchone()
-            msgs = int(row[0]) if row else 0
-            cur = await db.execute(
-                "SELECT COUNT(*) FROM conversations WHERE user_id = ?",
-                (user_id,),
-            )
-            row = await cur.fetchone()
-            convs = int(row[0]) if row else 0
-        return msgs, convs
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            msgs = (
+                await db.execute(
+                    select(func.count(Message.id)).where(
+                        Message.user_id == user_id
+                    )
+                )
+            ).scalar_one()
+            convs = (
+                await db.execute(
+                    select(func.count(Conversation.id)).where(
+                        Conversation.user_id == user_id
+                    )
+                )
+            ).scalar_one()
+        return int(msgs or 0), int(convs or 0)
     except Exception:
         return 0, 0
 
@@ -136,14 +139,22 @@ async def _count_messages(user_id: str) -> tuple[int, int]:
 async def _count_integrations() -> tuple[int, int]:
     """Return (active, total). Integrations stay global — admin-level state."""
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            cur = await db.execute(
-                "SELECT COALESCE(SUM(enabled), 0), COUNT(*) FROM integrations"
-            )
-            row = await cur.fetchone()
-            if not row:
-                return 0, 0
-            return int(row[0] or 0), int(row[1] or 0)
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            row = (
+                await db.execute(
+                    select(
+                        func.coalesce(
+                            func.sum(
+                                cast(Integration.enabled, Integer)
+                            ),
+                            0,
+                        ),
+                        func.count(Integration.id),
+                    )
+                )
+            ).one()
+        return int(row[0] or 0), int(row[1] or 0)
     except Exception:
         return 0, 0
 
@@ -155,20 +166,24 @@ async def _query_volume_7d(user_id: str) -> list[dict]:
         (today - timedelta(days=i)).isoformat(): 0 for i in range(6, -1, -1)
     }
     try:
-        cutoff = (today - timedelta(days=6)).isoformat()
-        async with aiosqlite.connect(DB_PATH) as db:
-            cur = await db.execute(
-                """
-                SELECT substr(created_at, 1, 10) AS day, COUNT(*)
-                FROM messages
-                WHERE role = 'user'
-                  AND user_id = ?
-                  AND substr(created_at, 1, 10) >= ?
-                GROUP BY day
-                """,
-                (user_id, cutoff),
+        cutoff_dt = datetime.combine(
+            today - timedelta(days=6),
+            datetime.min.time(),
+            tzinfo=timezone.utc,
+        )
+        day_expr = func.to_char(Message.created_at, "YYYY-MM-DD")
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            result = await db.execute(
+                select(day_expr.label("day"), func.count(Message.id))
+                .where(
+                    Message.role == "user",
+                    Message.user_id == user_id,
+                    Message.created_at >= cutoff_dt,
+                )
+                .group_by(day_expr)
             )
-            for day, count in await cur.fetchall():
+            for day, count in result.all():
                 if day in bins:
                     bins[day] = int(count)
     except Exception:
@@ -200,31 +215,35 @@ def _ingestion_7d() -> list[dict]:
 async def _recent_activity(user_id: str, limit: int = 8) -> list[dict]:
     """Last N user messages owned by ``user_id`` joined to conversation titles."""
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            db.row_factory = aiosqlite.Row
-            cur = await db.execute(
-                """
-                SELECT m.created_at, m.content, c.title
-                FROM messages m
-                JOIN conversations c ON c.id = m.conversation_id
-                WHERE m.role = 'user'
-                  AND m.user_id = ?
-                ORDER BY m.created_at DESC
-                LIMIT ?
-                """,
-                (user_id, limit),
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            stmt = (
+                select(
+                    Message.created_at,
+                    Message.content,
+                    Conversation.title,
+                )
+                .join(Conversation, Conversation.id == Message.conversation_id)
+                .where(
+                    Message.role == "user",
+                    Message.user_id == user_id,
+                )
+                .order_by(Message.created_at.desc())
+                .limit(limit)
             )
-            rows = await cur.fetchall()
+            rows = (await db.execute(stmt)).all()
     except Exception:
         return []
     return [
         {
-            "timestamp": r["created_at"],
-            "file": (r["title"] or "Untitled")[:120],
+            "timestamp": (
+                row.created_at.isoformat() if row.created_at else None
+            ),
+            "file": (row.title or "Untitled")[:120],
             "folder": "Chat",
             "status": "Answered",
         }
-        for r in rows
+        for row in rows
     ]
 
 
@@ -236,25 +255,28 @@ async def _avg_retrieval_latency(user_id: str) -> float | None:
     out user-think gaps. Returns None when fewer than 3 valid pairs exist.
     """
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            cur = await db.execute(
-                """
-                SELECT conversation_id, role, created_at
-                FROM messages
-                WHERE user_id = ?
-                ORDER BY created_at DESC
-                LIMIT 200
-                """,
-                (user_id,),
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            stmt = (
+                select(
+                    Message.conversation_id,
+                    Message.role,
+                    Message.created_at,
+                )
+                .where(Message.user_id == user_id)
+                .order_by(Message.created_at.desc())
+                .limit(200)
             )
-            rows = list(await cur.fetchall())
+            rows = list((await db.execute(stmt)).all())
     except Exception:
         return None
 
     rows.reverse()  # chronological
-    by_conv: dict[str, list[tuple[str, str]]] = {}
+    by_conv: dict[str, list[tuple[str, datetime]]] = {}
     for conv_id, role, created_at in rows:
-        by_conv.setdefault(conv_id, []).append((role, created_at))
+        if created_at is None:
+            continue
+        by_conv.setdefault(str(conv_id), []).append((role, created_at))
 
     deltas: list[float] = []
     for events in by_conv.values():
@@ -263,12 +285,7 @@ async def _avg_retrieval_latency(user_id: str) -> float | None:
             role_b, ts_b = events[i + 1]
             if role_a != "user" or role_b != "assistant":
                 continue
-            try:
-                t_a = datetime.fromisoformat(ts_a)
-                t_b = datetime.fromisoformat(ts_b)
-            except ValueError:
-                continue
-            d = (t_b - t_a).total_seconds()
+            d = (ts_b - ts_a).total_seconds()
             if 0 < d < _LATENCY_WINDOW_S:
                 deltas.append(d)
 

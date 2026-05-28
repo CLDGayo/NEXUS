@@ -66,12 +66,12 @@ class TestSeedResolution:
 @pytest.mark.asyncio
 class TestGraphSearch:
     async def test_empty_query_returns_empty(self, graph_db) -> None:
-        result = await graph_module.graph_search("", k=5)
+        result = await graph_module.graph_search("", k=5, tenant_id="hunter")
         assert result == []
 
     async def test_no_seeds_returns_empty(self, graph_db) -> None:
         # DB is empty (autouse fixture only sets env path).
-        result = await graph_module.graph_search("alpha", k=5)
+        result = await graph_module.graph_search("alpha", k=5, tenant_id="hunter")
         assert result == []
 
     async def test_walks_and_returns_qdrant_hits(
@@ -81,7 +81,7 @@ class TestGraphSearch:
 
         captured_paths: list[list[str]] = []
 
-        async def fake_fetch(query: str, paths: list[str], k: int):
+        async def fake_fetch(query: str, paths: list[str], k: int, **_kwargs):
             captured_paths.append(list(paths))
             return [
                 ScoredChunk(
@@ -97,7 +97,7 @@ class TestGraphSearch:
             graph_module, "_fetch_chunks_by_files", fake_fetch
         )
 
-        result = await graph_module.graph_search("tell me about alpha", k=5)
+        result = await graph_module.graph_search("tell me about alpha", k=5, tenant_id="hunter")
         # Seed = Alpha, neighbors = Beta + Gamma (one-hop). All three are
         # passed to Qdrant.
         assert captured_paths, "fetcher must be called"
@@ -121,5 +121,5 @@ class TestGraphSearch:
             raise RuntimeError("disk gone")
 
         monkeypatch.setattr(graph_module, "connect", broken_connect)
-        result = await graph_module.graph_search("alpha", k=5)
+        result = await graph_module.graph_search("alpha", k=5, tenant_id="hunter")
         assert result == []

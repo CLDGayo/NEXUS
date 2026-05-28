@@ -1,20 +1,34 @@
 """Conversation history CRUD.
 
-Phase 28 Part 1 — every row is scoped to the authenticated user. The SQLite
-``conversations``, ``messages`` and ``api_tokens`` tables grew a
-``user_id TEXT`` column in Phase 27 Part 2; this router now requires the
-fastapi-users JWT (``current_active_user``) and rejects cross-tenant reads
-with a 404 (we don't disclose row existence to non-owners).
+Phase 30.1 — every read/write goes through the SQLAlchemy 2.0 async ORM
+against ``app.conversations`` / ``app.messages``. Path params are typed
+``uuid.UUID`` so the framework rejects malformed ids with a 422 before
+the handler runs.
+
+Tenant + user guard order:
+    * ``current_active_user`` resolves the fastapi-users JWT;
+    * ``get_current_tenant`` validates membership via ``app.tenant_users``;
+    * every ``select(...)`` carries
+      ``.where(Conversation.user_id == user.id,
+              Conversation.tenant_id == tenant.id)``
+      so the same JWT used against two different workspaces (different
+      ``X-Tenant-ID``) yields disjoint result sets.
 """
 
-import aiosqlite
+from __future__ import annotations
+
+import uuid
+from datetime import datetime, timezone
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
+from sqlalchemy import delete, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import DB_PATH, new_id, now_iso
-
-from rag.auth import current_active_user
-from rag.database.models import User
+from rag.auth import current_active_user, get_current_tenant
+from rag.database.engine import get_async_session
+from rag.database.models import Conversation, Message, Tenant, User
 
 router = APIRouter(tags=["conversations"])
 
@@ -26,68 +40,103 @@ class CreateConversation(BaseModel):
 @router.get("/conversations")
 async def list_conversations(
     user: User = Depends(current_active_user),
-) -> list[dict]:
-    user_id = str(user.id)
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute(
-            """
-            SELECT c.id, c.title, c.created_at, c.updated_at,
-                   COUNT(m.id) AS message_count
-            FROM conversations c
-            LEFT JOIN messages m ON m.conversation_id = c.id
-            WHERE c.user_id = ?
-            GROUP BY c.id
-            ORDER BY c.updated_at DESC
-            LIMIT 100
-            """,
-            (user_id,),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_async_session),
+) -> list[dict[str, Any]]:
+    stmt = (
+        select(
+            Conversation.id,
+            Conversation.title,
+            Conversation.created_at,
+            Conversation.updated_at,
+            func.count(Message.id).label("message_count"),
         )
-        rows = await cursor.fetchall()
-    return [dict(r) for r in rows]
+        .select_from(Conversation)
+        .outerjoin(
+            Message,
+            (Message.conversation_id == Conversation.id)
+            & (Message.tenant_id == tenant.id),
+        )
+        .where(
+            Conversation.user_id == user.id,
+            Conversation.tenant_id == tenant.id,
+        )
+        .group_by(Conversation.id)
+        .order_by(Conversation.updated_at.desc())
+        .limit(100)
+    )
+    result = await db.execute(stmt)
+    return [
+        {
+            "id": str(row.id),
+            "title": row.title,
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+            "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+            "message_count": int(row.message_count or 0),
+        }
+        for row in result.all()
+    ]
 
 
 @router.post("/conversations", status_code=201)
 async def create_conversation(
     body: CreateConversation,
     user: User = Depends(current_active_user),
-) -> dict:
-    cid = new_id()
-    ts = now_iso()
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "INSERT INTO conversations (id, title, created_at, updated_at, user_id) VALUES (?, ?, ?, ?, ?)",
-            (cid, body.title[:120], ts, ts, str(user.id)),
-        )
-        await db.commit()
-    return {"id": cid}
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict[str, str]:
+    conv = Conversation(
+        id=uuid.uuid4(),
+        title=body.title[:120],
+        user_id=user.id,
+        tenant_id=tenant.id,
+    )
+    db.add(conv)
+    await db.commit()
+    return {"id": str(conv.id)}
 
 
 @router.get("/conversations/{conversation_id}")
 async def get_conversation(
-    conversation_id: str,
+    conversation_id: uuid.UUID,
     user: User = Depends(current_active_user),
-) -> dict:
-    user_id = str(user.id)
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict[str, Any]:
+    conv_stmt = select(Conversation).where(
+        Conversation.id == conversation_id,
+        Conversation.user_id == user.id,
+        Conversation.tenant_id == tenant.id,
+    )
+    conv = (await db.execute(conv_stmt)).scalar_one_or_none()
+    if conv is None:
+        # Don't disclose existence to non-owners.
+        raise HTTPException(status_code=404, detail="Conversation not found")
 
-        cur = await db.execute(
-            "SELECT id, title, created_at FROM conversations WHERE id = ? AND user_id = ?",
-            (conversation_id, user_id),
+    msg_stmt = (
+        select(Message)
+        .where(
+            Message.conversation_id == conversation_id,
+            Message.tenant_id == tenant.id,
         )
-        conv = await cur.fetchone()
-        if not conv:
-            # Don't distinguish "missing" from "owned by another user".
-            raise HTTPException(status_code=404, detail="Conversation not found")
-
-        cur = await db.execute(
-            "SELECT id, role, content, sources, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at",
-            (conversation_id,),
-        )
-        messages = await cur.fetchall()
-
-    return {**dict(conv), "messages": [dict(m) for m in messages]}
+        .order_by(Message.created_at.asc())
+    )
+    messages = (await db.execute(msg_stmt)).scalars().all()
+    return {
+        "id": str(conv.id),
+        "title": conv.title,
+        "created_at": conv.created_at.isoformat() if conv.created_at else None,
+        "messages": [
+            {
+                "id": str(m.id),
+                "role": m.role,
+                "content": m.content,
+                "sources": m.sources,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in messages
+        ],
+    }
 
 
 @router.delete(
@@ -96,16 +145,29 @@ async def get_conversation(
     response_class=Response,
 )
 async def delete_conversation(
-    conversation_id: str,
+    conversation_id: uuid.UUID,
     user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: AsyncSession = Depends(get_async_session),
 ) -> Response:
-    user_id = str(user.id)
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute(
-            "DELETE FROM conversations WHERE id = ? AND user_id = ?",
-            (conversation_id, user_id),
+    stmt = (
+        delete(Conversation)
+        .where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == user.id,
+            Conversation.tenant_id == tenant.id,
         )
-        await db.commit()
-        if cur.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Conversation not found")
+        .execution_options(synchronize_session=False)
+    )
+    result = await db.execute(stmt)
+    if result.rowcount == 0:
+        await db.rollback()
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    await db.commit()
     return Response(status_code=204)
+
+
+# Phase 30.1 — exposed for tests that touch the (timezone-aware) updated_at
+# column directly; keeps the route handlers free of datetime fiddling.
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)

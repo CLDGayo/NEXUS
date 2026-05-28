@@ -3,17 +3,18 @@ import Sidebar from './Sidebar.jsx';
 import PageHeader from './PageHeader.jsx';
 
 const TITLES = {
-  '/dashboard':     'Dashboard',
-  '/documents':     'Documents',
-  '/chat':          'Chat',
-  '/conversations': 'Conversations',
-  '/logs':          'Logs',
-  '/integrations':  'Integrations',
-  '/resources':     'Resources',
-  '/settings':      'Settings',
-  '/changelog':     "What's New",
-  '/profile':       'Profile',
-  '/admin/users':   'Admin · Users',
+  '/dashboard':           'Dashboard',
+  '/documents':           'Documents',
+  '/chat':                'Chat',
+  '/conversations':       'Conversations',
+  '/logs':                'Logs',
+  '/integrations':        'Integrations',
+  '/resources':           'Resources',
+  '/settings':            'Settings',
+  '/settings/workspaces': 'Workspaces',
+  '/changelog':           "What's New",
+  '/profile':             'Profile',
+  '/admin/users':         'Admin · Users',
 };
 
 export default function AppShell() {

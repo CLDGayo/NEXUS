@@ -1,23 +1,40 @@
-"""Integrations router — CRUD + test-fire + Messenger token management."""
+"""Integrations router — CRUD + test-fire + Messenger token management.
+
+Phase 30.1 — every row lives in ``app.integrations``. ``id`` is now a
+UUID (was an autoincrement int); ``config`` is JSONB rather than a
+TEXT-serialised JSON blob.
+
+Phase 31 — gated by ``require_owner`` end to end. Every select/insert/
+update/delete filters by ``Integration.tenant_id == tenant.id`` so an
+owner of workspace A cannot see, mutate, or fire-test an integration
+configured under workspace B. The Messenger token management routes
+(``/messenger`` and friends) operate on a single shared overlay today
+(``messenger_overlay``) — the owner-role gate still applies so a
+non-owner member cannot rotate the verify token even though the token
+itself is global.
+"""
 
 from __future__ import annotations
 
-import json
 import os
+import uuid
 from typing import Any
 
-import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import messenger_overlay
-from database import DB_PATH, now_iso
 from events import EVENT_NAMES
 from integrations.dispatcher import fire_test
 from integrations.providers import PROVIDERS
-from routers.deps import require_auth
 
-router = APIRouter(tags=["integrations"], dependencies=[Depends(require_auth)])
+from rag.database.engine import get_async_session
+from rag.database.models import Integration, MessengerPageTenant, Tenant
+from routers.deps import require_owner
+
+router = APIRouter(tags=["integrations"])
 
 VALID_TYPES = frozenset(PROVIDERS.keys())
 
@@ -63,42 +80,65 @@ def _validate_events(events: list[str]) -> None:
         )
 
 
-def _row_to_dict(r: aiosqlite.Row) -> dict[str, Any]:
-    try:
-        config = json.loads(r["config_json"])
-    except json.JSONDecodeError:
-        config = {}
+def _serialize(integration: Integration) -> dict[str, Any]:
+    config = integration.config or {}
     return {
-        "id": r["id"],
-        "type": r["type"],
-        "name": r["name"],
-        "config": _redact(r["type"], config),
-        "events": [e for e in (r["events_csv"] or "").split(",") if e],
-        "enabled": bool(r["enabled"]),
-        "created_at": r["created_at"],
-        "updated_at": r["updated_at"],
-        "last_fired_at": r["last_fired_at"],
-        "last_status": r["last_status"],
+        "id": str(integration.id),
+        "type": integration.type,
+        "name": integration.name,
+        "config": _redact(integration.type, dict(config)),
+        "events": [
+            e for e in (integration.events_csv or "").split(",") if e
+        ],
+        "enabled": bool(integration.enabled),
+        "created_at": (
+            integration.created_at.isoformat()
+            if integration.created_at
+            else None
+        ),
+        "updated_at": (
+            integration.updated_at.isoformat()
+            if integration.updated_at
+            else None
+        ),
+        "last_fired_at": (
+            integration.last_fired_at.isoformat()
+            if integration.last_fired_at
+            else None
+        ),
+        "last_status": integration.last_status,
     }
 
 
+async def _load_for_tenant(
+    db: AsyncSession, integration_id: uuid.UUID, tenant_id: uuid.UUID
+) -> Integration:
+    stmt = select(Integration).where(
+        Integration.id == integration_id,
+        Integration.tenant_id == tenant_id,
+    )
+    integration = (await db.execute(stmt)).scalar_one_or_none()
+    if integration is None:
+        raise HTTPException(status_code=404, detail="Integration not found")
+    return integration
+
+
 @router.get("")
-async def list_integrations() -> list[dict]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        cur = await db.execute(
-            """
-            SELECT id, type, name, config_json, events_csv, enabled, created_at,
-                   updated_at, last_fired_at, last_status
-            FROM integrations ORDER BY id DESC
-            """
-        )
-        rows = await cur.fetchall()
-    return [_row_to_dict(r) for r in rows]
+async def list_integrations(
+    tenant: Tenant = Depends(require_owner),
+    db: AsyncSession = Depends(get_async_session),
+) -> list[dict]:
+    stmt = (
+        select(Integration)
+        .where(Integration.tenant_id == tenant.id)
+        .order_by(Integration.created_at.desc())
+    )
+    rows = (await db.execute(stmt)).scalars().all()
+    return [_serialize(r) for r in rows]
 
 
 @router.get("/events")
-async def list_events() -> dict:
+async def list_events(_: Tenant = Depends(require_owner)) -> dict:
     return {"events": list(EVENT_NAMES), "types": sorted(VALID_TYPES)}
 
 
@@ -144,18 +184,28 @@ def _messenger_payload(request: Request) -> dict[str, Any]:
 
 
 @router.get("/messenger")
-async def get_messenger(request: Request) -> dict[str, Any]:
+async def get_messenger(
+    request: Request,
+    _: Tenant = Depends(require_owner),
+) -> dict[str, Any]:
     return _messenger_payload(request)
 
 
 @router.post("/messenger/rotate-verify-token")
-async def rotate_messenger_verify_token(request: Request) -> dict[str, Any]:
+async def rotate_messenger_verify_token(
+    request: Request,
+    _: Tenant = Depends(require_owner),
+) -> dict[str, Any]:
     messenger_overlay.rotate_verify_token()
     return _messenger_payload(request)
 
 
 @router.patch("/messenger")
-async def patch_messenger(body: MessengerPatch, request: Request) -> dict[str, Any]:
+async def patch_messenger(
+    body: MessengerPatch,
+    request: Request,
+    _: Tenant = Depends(require_owner),
+) -> dict[str, Any]:
     if (
         body.verify_token is None
         and body.page_access_token is None
@@ -174,101 +224,180 @@ async def patch_messenger(body: MessengerPatch, request: Request) -> dict[str, A
     return _messenger_payload(request)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 32 — Messenger Page ↔ Tenant binding admin
+#
+# A Facebook Page ID is global (PK on app.messenger_page_tenants), so the
+# binding is "this page now belongs to this workspace" — rebinding to a
+# second tenant must explicitly DELETE the existing row first.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class MessengerPageBindRequest(BaseModel):
+    facebook_page_id: str = Field(..., min_length=1, max_length=64)
+
+
+def _serialize_page(row: MessengerPageTenant) -> dict[str, Any]:
+    return {
+        "facebook_page_id": row.facebook_page_id,
+        "tenant_id": str(row.tenant_id),
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+
+@router.get("/messenger/pages")
+async def list_messenger_pages(
+    tenant: Tenant = Depends(require_owner),
+    db: AsyncSession = Depends(get_async_session),
+) -> list[dict[str, Any]]:
+    """List the Facebook pages bound to the active tenant."""
+    rows = (
+        await db.execute(
+            select(MessengerPageTenant)
+            .where(MessengerPageTenant.tenant_id == tenant.id)
+            .order_by(MessengerPageTenant.created_at.desc())
+        )
+    ).scalars().all()
+    return [_serialize_page(r) for r in rows]
+
+
+@router.post("/messenger/pages", status_code=201)
+async def bind_messenger_page(
+    body: MessengerPageBindRequest,
+    tenant: Tenant = Depends(require_owner),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict[str, Any]:
+    """Bind a Facebook page id to the active tenant.
+
+    Rebinding from another tenant is refused with 409 — operators must
+    delete the existing binding first so the change is intentional.
+    """
+    existing = (
+        await db.execute(
+            select(MessengerPageTenant).where(
+                MessengerPageTenant.facebook_page_id == body.facebook_page_id
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        if existing.tenant_id == tenant.id:
+            return _serialize_page(existing)
+        raise HTTPException(
+            status_code=409,
+            detail="page_bound_to_other_tenant",
+        )
+    row = MessengerPageTenant(
+        facebook_page_id=body.facebook_page_id, tenant_id=tenant.id
+    )
+    db.add(row)
+    await db.commit()
+    await db.refresh(row)
+    return _serialize_page(row)
+
+
+@router.delete(
+    "/messenger/pages/{facebook_page_id}",
+    status_code=204,
+    response_class=Response,
+)
+async def unbind_messenger_page(
+    facebook_page_id: str,
+    tenant: Tenant = Depends(require_owner),
+    db: AsyncSession = Depends(get_async_session),
+) -> Response:
+    """Unbind a page from the active tenant. 404 if it belongs to someone else."""
+    row = (
+        await db.execute(
+            select(MessengerPageTenant).where(
+                MessengerPageTenant.facebook_page_id == facebook_page_id,
+                MessengerPageTenant.tenant_id == tenant.id,
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="page_binding_not_found")
+    await db.delete(row)
+    await db.commit()
+    return Response(status_code=204)
+
+
 @router.post("", status_code=201)
-async def create_integration(body: IntegrationCreate) -> dict:
+async def create_integration(
+    body: IntegrationCreate,
+    tenant: Tenant = Depends(require_owner),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict:
     _validate_type(body.type)
     _validate_events(body.events)
-    ts = now_iso()
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute(
-            """
-            INSERT INTO integrations
-                (type, name, config_json, events_csv, enabled, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                body.type,
-                body.name,
-                json.dumps(body.config),
-                ",".join(body.events),
-                1 if body.enabled else 0,
-                ts,
-                ts,
-            ),
-        )
-        await db.commit()
-        new_id = cur.lastrowid
-        db.row_factory = aiosqlite.Row
-        cur2 = await db.execute(
-            """
-            SELECT id, type, name, config_json, events_csv, enabled, created_at,
-                   updated_at, last_fired_at, last_status
-            FROM integrations WHERE id = ?
-            """,
-            (new_id,),
-        )
-        row = await cur2.fetchone()
-    assert row is not None
-    return _row_to_dict(row)
+    integration = Integration(
+        id=uuid.uuid4(),
+        tenant_id=tenant.id,
+        type=body.type,
+        name=body.name,
+        config=body.config,
+        events_csv=",".join(body.events),
+        enabled=body.enabled,
+    )
+    db.add(integration)
+    await db.commit()
+    await db.refresh(integration)
+    return _serialize(integration)
 
 
 @router.patch("/{integration_id}")
-async def update_integration(integration_id: int, body: IntegrationPatch) -> dict:
+async def update_integration(
+    integration_id: uuid.UUID,
+    body: IntegrationPatch,
+    tenant: Tenant = Depends(require_owner),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict:
     if body.events is not None:
         _validate_events(body.events)
 
-    sets: list[str] = []
-    args: list[Any] = []
-    if body.name is not None:
-        sets.append("name = ?")
-        args.append(body.name)
-    if body.config is not None:
-        sets.append("config_json = ?")
-        args.append(json.dumps(body.config))
-    if body.events is not None:
-        sets.append("events_csv = ?")
-        args.append(",".join(body.events))
-    if body.enabled is not None:
-        sets.append("enabled = ?")
-        args.append(1 if body.enabled else 0)
-    if not sets:
-        raise HTTPException(status_code=422, detail="No fields to update")
-    sets.append("updated_at = ?")
-    args.append(now_iso())
-    args.append(integration_id)
+    integration = await _load_for_tenant(db, integration_id, tenant.id)
 
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute(
-            f"UPDATE integrations SET {', '.join(sets)} WHERE id = ?", args
-        )
-        await db.commit()
-        if cur.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Integration not found")
-        db.row_factory = aiosqlite.Row
-        cur2 = await db.execute(
-            """
-            SELECT id, type, name, config_json, events_csv, enabled, created_at,
-                   updated_at, last_fired_at, last_status
-            FROM integrations WHERE id = ?
-            """,
-            (integration_id,),
-        )
-        row = await cur2.fetchone()
-    assert row is not None
-    return _row_to_dict(row)
+    changed = False
+    if body.name is not None:
+        integration.name = body.name
+        changed = True
+    if body.config is not None:
+        integration.config = body.config
+        changed = True
+    if body.events is not None:
+        integration.events_csv = ",".join(body.events)
+        changed = True
+    if body.enabled is not None:
+        integration.enabled = body.enabled
+        changed = True
+    if not changed:
+        raise HTTPException(status_code=422, detail="No fields to update")
+
+    await db.commit()
+    await db.refresh(integration)
+    return _serialize(integration)
 
 
 @router.delete("/{integration_id}", status_code=204, response_class=Response)
-async def delete_integration(integration_id: int) -> Response:
-    async with aiosqlite.connect(DB_PATH) as db:
-        cur = await db.execute("DELETE FROM integrations WHERE id = ?", (integration_id,))
-        await db.commit()
-        if cur.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Integration not found")
+async def delete_integration(
+    integration_id: uuid.UUID,
+    tenant: Tenant = Depends(require_owner),
+    db: AsyncSession = Depends(get_async_session),
+) -> Response:
+    integration = await _load_for_tenant(db, integration_id, tenant.id)
+    await db.delete(integration)
+    await db.commit()
     return Response(status_code=204)
 
 
 @router.post("/{integration_id}/test")
-async def test_integration(integration_id: int) -> dict:
+async def test_integration(
+    integration_id: uuid.UUID,
+    tenant: Tenant = Depends(require_owner),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict:
+    # Confirm the integration belongs to this tenant before the dispatcher
+    # fires — fire_test reads its own row by id, which would happily fire
+    # a sibling-tenant webhook otherwise.
+    await _load_for_tenant(db, integration_id, tenant.id)
     status, body = await fire_test(integration_id)
     return {"status": status, "body": body, "ok": 200 <= status < 300}

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, Any, Literal, TypedDict
 
 from rag.retrieval.types import ScoredChunk
 
@@ -155,6 +155,10 @@ class NexusState(TypedDict, total=False):
     thread_key: str
     correlation_id: str
     surface: Surface
+    # Phase 29 — strict tenancy. Carries the active tenant SLUG (not UUID).
+    # Populated at graph entry by the surface adapter and never mutated
+    # mid-run. Every retrieval node consumes it to build the Qdrant filter.
+    tenant_id: str
     # Phase 15 — multimodal attachments forwarded from the surface adapter.
     # Each item: {"type": "image", "url": "data:image/jpeg;base64,..."} (SPA)
     # or {"type": "image", "url": "https://scontent.../..."} (Messenger CDN).
@@ -221,3 +225,10 @@ class NexusState(TypedDict, total=False):
     # response was unparseable — ``fuse_node`` falls back to uniform
     # (1.0) per-arm weights, preserving the pre-Phase-25 behavior.
     query_intent: Literal["factual", "conceptual", "mixed"] | None
+
+    # Phase 32 — Messenger product carousel. Populated by
+    # ``enrich_with_products_node`` (messenger surface only) with a
+    # serialised ``ProductCarouselBlock``. ``build_outbound_payload``
+    # reads this key and attaches the carousel to the ReplyBlock; absent
+    # on every surface but messenger.
+    product_carousel: dict[str, Any]

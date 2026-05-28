@@ -8,10 +8,70 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
+
+
+class _FakeUser:
+    def __init__(self) -> None:
+        self.id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+        self.email = "tester@nexus.test"
+
+
+class _FakeTenant:
+    def __init__(self, slug: str = "hunter") -> None:
+        self.id = uuid.UUID("4e15a5c0-7b9f-4f8e-9e30-1d000000beef")
+        self.name = "Hunter"
+        self.slug = slug
+        self.created_at = datetime(2026, 5, 25, tzinfo=timezone.utc)
+
+
+_USER = _FakeUser()
+_TENANT = _FakeTenant()
+
+
+class _StubSession:
+    """Async-session shim sufficient for the documents router's archive +
+    reconcile codepaths.
+
+    Phase 31 — archive_documents calls ``select(Document)`` per path then
+    flips ``archived_at`` on the returned row (or no-ops if absent).
+    reconcile_vault calls ``select(Document.file)`` to enumerate live
+    docs. The stub returns a configurable set of paths so tests can pin
+    the active_files count without standing up Postgres.
+    """
+
+    def __init__(self, live_files: tuple[str, ...] = ()) -> None:
+        self._live_files = tuple(live_files)
+        self.committed = False
+
+    async def execute(self, stmt):  # noqa: ANN001 — duck-typed for tests
+        return _StubResult(self._live_files)
+
+    async def commit(self) -> None:
+        self.committed = True
+
+    async def rollback(self) -> None:  # pragma: no cover — defensive
+        pass
+
+
+class _StubResult:
+    def __init__(self, live_files: tuple[str, ...]) -> None:
+        self._live_files = live_files
+
+    def scalar_one_or_none(self):
+        # archive_documents looks up a single Document per path; we
+        # always return None (no row) so the `if doc is not None` branch
+        # is skipped. The vector-purge + filesystem-move assertions
+        # still hold because they don't depend on the DB row.
+        return None
+
+    def all(self):
+        return [(f,) for f in self._live_files]
 
 
 @pytest.fixture
@@ -142,24 +202,32 @@ def test_archive_documents_purges_vectors_for_each_path(
     tmp_vault, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, documents = tmp_vault
-    purged_paths: list[str] = []
+    purged_paths: list[tuple[str, str]] = []
     monkeypatch.setattr(
         documents,
         "delete_vectors_for_file",
-        lambda rel: purged_paths.append(rel),
+        lambda rel, *, tenant_slug: purged_paths.append((rel, tenant_slug)),
     )
 
     req = documents.ArchiveRequest(paths=[
         "00 - Inbox/alpha.md",
         "06 - Concepts/beta.md",
     ])
-    res = asyncio.run(documents.archive_documents(req))
+    res = asyncio.run(
+        documents.archive_documents(
+            req, user=_USER, tenant=_TENANT, db=_StubSession()
+        )
+    )
 
     assert len(res["archived"]) == 2
     assert res["failed"] == []
     assert res["vectors_purged"] == 2
-    # Vector purge uses the ORIGINAL rel_path (matches Qdrant payload.file).
-    assert sorted(purged_paths) == ["00 - Inbox/alpha.md", "06 - Concepts/beta.md"]
+    # Vector purge uses the ORIGINAL rel_path (matches Qdrant payload.file)
+    # plus the active tenant slug (Phase 29 — prevents cross-tenant purge).
+    assert sorted(purged_paths) == [
+        ("00 - Inbox/alpha.md", "hunter"),
+        ("06 - Concepts/beta.md", "hunter"),
+    ]
     assert (root / "04 - Archive" / "00 - Inbox" / "alpha.md").exists()
     assert (root / "04 - Archive" / "06 - Concepts" / "beta.md").exists()
 
@@ -168,14 +236,22 @@ def test_archive_documents_collects_per_item_failures(
     tmp_vault, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _root, documents = tmp_vault
-    monkeypatch.setattr(documents, "delete_vectors_for_file", lambda _: None)
+    monkeypatch.setattr(
+        documents,
+        "delete_vectors_for_file",
+        lambda _rel, *, tenant_slug: None,
+    )
 
     req = documents.ArchiveRequest(paths=[
         "00 - Inbox/alpha.md",
         "00 - Inbox/missing.md",       # 404
         "../escape.md",                  # 400
     ])
-    res = asyncio.run(documents.archive_documents(req))
+    res = asyncio.run(
+        documents.archive_documents(
+            req, user=_USER, tenant=_TENANT, db=_StubSession()
+        )
+    )
 
     assert len(res["archived"]) == 1
     assert len(res["failed"]) == 2
@@ -190,11 +266,15 @@ class _StubScrollClient:
 
     Accepts either ``list[str]`` (just file names) or ``list[dict]`` payloads
     so tests can also exercise the index-summary path that needs ``text``.
+    Phase 29 — accepts ``scroll_filter`` and records it so tests can assert
+    the tenant predicate was supplied.
     """
     def __init__(self, items) -> None:  # noqa: ANN001
         self._items = items
+        self.last_filter = None
 
-    def scroll(self, *, collection_name, limit, with_payload, with_vectors, offset):  # noqa: ANN001
+    def scroll(self, *, collection_name, limit, with_payload, with_vectors, offset, scroll_filter=None):  # noqa: ANN001
+        self.last_filter = scroll_filter
         if offset is None:
             class _Pt:
                 def __init__(self, payload):
@@ -217,21 +297,29 @@ def test_reconcile_purges_only_orphans(
         "06 - Concepts/beta.md",
         "06 - Concepts/ghost.md",  # orphan — never existed in vault
     ]
+    stub_client = _StubScrollClient(qdrant_files)
+    monkeypatch.setattr(documents, "get_client", lambda: stub_client)
+    purged: list[tuple[str, str]] = []
     monkeypatch.setattr(
-        documents, "get_client", lambda: _StubScrollClient(qdrant_files)
-    )
-    purged: list[str] = []
-    monkeypatch.setattr(
-        documents, "delete_vectors_for_file", lambda rel: purged.append(rel)
+        documents,
+        "delete_vectors_for_file",
+        lambda rel, *, tenant_slug: purged.append((rel, tenant_slug)),
     )
 
-    res = asyncio.run(documents.reconcile_vault())
+    live = _StubSession(
+        live_files=("00 - Inbox/alpha.md", "06 - Concepts/beta.md")
+    )
+    res = asyncio.run(
+        documents.reconcile_vault(user=_USER, tenant=_TENANT, db=live)
+    )
 
     assert res["qdrant_files"] == 3
     assert res["active_files"] == 2
     assert res["orphans"] == ["06 - Concepts/ghost.md"]
     assert res["purged"] == 1
-    assert purged == ["06 - Concepts/ghost.md"]
+    assert purged == [("06 - Concepts/ghost.md", "hunter")]
+    # Phase 29 — every scroll must carry the tenant filter.
+    assert stub_client.last_filter is not None
 
 
 def test_reconcile_no_orphans_when_in_sync(
@@ -243,12 +331,19 @@ def test_reconcile_no_orphans_when_in_sync(
         "get_client",
         lambda: _StubScrollClient(["00 - Inbox/alpha.md", "06 - Concepts/beta.md"]),
     )
-    purged: list[str] = []
+    purged: list[tuple[str, str]] = []
     monkeypatch.setattr(
-        documents, "delete_vectors_for_file", lambda rel: purged.append(rel)
+        documents,
+        "delete_vectors_for_file",
+        lambda rel, *, tenant_slug: purged.append((rel, tenant_slug)),
     )
 
-    res = asyncio.run(documents.reconcile_vault())
+    live = _StubSession(
+        live_files=("00 - Inbox/alpha.md", "06 - Concepts/beta.md")
+    )
+    res = asyncio.run(
+        documents.reconcile_vault(user=_USER, tenant=_TENANT, db=live)
+    )
     assert res["orphans"] == []
     assert res["purged"] == 0
     assert purged == []
@@ -264,7 +359,11 @@ def test_reconcile_502_when_qdrant_unreachable(
 
     monkeypatch.setattr(documents, "get_client", _boom)
     with pytest.raises(HTTPException) as exc:
-        asyncio.run(documents.reconcile_vault())
+        asyncio.run(
+            documents.reconcile_vault(
+                user=_USER, tenant=_TENANT, db=_StubSession()
+            )
+        )
     assert exc.value.status_code == 502
 
 
@@ -283,7 +382,7 @@ def test_index_summary_aggregates_chunks_and_tokens(
     ]
     monkeypatch.setattr(documents, "get_client", lambda: _StubScrollClient(points))
 
-    res = asyncio.run(documents.index_summary())
+    res = asyncio.run(documents.index_summary(user=_USER, tenant=_TENANT))
 
     assert res["available"] is True
     assert res["total_chunks"] == 3
@@ -303,7 +402,7 @@ def test_index_summary_returns_unavailable_when_qdrant_down(
         raise RuntimeError("qdrant down")
 
     monkeypatch.setattr(documents, "get_client", _boom)
-    res = asyncio.run(documents.index_summary())
+    res = asyncio.run(documents.index_summary(user=_USER, tenant=_TENANT))
     assert res == {"summary": {}, "total_chunks": 0, "available": False}
 
 

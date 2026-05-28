@@ -11,7 +11,18 @@ from rag.auth.config import (
     fastapi_users,
     get_jwt_strategy,
 )
-from rag.auth.schemas import UserCreate, UserRead, UserUpdate
+from rag.auth.schemas import (
+    TenantCreate,
+    TenantRead,
+    UserCreate,
+    UserRead,
+    UserUpdate,
+)
+from rag.auth.tenant import (
+    get_current_tenant,
+    list_tenants_for_user,
+    slugify_tenant_name,
+)
 
 __all__ = [
     "auth_backend",
@@ -19,6 +30,11 @@ __all__ = [
     "current_superuser",
     "fastapi_users",
     "get_jwt_strategy",
+    "get_current_tenant",
+    "list_tenants_for_user",
+    "slugify_tenant_name",
+    "TenantCreate",
+    "TenantRead",
     "UserCreate",
     "UserRead",
     "UserUpdate",

@@ -34,8 +34,10 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import PlainTextResponse
 from opentelemetry import trace
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag.config import settings
+from rag.database.engine import get_async_session
 from rag.guardrails.groundedness import abstention_text
 from rag.messenger.idempotency import (
     acquire_thread_lock,
@@ -57,6 +59,7 @@ from rag.messenger.security import (
     verify_meta_signature,
 )
 from rag.messenger.sender import OutboundSender, SendResult, get_sender
+from rag.messenger.tenant_resolver import resolve_tenant_for_page
 from rag.messenger_overlay import current_verify_token
 
 _log = logging.getLogger(__name__)
@@ -72,7 +75,14 @@ GraphRunner = Callable[[InboundMessage, str], Awaitable[dict]]
 
 
 async def _real_graph_runner(payload: InboundMessage, correlation_id: str) -> dict:
-    """Default runner — calls the live LangGraph cortex."""
+    """Default runner — calls the live LangGraph cortex.
+
+    Phase 29.2 — forwards ``payload.tenant_slug`` into ``run_graph``. The
+    slug is what ``NexusState["tenant_id"]`` carries (Qdrant payload
+    filter), not the UUID. The direct webhook handler populates
+    ``tenant_slug`` from the resolver before scheduling the background
+    task; tests inject it explicitly on the stub ``InboundMessage``.
+    """
 
     # Imported lazily so test environments that override this dependency
     # never trigger the heavy orchestrator import chain.
@@ -84,6 +94,7 @@ async def _real_graph_runner(payload: InboundMessage, correlation_id: str) -> di
         correlation_id=correlation_id,
         surface="messenger",
         attachments=payload.attachments,
+        tenant_id=payload.tenant_slug,
     )
 
 
@@ -223,6 +234,7 @@ async def messenger_inbound_direct(
     request: Request,
     runner: GraphRunner = Depends(get_graph_runner),
     sender: OutboundSender = Depends(get_outbound_sender),
+    db: AsyncSession = Depends(get_async_session),
 ) -> PlainTextResponse:
     """Handle a signed inbound webhook event from Meta.
 
@@ -343,6 +355,26 @@ async def messenger_inbound_direct(
 
         mids = [c["mid"] for c in group if c["mid"]]
 
+        # Phase 29.2 — resolve the owning tenant from the inbound page id
+        # BEFORE any state is claimed. An unmapped page is dropped here
+        # with a structured log; we never 5xx (Meta would retry hard) and
+        # we never default to a fallback tenant (would re-open the
+        # cross-tenant leak Phase 29 closes).
+        if not page_id:
+            _log.info(
+                "messenger.event.no_tenant_mapping sender=%s reason=missing_page_id",
+                sender_id,
+            )
+            continue
+        tenant = await resolve_tenant_for_page(db, page_id)
+        if tenant is None:
+            _log.info(
+                "messenger.event.no_tenant_mapping page_id=%s sender=%s",
+                page_id,
+                sender_id,
+            )
+            continue
+
         inbound = InboundMessage(
             user_id=sender_id,
             message_text=merged_text,
@@ -351,7 +383,22 @@ async def messenger_inbound_direct(
             page_id=page_id or None,
             correlation_id=mids[0] if mids else None,
             attachments=images or None,
+            tenant_id=tenant.id,
+            tenant_slug=tenant.slug,
         )
+
+        # Phase 32 — surface attachment count to the trace so the product
+        # carousel branch in the orchestrator has a structured signal it
+        # can rely on without re-parsing the InboundMessage shape.
+        if images:
+            _log.info(
+                "messenger.event.attachment_received "
+                "tenant=%s page_id=%s sender=%s count=%d",
+                tenant.slug,
+                page_id,
+                sender_id,
+                len(images),
+            )
 
         # Content-keyed claim survives Meta retries with fresh mids.
         try:
@@ -530,6 +577,7 @@ async def messenger_inbound_orchestrator(
     payload: InboundMessage,
     runner: GraphRunner = Depends(get_graph_runner),
     sender: OutboundSender = Depends(get_outbound_sender),
+    db: AsyncSession = Depends(get_async_session),
 ) -> InboundAck:
     """Broker path. Synchronous: returns the reply in the ack body, and
     optionally POSTs it to an outbound webhook with retry.
@@ -545,6 +593,32 @@ async def messenger_inbound_orchestrator(
     # FastAPI's signature inspector.
     started = time.perf_counter()
     correlation_id = _correlation_id(payload.correlation_id)
+
+    # Phase 29.2 — broker path: legacy n8n / Make payloads don't carry a
+    # tenant slug, so resolve from ``page_id`` if needed. Resolver's own
+    # guard short-circuits on empty page_id (returns None); same
+    # drop-on-miss semantics as the direct path. Returns a structured
+    # rejection rather than 5xx so the orchestrator surfaces the cause
+    # cleanly.
+    if not payload.tenant_slug:
+        tenant = await resolve_tenant_for_page(db, payload.page_id or "")
+        if tenant is not None:
+            payload = payload.model_copy(
+                update={"tenant_id": tenant.id, "tenant_slug": tenant.slug}
+            )
+        if not payload.tenant_slug:
+            _log.info(
+                "messenger.event.no_tenant_mapping path=broker page_id=%s user=%s",
+                payload.page_id,
+                payload.user_id,
+            )
+            return InboundAck(
+                status="rejected",
+                correlation_id=correlation_id,
+                reply_text=None,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+                received_at=_now_epoch(),
+            )
 
     # Order matters. Rate-limit BEFORE idempotency so a flood of
     # duplicate retries still counts against the spammer's budget. PII

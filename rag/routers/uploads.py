@@ -103,6 +103,9 @@ async def upload_document(file: UploadFile = File(...)) -> dict:
                 "chunks_indexed": 0,
                 "message": f"File '{name}' is identical to existing document. Skipped.",
             }
+        # TODO(phase29.2): route through get_current_tenant once this
+        # endpoint moves off legacy require_auth; default Hunter tenant
+        # is used for the single-tenant transition window.
         delete_vectors_for_file(rel_path)
         status = "updated"
     else:
@@ -119,6 +122,7 @@ async def upload_document(file: UploadFile = File(...)) -> dict:
     )
 
     try:
+        # TODO(phase29.2): pass tenant.slug here once require_auth is upgraded.
         chunk_count = index_note(target)
     except Exception as exc:
         log.exception("documents.upload: indexing failed for %s", rel_path)

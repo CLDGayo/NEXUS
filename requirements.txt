@@ -69,6 +69,13 @@ rich==13.9.4
 pypdf==5.1.0
 pymupdf==1.24.14
 
+# ---- Object storage (Phase 28+) ----
+# aioboto3 + pillow are required by rag/services/object_store.py and the
+# avatar upload pipeline. Also declared in rag/pyproject.toml — keep both
+# in sync. Docker builds from THIS file (Dockerfile:34), not rag/.
+aioboto3>=13.0.0,<15
+pillow>=11.0.0,<12
+
 # ---- Dev / test ----
 # fakeredis lets the webhook security tests (idempotency, rate limit)
 # exercise the real redis.asyncio code paths without a running broker.
