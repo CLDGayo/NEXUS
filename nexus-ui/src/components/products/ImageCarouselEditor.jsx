@@ -3,7 +3,12 @@
 // Uses @dnd-kit/sortable for accessible keyboard + pointer DnD.
 // Uploads use the HTML5 drop-target pattern from Dropzone.jsx (zero deps).
 // Reorder is optimistic; on settle calls PATCH /products/:id/images/order.
-import { useRef, useState } from 'react';
+//
+// Phase 32.1 — supports a "staged" mode when ``productId == null``
+// (i.e. the parent ProductForm is still creating). Files are buffered
+// in local state with blob-URL previews; ProductForm flushes them to
+// POST /products/{id}/images after the create call returns.
+import { useEffect, useRef, useState } from 'react';
 import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable, sortableKeyboardCoordinates, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -12,6 +17,15 @@ import { GripVertical, ImagePlus, Trash2 } from 'lucide-react';
 import { deleteProductImage, reorderProductImages, uploadProductImage } from '../../lib/products.js';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
+
+// Counter used only to mint stable client-side ids for staged previews
+// (crypto.randomUUID would also work, but is gated on secure contexts
+// in some browsers).
+let _stagedIdSeq = 0;
+function nextStagedId() {
+  _stagedIdSeq += 1;
+  return `staged-${Date.now()}-${_stagedIdSeq}`;
+}
 
 function SortableThumb({ image, onDelete, disabled }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: image.id });
@@ -61,11 +75,30 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
+  const staged = !productId;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // Revoke any staged blob URLs on unmount to avoid memory leaks if the
+  // user navigates away without submitting. We snapshot the list inside
+  // the effect closure so React's strict-mode double-invoke and parent
+  // re-renders don't race the revoke.
+  useEffect(() => {
+    return () => {
+      for (const im of images) {
+        if (im?._pending && typeof im.image_url === 'string' && im.image_url.startsWith('blob:')) {
+          try {
+            URL.revokeObjectURL(im.image_url);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleFiles(fileList) {
     setError('');
@@ -84,8 +117,22 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
           setError(`Skipped ${file.name} — only JPG/PNG/WEBP allowed.`);
           continue;
         }
-        const uploaded = await uploadProductImage(productId, file);
-        next.push(uploaded);
+        if (staged) {
+          next.push({
+            id: nextStagedId(),
+            image_url: URL.createObjectURL(file),
+            display_order: next.length,
+            content_type: file.type,
+            width: null,
+            height: null,
+            storage_key: '',
+            _pending: true,
+            _file: file,
+          });
+        } else {
+          const uploaded = await uploadProductImage(productId, file);
+          next.push(uploaded);
+        }
       }
       onImagesChange(next);
     } catch (err) {
@@ -100,8 +147,20 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
     setBusy(true);
     setError('');
     try {
-      await deleteProductImage(productId, imageId);
-      onImagesChange(images.filter((im) => im.id !== imageId));
+      const target = images.find((im) => im.id === imageId);
+      if (target?._pending) {
+        if (typeof target.image_url === 'string' && target.image_url.startsWith('blob:')) {
+          try {
+            URL.revokeObjectURL(target.image_url);
+          } catch {
+            /* ignore */
+          }
+        }
+        onImagesChange(images.filter((im) => im.id !== imageId));
+      } else {
+        await deleteProductImage(productId, imageId);
+        onImagesChange(images.filter((im) => im.id !== imageId));
+      }
     } catch (err) {
       setError(err?.body || err?.message || 'Delete failed.');
     } finally {
@@ -117,6 +176,9 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
     if (oldIndex === -1 || newIndex === -1) return;
     const next = arrayMove(images, oldIndex, newIndex);
     onImagesChange(next);
+    // While staged, ordering is implicit in the array; the persistence
+    // call only fires after the product exists.
+    if (staged) return;
     try {
       await reorderProductImages(productId, next.map((im) => im.id));
     } catch (err) {

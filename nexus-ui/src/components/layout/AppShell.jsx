@@ -10,6 +10,8 @@ const TITLES = {
   '/logs':                'Logs',
   '/integrations':        'Integrations',
   '/resources':           'Resources',
+  '/products':            'Products',
+  '/products/new':        'New product',
   '/settings':            'Settings',
   '/settings/workspaces': 'Workspaces',
   '/changelog':           "What's New",
@@ -17,9 +19,24 @@ const TITLES = {
   '/admin/users':         'Admin · Users',
 };
 
+// Phase 32.1 — regex fallbacks for parametric routes that exact-match
+// can't cover. First match wins; falls through to "NEXUS" when nothing
+// hits.
+const MATCHERS = [
+  [/^\/products\/[^/]+$/, 'Product'],
+];
+
+function resolveTitle(pathname) {
+  if (TITLES[pathname]) return TITLES[pathname];
+  for (const [re, title] of MATCHERS) {
+    if (re.test(pathname)) return title;
+  }
+  return 'NEXUS';
+}
+
 export default function AppShell() {
   const { pathname } = useLocation();
-  const title = TITLES[pathname] || 'NEXUS';
+  const title = resolveTitle(pathname);
 
   return (
     <div className="h-screen flex bg-slate-50 text-slate-900">

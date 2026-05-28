@@ -1,9 +1,12 @@
 // Phase 32 — Owner-gated product list view.
+//
+// Phase 32.1 — page no longer renders its own PageHeader; AppShell
+// owns the top bar for every route. The "New" CTA moved into the
+// toolbar row so it stays a one-click action.
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
 import { useTenant } from '../hooks/useTenant.js';
-import PageHeader from '../components/layout/PageHeader.jsx';
 import ProductsTable from '../components/products/ProductsTable.jsx';
 import { deleteProduct, listProducts } from '../lib/products.js';
 
@@ -47,21 +50,8 @@ export default function ProductsDashboardPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title={`Products (${total})`}
-        right={
-          <Link
-            to="/products/new"
-            className="inline-flex items-center gap-2 rounded-md bg-nexus-accent px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:opacity-95"
-          >
-            <Plus size={14} />
-            New
-          </Link>
-        }
-      />
-
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+    <div className="space-y-5 p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -79,6 +69,16 @@ export default function ProductsDashboardPage() {
           />
           Active only
         </label>
+        <div className="text-sm text-slate-500">
+          {total} product{total === 1 ? '' : 's'}
+        </div>
+        <Link
+          to="/products/new"
+          className="inline-flex items-center gap-2 rounded-md bg-nexus-accent px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:opacity-95"
+        >
+          <Plus size={14} />
+          New
+        </Link>
       </div>
 
       {error && (

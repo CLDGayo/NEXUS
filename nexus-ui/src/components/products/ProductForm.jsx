@@ -2,8 +2,13 @@
 //
 // Submits to POST /products (new) or PATCH /products/:id (edit). Inline
 // error/success per the existing SettingsWorkspacesPage pattern.
+//
+// Phase 32.1 — image upload is no longer gated behind "save once". The
+// carousel runs in "staged" mode when no product exists yet (previews
+// via URL.createObjectURL); on create-submit we POST the product, then
+// drain the staged files through POST /products/{id}/images.
 import { useEffect, useState } from 'react';
-import { createProduct, updateProduct } from '../../lib/products.js';
+import { createProduct, updateProduct, uploadProductImage } from '../../lib/products.js';
 import ImageCarouselEditor from './ImageCarouselEditor.jsx';
 
 const CURRENCY_OPTIONS = ['USD', 'EUR', 'GBP', 'JPY', 'PHP', 'CAD', 'AUD'];
@@ -50,11 +55,57 @@ export default function ProductForm({ product, onSaved, onDelete }) {
         is_active: Boolean(isActive),
         url: url.trim() || null,
       };
-      const saved = isEditing
-        ? await updateProduct(product.id, body)
-        : await createProduct(body);
-      setStatus({ kind: 'ok', message: isEditing ? 'Saved.' : 'Created.' });
-      onSaved?.(saved);
+
+      if (isEditing) {
+        const saved = await updateProduct(product.id, body);
+        setStatus({ kind: 'ok', message: 'Saved.' });
+        onSaved?.(saved);
+        return;
+      }
+
+      // New-product flow: create first, then drain any client-side
+      // staged image previews to /products/{id}/images.
+      const saved = await createProduct(body);
+      const stagedFiles = images.filter((im) => im?._pending && im?._file);
+
+      const uploaded = [];
+      let uploadFailure = null;
+      for (const im of stagedFiles) {
+        try {
+          const result = await uploadProductImage(saved.id, im._file);
+          uploaded.push(result);
+        } catch (err) {
+          uploadFailure = err;
+          break;
+        } finally {
+          if (typeof im.image_url === 'string' && im.image_url.startsWith('blob:')) {
+            try {
+              URL.revokeObjectURL(im.image_url);
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+      }
+
+      // Hand the merged product (server images + freshly uploaded ones)
+      // back to the parent so it can route to /products/:id.
+      const finalProduct = {
+        ...saved,
+        images: [...(saved.images || []), ...uploaded],
+      };
+      setImages(finalProduct.images);
+
+      if (uploadFailure) {
+        const detail = uploadFailure?.body || uploadFailure?.message || 'Image upload failed.';
+        setStatus({
+          kind: 'err',
+          message: `Product created, but image upload failed: ${detail}`,
+        });
+      } else {
+        setStatus({ kind: 'ok', message: 'Created.' });
+      }
+      onSaved?.(finalProduct);
     } catch (err) {
       const detail = err?.body || err?.message || 'Save failed.';
       setStatus({ kind: 'err', message: String(detail) });
@@ -150,17 +201,14 @@ export default function ProductForm({ product, onSaved, onDelete }) {
         Active (visible in catalogue + carousel)
       </label>
 
-      {isEditing && (
-        <ImageCarouselEditor
-          productId={product.id}
-          images={images}
-          onImagesChange={setImages}
-        />
-      )}
-
-      {!isEditing && (
+      <ImageCarouselEditor
+        productId={isEditing ? product.id : null}
+        images={images}
+        onImagesChange={setImages}
+      />
+      {!isEditing && images.length === 0 && (
         <p className="text-xs text-slate-500">
-          Save once to upload images.
+          Drop images now — they upload after you click “Create product.”
         </p>
       )}
 
