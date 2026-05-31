@@ -35,10 +35,42 @@ dependencies = [
     # Phase 28 Part 2 — Minio-backed avatar uploads.
     "aioboto3>=13.0.0,<15",
     "pillow>=11.0.0,<12",
+    # Backs the BM25 sparse retrieval arm in rag/retrieval/sparse.py; mirrors
+    # the root requirements.txt retrieval block (rank-bm25==0.2.2 pinned there).
+    "rank-bm25>=0.2.2",
+    # Langfuse client — backs rag/observability/tracing.py (Langfuse client)
+    # imported transitively by orchestrator/guardrails; pinned <3 because the
+    # code uses the v2 trace()/generation()/event() API that langfuse 3.x
+    # removed. Mirrors the root requirements.txt observability block.
+    "langfuse>=2.55.0,<3",
+    # Observability — backs rag/observability/ (tracing.py, decorators.py,
+    # diagnose.py) and rag/messenger/routers/webhook.py span instrumentation.
+    # Mirrors the opentelemetry block in the root requirements.txt (Docker).
+    # These were previously installed out-of-band; declaring them here ensures
+    # `uv sync` keeps them instead of removing them.
+    "opentelemetry-api>=1.28.0",
+    "opentelemetry-sdk>=1.28.0",
+    # Meta-package that provides the proto.grpc OTLP exporter imported by
+    # rag/observability/tracing.py (opentelemetry.exporter.otlp.proto.grpc).
+    "opentelemetry-exporter-otlp>=1.28.0",
+    # opentelemetry-instrumentation-fastapi ships as a pre-release (0.49b2).
+    # The prerelease = "allow" setting below is required for uv to resolve it.
+    "opentelemetry-instrumentation-fastapi>=0.49b2",
+    # Backs the LangGraph orchestrator in rag/orchestrator/graph.py
+    # (StateGraph, START/END, MemorySaver, AsyncPostgresSaver).
+    # Mirrors the root requirements.txt orchestration block (langgraph==0.2.59,
+    # langgraph-checkpoint-postgres==2.0.7). Upper bound <0.3 guards against
+    # API breakage introduced in the 0.3.x rewrite.
+    "langgraph>=0.2.59,<0.3",
+    "langgraph-checkpoint-postgres>=2.0.7",
 ]
 
 [tool.uv]
 package = false
+# Required so uv resolves opentelemetry-instrumentation-fastapi which ships
+# on a pre-release versioning scheme (0.49b2, 0.50b0, etc.).  Without this,
+# uv's default "disallow prereleases" policy rejects the 0.49bN line.
+prerelease = "allow"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
