@@ -1,8 +1,22 @@
-"""Tests for the wikilink graph retriever arm."""
+"""Tests for the wikilink graph retriever arm (Phase 31+).
+
+Migration note (old → new API):
+  - upsert_note(conn, path, title, aliases) removed; replaced by
+    upsert_document(session, tenant_id=..., file=..., title=..., aliases=(...)).
+  - replace_links_for now takes src_document_id (UUID) not src_path.
+  - All graph_db helpers require tenant_id= kwarg.
+  - connect() yields an AsyncSession; no manual .commit() calls needed.
+  - graph_search() already accepted tenant_id (str) — callers pass a UUID str.
+  - Tests that seed the graph now require a live Postgres connection and are
+    skipped when DATABASE_URL is absent.  The monkeypatch for connect() in
+    test_db_failure_returns_empty still works without Postgres because it
+    patches before any real connection is made.
+"""
 
 from __future__ import annotations
 
-from pathlib import Path
+import os
+import uuid
 
 import pytest
 
@@ -10,54 +24,74 @@ from rag.ingest_v2.graph_db import (
     connect,
     replace_links_for,
     resolve_link_targets,
-    upsert_note,
+    upsert_document,
 )
 from rag.retrieval import graph as graph_module
 from rag.retrieval.types import ScoredChunk
 
+_DB_AVAILABLE = bool(os.getenv("DATABASE_URL"))
 
-@pytest.fixture
-def graph_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("NEXUS_GRAPH_DB", str(tmp_path / "graph.db"))
-    yield
+# Tenant used by seeding helpers — unique per test-session invocation.
+_TENANT_ID = uuid.uuid4()
+_TENANT_STR = str(_TENANT_ID)
 
 
-async def _seed_three_note_vault() -> None:
-    """A → B, A → C, B → C. Used by the seed/neighbor tests below."""
+async def _seed_three_note_vault(tenant_id: uuid.UUID) -> None:
+    """Seed: Alpha → Beta, Alpha → Gamma, Beta → Gamma.
 
-    async with connect() as conn:
-        await upsert_note(conn, path="/v/Alpha.md", title="Project Alpha", aliases=())
-        await upsert_note(conn, path="/v/Beta.md", title="Project Beta", aliases=())
-        await upsert_note(conn, path="/v/Gamma.md", title="Concept Gamma", aliases=())
+    Used by seed/neighbor tests that need a live Postgres connection.
+    """
+    async with connect() as session:
+        id_alpha = await upsert_document(
+            session, tenant_id=tenant_id,
+            file="/v/Alpha.md", title="Project Alpha",
+        )
+        id_beta = await upsert_document(
+            session, tenant_id=tenant_id,
+            file="/v/Beta.md", title="Project Beta",
+        )
+        id_gamma = await upsert_document(
+            session, tenant_id=tenant_id,
+            file="/v/Gamma.md", title="Concept Gamma",
+        )
         await replace_links_for(
-            conn, src_path="/v/Alpha.md",
+            session,
+            tenant_id=tenant_id,
+            src_document_id=id_alpha,
             links=(("Project Beta", None, None), ("Concept Gamma", None, None)),
         )
         await replace_links_for(
-            conn, src_path="/v/Beta.md",
+            session,
+            tenant_id=tenant_id,
+            src_document_id=id_beta,
             links=(("Concept Gamma", None, None),),
         )
-        await conn.commit()
-        await resolve_link_targets(conn)
+        await resolve_link_targets(session, tenant_id=tenant_id)
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
 class TestSeedResolution:
-    async def test_resolves_title_word(self, graph_db) -> None:
-        await _seed_three_note_vault()
-        async with connect() as conn:
+    @pytest.mark.skipif(not _DB_AVAILABLE, reason="Postgres DATABASE_URL not set")
+    async def test_resolves_title_word(self) -> None:
+        tenant = uuid.uuid4()
+        await _seed_three_note_vault(tenant)
+        async with connect() as session:
             seeds = await graph_module._resolve_seeds(
-                conn, query="tell me about alpha", limit=3
+                session, query="tell me about alpha", limit=3,
+                tenant_id=tenant,
             )
         seed_paths = [p for p, _ in seeds]
         assert "/v/Alpha.md" in seed_paths
 
-    async def test_no_match_returns_empty(self, graph_db) -> None:
-        await _seed_three_note_vault()
-        async with connect() as conn:
+    @pytest.mark.skipif(not _DB_AVAILABLE, reason="Postgres DATABASE_URL not set")
+    async def test_no_match_returns_empty(self) -> None:
+        tenant = uuid.uuid4()
+        await _seed_three_note_vault(tenant)
+        async with connect() as session:
             seeds = await graph_module._resolve_seeds(
-                conn, query="nothing related here", limit=3
+                session, query="nothing related here", limit=3,
+                tenant_id=tenant,
             )
         assert seeds == []
 
@@ -65,19 +99,21 @@ class TestSeedResolution:
 @pytest.mark.unit
 @pytest.mark.asyncio
 class TestGraphSearch:
-    async def test_empty_query_returns_empty(self, graph_db) -> None:
-        result = await graph_module.graph_search("", k=5, tenant_id="hunter")
+    async def test_empty_query_returns_empty(self) -> None:
+        result = await graph_module.graph_search("", k=5, tenant_id=_TENANT_STR)
         assert result == []
 
-    async def test_no_seeds_returns_empty(self, graph_db) -> None:
-        # DB is empty (autouse fixture only sets env path).
-        result = await graph_module.graph_search("alpha", k=5, tenant_id="hunter")
+    @pytest.mark.skipif(not _DB_AVAILABLE, reason="Postgres DATABASE_URL not set")
+    async def test_no_seeds_returns_empty(self) -> None:
+        # Fresh tenant — DB has no documents for it.
+        fresh = str(uuid.uuid4())
+        result = await graph_module.graph_search("alpha", k=5, tenant_id=fresh)
         assert result == []
 
-    async def test_walks_and_returns_qdrant_hits(
-        self, graph_db, monkeypatch
-    ) -> None:
-        await _seed_three_note_vault()
+    @pytest.mark.skipif(not _DB_AVAILABLE, reason="Postgres DATABASE_URL not set")
+    async def test_walks_and_returns_qdrant_hits(self, monkeypatch) -> None:
+        tenant = uuid.uuid4()
+        await _seed_three_note_vault(tenant)
 
         captured_paths: list[list[str]] = []
 
@@ -93,13 +129,12 @@ class TestGraphSearch:
                 for i, p in enumerate(paths[:k])
             ]
 
-        monkeypatch.setattr(
-            graph_module, "_fetch_chunks_by_files", fake_fetch
-        )
+        monkeypatch.setattr(graph_module, "_fetch_chunks_by_files", fake_fetch)
 
-        result = await graph_module.graph_search("tell me about alpha", k=5, tenant_id="hunter")
-        # Seed = Alpha, neighbors = Beta + Gamma (one-hop). All three are
-        # passed to Qdrant.
+        result = await graph_module.graph_search(
+            "tell me about alpha", k=5, tenant_id=str(tenant)
+        )
+        # Seed = Alpha, neighbors = Beta + Gamma (one-hop). All three passed to Qdrant.
         assert captured_paths, "fetcher must be called"
         paths_seen = set(captured_paths[0])
         assert "/v/Alpha.md" in paths_seen
@@ -109,17 +144,14 @@ class TestGraphSearch:
         assert len(result) >= 1
         assert all(isinstance(c, ScoredChunk) for c in result)
 
-    async def test_db_failure_returns_empty(
-        self, graph_db, monkeypatch
-    ) -> None:
-        """If the SQLite path is corrupt we degrade — no exception."""
+    async def test_db_failure_returns_empty(self, monkeypatch) -> None:
+        """If the Postgres session raises we degrade gracefully — no exception."""
 
         def broken_connect(*a, **kw):
-            # The real connect() returns an async context manager. Raising
-            # at call time lets the module's try/except catch us before
-            # any `async with` machinery spins up.
+            # Raise at call time so the module's try/except catches it
+            # before any async-with machinery spins up.
             raise RuntimeError("disk gone")
 
         monkeypatch.setattr(graph_module, "connect", broken_connect)
-        result = await graph_module.graph_search("alpha", k=5, tenant_id="hunter")
+        result = await graph_module.graph_search("alpha", k=5, tenant_id=_TENANT_STR)
         assert result == []
