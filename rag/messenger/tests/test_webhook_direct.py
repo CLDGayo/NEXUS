@@ -35,6 +35,7 @@ from rag.messenger.sender import SendResult
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def overlay_tmp(tmp_path, monkeypatch):
     """Isolate the messenger overlay file per test."""
@@ -127,7 +128,9 @@ def _sign(body: bytes, secret: str) -> str:
     return "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
 
 
-def _envelope(text: str = "hello", mid: str = "m_42", sender_id: str = "psid_99") -> dict:
+def _envelope(
+    text: str = "hello", mid: str = "m_42", sender_id: str = "psid_99"
+) -> dict:
     return {
         "object": "page",
         "entry": [
@@ -149,6 +152,7 @@ def _envelope(text: str = "hello", mid: str = "m_42", sender_id: str = "psid_99"
 # ---------------------------------------------------------------------------
 # GET /messenger/inbound — handshake
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 class TestHandshake:
@@ -195,9 +199,7 @@ class TestHandshake:
         assert good.text == "777"
         assert bad.status_code == 403
 
-    def test_wrong_token_returns_403(
-        self, client: TestClient, overlay_tmp
-    ) -> None:
+    def test_wrong_token_returns_403(self, client: TestClient, overlay_tmp) -> None:
         overlay_tmp.set_verify_token("nexus-verify-token-secret-XX")
         r = client.get(
             "/webhook/messenger/inbound",
@@ -226,6 +228,7 @@ class TestHandshake:
 # ---------------------------------------------------------------------------
 # POST /messenger/inbound — signed raw payload
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 class TestSignedPost:
@@ -375,6 +378,7 @@ class TestSignedPost:
 # ---------------------------------------------------------------------------
 # Phase 15 — multimodal image attachments
 # ---------------------------------------------------------------------------
+
 
 def _envelope_with_attachments(
     *,
@@ -538,5 +542,203 @@ class TestMultimodal:
             content=body,
         )
         assert r.status_code == 200
+        assert captured_events == []
+
+
+# ---------------------------------------------------------------------------
+# Phase 37 — HITL Handover & Notification Protocol
+# ---------------------------------------------------------------------------
+
+
+def _read_envelope(sender_id: str = "psid_read", page_id: str = "page_1") -> dict:
+    """Build a Meta read-receipt envelope (no ``message`` key)."""
+
+    return {
+        "object": "page",
+        "entry": [
+            {
+                "id": page_id,
+                "messaging": [
+                    {
+                        "sender": {"id": sender_id},
+                        "recipient": {"id": page_id},
+                        "timestamp": 1731742900,
+                        "read": {"watermark": 1731742900000},
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _human_echo_envelope(
+    *,
+    recipient_id: str = "psid_owner_target",
+    app_id: str | int | None = 222,
+    page_id: str = "page_1",
+) -> dict:
+    """Build an is_echo envelope as if the human owner replied via Page Inbox."""
+
+    message: dict = {"mid": "m_echo_1", "text": "Hi from the owner", "is_echo": True}
+    if app_id is not None:
+        message["app_id"] = app_id
+    return {
+        "object": "page",
+        "entry": [
+            {
+                "id": page_id,
+                "messaging": [
+                    {
+                        "sender": {"id": "page_1"},
+                        "recipient": {"id": recipient_id},
+                        "timestamp": 1731742950,
+                        "message": message,
+                    }
+                ],
+            }
+        ],
+    }
+
+
+@pytest.mark.unit
+class TestHITL:
+    def test_read_event_pauses_bot_and_skips_graph(
+        self,
+        client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
+        stub_runner: _StubRunner,
+        captured_events: list[Awaitable[None]],
+        fake_redis,
+    ) -> None:
+        monkeypatch.setenv("MESSENGER_APP_SECRET", "hitl-read-secret")
+        body = json.dumps(_read_envelope(sender_id="psid_read_42")).encode()
+        sig = _sign(body, "hitl-read-secret")
+
+        r = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Hub-Signature-256": sig},
+            content=body,
+        )
+        assert r.status_code == 200
+        # Graph runner must NOT be called for a read receipt.
+        assert stub_runner.calls == []
+        # Exactly one background task scheduled: the pause helper.
+        assert len(captured_events) == 1
+
+        import asyncio
+
+        asyncio.run(captured_events[0])
+
+        # Pause key now exists in fakeredis.
+        async def _check() -> int:
+            return await fake_redis.exists("nexus:hitl:paused:psid_read_42")
+
+        assert asyncio.run(_check()) == 1
+
+    def test_human_echo_pauses_bot_for_recipient(
+        self,
+        client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
+        stub_runner: _StubRunner,
+        captured_events: list[Awaitable[None]],
+        fake_redis,
+    ) -> None:
+        # Our app id = "111", echo carries app_id 222 → human owner via
+        # Business Suite. Pause should be set for the *recipient* (the
+        # customer the owner is talking to).
+        from rag.config import settings as _settings
+
+        monkeypatch.setenv("MESSENGER_APP_SECRET", "hitl-echo-secret")
+        monkeypatch.setattr(_settings, "messenger_app_id", "111")
+
+        body = json.dumps(
+            _human_echo_envelope(recipient_id="psid_customer_7", app_id=222)
+        ).encode()
+        sig = _sign(body, "hitl-echo-secret")
+
+        r = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Hub-Signature-256": sig},
+            content=body,
+        )
+        assert r.status_code == 200
+        assert stub_runner.calls == []
+        assert len(captured_events) == 1
+
+        import asyncio
+
+        asyncio.run(captured_events[0])
+
+        async def _check() -> int:
+            return await fake_redis.exists("nexus:hitl:paused:psid_customer_7")
+
+        assert asyncio.run(_check()) == 1
+
+    def test_bot_own_echo_does_not_pause(
+        self,
+        client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
+        stub_runner: _StubRunner,
+        captured_events: list[Awaitable[None]],
+        fake_redis,
+    ) -> None:
+        # Echo with app_id matching our own → ignored, no pause scheduled.
+        from rag.config import settings as _settings
+
+        monkeypatch.setenv("MESSENGER_APP_SECRET", "hitl-self-echo-secret")
+        monkeypatch.setattr(_settings, "messenger_app_id", "111")
+
+        body = json.dumps(
+            _human_echo_envelope(recipient_id="psid_customer_8", app_id="111")
+        ).encode()
+        sig = _sign(body, "hitl-self-echo-secret")
+
+        r = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Hub-Signature-256": sig},
+            content=body,
+        )
+        assert r.status_code == 200
+        assert stub_runner.calls == []
+        assert captured_events == []
+
+        import asyncio
+
+        async def _check() -> int:
+            return await fake_redis.exists("nexus:hitl:paused:psid_customer_8")
+
+        assert asyncio.run(_check()) == 0
+
+    def test_paused_inbound_is_dropped_and_graph_not_called(
+        self,
+        client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
+        stub_runner: _StubRunner,
+        stub_sender: _StubSender,
+        captured_events: list[Awaitable[None]],
+        fake_redis,
+    ) -> None:
+        # Pre-pause the sender, then POST a real inbound message. Expect
+        # 200, NO graph call, NO outbound dispatch.
+        import asyncio
+
+        from rag.messenger.hitl import set_bot_paused
+
+        asyncio.run(set_bot_paused("psid_99"))
+
+        monkeypatch.setenv("MESSENGER_APP_SECRET", "hitl-pause-secret")
+
+        body = json.dumps(_envelope("Hello, can you help?")).encode()
+        sig = _sign(body, "hitl-pause-secret")
+
+        r = client.post(
+            "/webhook/messenger/inbound",
+            headers={"X-Hub-Signature-256": sig},
+            content=body,
+        )
+        assert r.status_code == 200
+        assert stub_runner.calls == []
+        stub_sender.dispatch.assert_not_awaited()
+        # No handler scheduled — gatekeeper short-circuited before _scheduler.
         assert captured_events == []
         assert stub_runner.calls == []

@@ -39,6 +39,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from rag.config import settings
 from rag.database.engine import get_async_session
 from rag.guardrails.groundedness import abstention_text
+from rag.messenger.hitl import (
+    is_bot_paused,
+    is_human_echo,
+    is_read_event,
+    notify_owner_if_needed,
+    set_bot_paused,
+)
 from rag.messenger.idempotency import (
     acquire_thread_lock,
     check_idempotency,
@@ -60,6 +67,7 @@ from rag.messenger.security import (
 )
 from rag.messenger.sender import OutboundSender, SendResult, get_sender
 from rag.messenger.tenant_resolver import resolve_tenant_for_page
+from rag.messenger.triage import TriageResult, triage_comment
 from rag.messenger_overlay import current_verify_token
 
 _log = logging.getLogger(__name__)
@@ -95,6 +103,7 @@ async def _real_graph_runner(payload: InboundMessage, correlation_id: str) -> di
         surface="messenger",
         attachments=payload.attachments,
         tenant_id=payload.tenant_slug,
+        sender_id=payload.user_id,
     )
 
 
@@ -108,6 +117,7 @@ async def get_graph_runner() -> GraphRunner:
 # ---------------------------------------------------------------------------
 # Outbound dispatcher dependency
 # ---------------------------------------------------------------------------
+
 
 async def get_outbound_sender() -> OutboundSender:
     """FastAPI dependency. Tests override via dependency_overrides."""
@@ -160,6 +170,7 @@ def set_event_scheduler(scheduler: EventScheduler | None) -> None:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _correlation_id(provided: str | None) -> str:
     return provided or f"corr_{uuid.uuid4().hex[:16]}"
 
@@ -181,6 +192,7 @@ def _should_dispatch_outbound(payload: InboundMessage) -> str | None:
 # ---------------------------------------------------------------------------
 # Phase 12 — Meta direct endpoints
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/messenger/inbound",
@@ -216,7 +228,9 @@ async def messenger_handshake(request: Request) -> PlainTextResponse:
 
     if not provided_token or not _hmac.compare_digest(provided_token, expected_token):
         _log.warning("messenger.handshake.token_mismatch")
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="verify token")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="verify token"
+        )
 
     if not challenge:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="challenge")
@@ -278,9 +292,34 @@ async def messenger_inbound_direct(
     for entry in envelope.get("entry") or []:
         page_id = str(entry.get("id") or "")
         for event in entry.get("messaging") or []:
+            # Phase 37 — human-owner read receipt → pause bot.
+            if is_read_event(event):
+                read_sender = str(((event.get("sender") or {}).get("id")) or "")
+                if read_sender:
+                    _log.info(
+                        "hitl.read_receipt sender=%s page=%s",
+                        read_sender,
+                        page_id,
+                    )
+                    _scheduler(_hitl_pause_on_human_activity(read_sender))
+                continue
+
             message = event.get("message") or {}
+
+            # Phase 37 — human-owner echo (Business Suite reply) → pause bot.
+            if is_human_echo(event, settings.messenger_app_id):
+                echo_recipient = str(((event.get("recipient") or {}).get("id")) or "")
+                if echo_recipient:
+                    _log.info(
+                        "hitl.human_echo recipient=%s page=%s",
+                        echo_recipient,
+                        page_id,
+                    )
+                    _scheduler(_hitl_pause_on_human_activity(echo_recipient))
+                continue
+
             if message.get("is_echo"):
-                # Our own outbound deliveries echo back — never reply to them.
+                # Our own bot's outbound deliveries echo back — never reply.
                 continue
             sender_id = str(((event.get("sender") or {}).get("id")) or "")
             if not sender_id:
@@ -318,6 +357,43 @@ async def messenger_inbound_direct(
                     "ts_ms": ts_ms,
                 }
             )
+
+        # Phase 38 — Feed events (public comments on Page posts).
+        # These arrive under entry.changes, NOT entry.messaging.
+        # Dispatched to the stateless triage engine (no LangGraph).
+        if settings.comment_triage_enabled:
+            for change in entry.get("changes") or []:
+                if not isinstance(change, dict):
+                    continue
+                if change.get("field") != "feed":
+                    continue
+                value = change.get("value") or {}
+                if value.get("item") != "comment" or value.get("verb") != "add":
+                    continue
+                comment_sender_id = str(((value.get("from") or {}).get("id")) or "")
+                # Strict echo guard: never process our own Page's comments.
+                if not comment_sender_id or comment_sender_id == page_id:
+                    continue
+                comment_id = str(value.get("comment_id") or "")
+                post_id = str(value.get("post_id") or "")
+                comment_text = str(value.get("message") or "").strip()
+                if not comment_id or not comment_text:
+                    continue
+                _scheduler(
+                    _handle_comment_triage(
+                        page_id=page_id,
+                        comment_id=comment_id,
+                        post_id=post_id,
+                        comment_text=comment_text,
+                        sender_id=comment_sender_id,
+                    )
+                )
+                _log.info(
+                    "comment_triage.scheduled page=%s comment=%s sender=%s",
+                    page_id,
+                    comment_id,
+                    comment_sender_id,
+                )
 
     # Coalescing window: events from the same sender within this many
     # seconds collapse into one turn. Two seconds is wider than Meta's
@@ -440,6 +516,20 @@ async def messenger_inbound_direct(
             )
             continue
 
+        # Phase 37 — HITL gatekeeper. If the human owner is active, drop
+        # the inbound message (do NOT run the graph). Return 200 so Meta
+        # doesn't retry. Release the thread lock we just acquired so a
+        # later (post-pause) turn can re-acquire it cleanly.
+        if await is_bot_paused(sender_id):
+            _log.info(
+                "hitl.gatekeeper_dropped sender=%s page=%s reason=human_active",
+                sender_id,
+                page_id,
+            )
+            if lock_verdict is not None:
+                await release_thread_lock(sender_id)
+            continue
+
         _scheduler(
             _handle_messenger_event(
                 inbound=inbound,
@@ -517,6 +607,24 @@ async def _handle_messenger_event(
             reply_text = abstention_text()
             graph_result = {"abstained": True, "requires_human_handover": True}
 
+        # Phase 37 — notify the human owner (once per 24h session). Fires
+        # on both happy-path and abstention-path so the owner is alerted
+        # any time a real customer query lands.
+        try:
+            await notify_owner_if_needed(
+                sender_id=inbound.user_id,
+                page_id=inbound.page_id or "",
+                thread_key=inbound.user_id,
+                user_query=inbound.message_text,
+                bot_answer=reply_text,
+            )
+        except Exception as exc:  # noqa: BLE001 — notification must never block dispatch
+            _log.warning(
+                "hitl.notify_swallowed correlation_id=%s err=%s",
+                correlation_id,
+                exc,
+            )
+
         # Step F — checkpoint persistence is decoupled from outbound
         # delivery. If the graph reports a persistence error (raised
         # inside the saver after the answer was already produced), we
@@ -536,8 +644,7 @@ async def _handle_messenger_event(
             )
             if persistence_error:
                 _log.warning(
-                    "messenger.event.persistence_degraded "
-                    "correlation_id=%s err=%s",
+                    "messenger.event.persistence_degraded correlation_id=%s err=%s",
                     correlation_id,
                     persistence_error,
                 )
@@ -562,9 +669,77 @@ async def _handle_messenger_event(
             await release_thread_lock(lock_thread_key)
 
 
+async def _hitl_pause_on_human_activity(sender_id: str) -> None:
+    """Phase 37 — background task: pause the bot when the human owner
+    reads or replies in the thread."""
+
+    try:
+        await set_bot_paused(sender_id)
+    except Exception as exc:  # noqa: BLE001
+        _log.warning("hitl.pause_on_activity_failed sender=%s err=%s", sender_id, exc)
+
+
+async def _handle_comment_triage(
+    *,
+    page_id: str,
+    comment_id: str,
+    post_id: str,
+    comment_text: str,
+    sender_id: str,
+) -> None:
+    """Phase 38 — background task: stateless LLM triage of a public comment.
+
+    Bypasses LangGraph entirely. Calls the fast 8B model for intent
+    classification, then dispatches public reply and/or private reply
+    via the Graph API. All exceptions are caught and logged — a failed
+    comment triage must never block the main DM pipeline.
+    """
+    try:
+        result: TriageResult = await triage_comment(comment_text)
+        _log.info(
+            "comment_triage.result comment=%s action=%s",
+            comment_id,
+            result.action,
+        )
+        if result.action == "ignore":
+            return
+
+        from rag.messenger.sender import (
+            send_private_reply,
+            send_public_comment_reply,
+        )
+        from rag.messenger_overlay import current_page_access_token
+
+        token = current_page_access_token()
+        if not token:
+            _log.warning("comment_triage.no_token comment=%s", comment_id)
+            return
+
+        if result.public_reply:
+            await send_public_comment_reply(
+                comment_id=comment_id,
+                message=result.public_reply,
+                access_token=token,
+            )
+
+        if result.action == "public_and_private" and result.private_reply:
+            await send_private_reply(
+                comment_id=comment_id,
+                message=result.private_reply,
+                access_token=token,
+            )
+    except Exception as exc:  # noqa: BLE001
+        _log.warning(
+            "comment_triage.failed comment=%s err=%s",
+            comment_id,
+            exc,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Phase 6 — Orchestrator broker endpoint (n8n / Make)
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/messenger/orchestrator",

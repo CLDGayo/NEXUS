@@ -16,6 +16,7 @@ to drive on retry.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import time
@@ -66,6 +67,58 @@ def _retryable_status(status_code: int) -> bool:
     """5xx are retryable; 4xx are client errors and shouldn't retry."""
 
     return status_code >= 500
+
+
+def _body_kind(body: dict) -> str:
+    """Identify a Send API body as ``"carousel"`` (generic template) or
+    ``"text"`` so per-body retry payloads can be scoped down to that
+    bubble and per-body log lines stay legible.
+    """
+
+    message = body.get("message") or {}
+    if isinstance(message, dict) and "attachment" in message:
+        return "carousel"
+    if isinstance(message, dict) and "text" in message:
+        return "text"
+    return "unknown"
+
+
+def _extract_image_urls(bodies: list[dict]) -> list[str]:
+    """Collect every ``image_url`` from a list of Send API bodies.
+
+    Used for the Phase 32.6 fingerprint log: we want a stable digest of
+    the URLs Meta sees, without dumping the JWTs themselves.
+    """
+
+    urls: list[str] = []
+    for body in bodies:
+        message = body.get("message") or {}
+        if not isinstance(message, dict):
+            continue
+        attachment = message.get("attachment") or {}
+        if not isinstance(attachment, dict):
+            continue
+        attach_payload = attachment.get("payload") or {}
+        if not isinstance(attach_payload, dict):
+            continue
+        for el in attach_payload.get("elements") or []:
+            if not isinstance(el, dict):
+                continue
+            image_url = el.get("image_url")
+            if isinstance(image_url, str) and image_url:
+                urls.append(image_url)
+    return urls
+
+
+def _fingerprint_urls(urls: list[str]) -> str:
+    """Return a short stable digest of an ordered URL list. Empty input
+    returns ``"-"`` so the log line stays self-describing.
+    """
+
+    if not urls:
+        return "-"
+    digest = hashlib.sha256("|".join(urls).encode("utf-8")).hexdigest()
+    return digest[:12]
 
 
 def _classify_graph_error(status_code: int, body: dict | None) -> tuple[bool, str]:
@@ -232,20 +285,66 @@ class OutboundSender:
                 target="graph_api",
             )
 
+        # Phase 32.6 — Structured fingerprint of the image_url set we're
+        # about to ship. Lets future "(#100) … should represent a valid URL"
+        # incidents be debugged from logs without re-running the request.
+        image_urls = _extract_image_urls(bodies)
+        image_count = len(image_urls)
+        image_fingerprint = _fingerprint_urls(image_urls)
+        _log.info(
+            "outbound.graph_api dispatch correlation_id=%s bodies=%d "
+            "image_urls=%d image_fingerprint=%s",
+            payload.correlation_id,
+            len(bodies),
+            image_count,
+            image_fingerprint,
+        )
+
+        # Phase 32.6 — Per-body outcomes. The carousel and the text bubble
+        # ship to Meta as two independent Send API calls; a 400 on one
+        # must not silently swallow the other. Track each body's outcome
+        # and aggregate at the end:
+        #
+        # * 400 (non-retryable) on a body → log + continue to the next body.
+        # * Transport / 5xx / rate-limit on a body → enqueue THAT body
+        #   alone for retry (so the worker doesn't re-send the bodies that
+        #   already delivered) and stop dispatching subsequent bodies in
+        #   this turn.
+        # * delivered if ≥1 body shipped; queued if any body is in the
+        #   retry queue; dead_letter only when ALL bodies non-retryably
+        #   failed.
+        delivered = 0
+        non_retryable_failures = 0
         last_status: int | None = None
-        for graph_body in bodies:
+        last_error: str | None = None
+        queued_result: SendResult | None = None
+        carousel_failed = False
+
+        for index, graph_body in enumerate(bodies):
+            body_kind = _body_kind(graph_body)
             try:
                 async with self._client_factory() as client:
                     response = await client.post(url, json=graph_body)
             except httpx.HTTPError as exc:
-                return await self._on_failure(
-                    payload=payload,
-                    target_url=_GRAPH_API_BASE,
-                    attempts_so_far=0,
-                    error=f"transport: {exc.__class__.__name__}: {exc}",
-                    retryable=True,
-                    target="graph_api",
+                error = f"transport: {exc.__class__.__name__}: {exc}"
+                _log.warning(
+                    "outbound.graph_api transport_error "
+                    "correlation_id=%s body_index=%d body_kind=%s err=%s",
+                    payload.correlation_id,
+                    index,
+                    body_kind,
+                    error,
                 )
+                queued_result = await self._on_failure_for_body(
+                    payload=payload,
+                    body=graph_body,
+                    body_kind=body_kind,
+                    error=error,
+                    retryable=True,
+                    status_code=None,
+                )
+                last_error = error
+                break
 
             if response.status_code >= 400:
                 try:
@@ -256,34 +355,114 @@ class OutboundSender:
                     response.status_code, err_body
                 )
                 _log.warning(
-                    "outbound.graph_api error correlation_id=%s retryable=%s %s",
+                    "outbound.graph_api error correlation_id=%s body_index=%d "
+                    "body_kind=%s retryable=%s %s",
                     payload.correlation_id,
+                    index,
+                    body_kind,
                     retryable,
                     summary,
                 )
-                return await self._on_failure(
-                    payload=payload,
-                    target_url=_GRAPH_API_BASE,
-                    attempts_so_far=0,
-                    error=summary,
-                    retryable=retryable,
-                    status_code=response.status_code,
-                    target="graph_api",
-                )
+                last_status = response.status_code
+                last_error = summary
+
+                if retryable:
+                    queued_result = await self._on_failure_for_body(
+                        payload=payload,
+                        body=graph_body,
+                        body_kind=body_kind,
+                        error=summary,
+                        retryable=True,
+                        status_code=response.status_code,
+                    )
+                    break
+
+                # Non-retryable (e.g. Meta validation 400 on a single
+                # body) — keep going so a carousel-only failure can't
+                # silently drop the text continuity bubble.
+                non_retryable_failures += 1
+                if body_kind == "carousel":
+                    carousel_failed = True
+                continue
+
+            delivered += 1
             last_status = response.status_code
 
-        _log.info(
-            "outbound.graph_api delivered correlation_id=%s status=%s "
-            "messages=%d token_tail=%s",
-            payload.correlation_id,
-            last_status,
-            len(bodies),
-            token[-4:] if len(token) >= 4 else "????",
-        )
-        return SendResult(
-            outcome="delivered",
+        if delivered > 0:
+            _log.info(
+                "outbound.graph_api delivered correlation_id=%s status=%s "
+                "messages=%d failed=%d carousel_failed=%s token_tail=%s "
+                "image_urls=%d image_fingerprint=%s",
+                payload.correlation_id,
+                last_status,
+                delivered,
+                non_retryable_failures,
+                carousel_failed,
+                token[-4:] if len(token) >= 4 else "????",
+                image_count,
+                image_fingerprint,
+            )
+            return SendResult(
+                outcome="delivered",
+                status_code=last_status,
+                attempts=1,
+                error=last_error,
+                target="graph_api",
+            )
+
+        if queued_result is not None:
+            return queued_result
+
+        # All bodies failed non-retryably and nothing made it to the queue.
+        return await self._on_failure(
+            payload=payload,
+            target_url=_GRAPH_API_BASE,
+            attempts_so_far=0,
+            error=last_error or "all bodies failed",
+            retryable=False,
             status_code=last_status,
-            attempts=1,
+            target="graph_api",
+        )
+
+    async def _on_failure_for_body(
+        self,
+        *,
+        payload: OutboundPayload,
+        body: dict,
+        body_kind: str,
+        error: str,
+        retryable: bool,
+        status_code: int | None,
+    ) -> SendResult:
+        """Phase 32.6 — failure path scoped to a single Send API body.
+
+        Used when one of the bodies fired by ``_dispatch_graph_api`` needs
+        to be retried. We materialise a one-body ``OutboundPayload`` for
+        the queue so the worker only re-sends that body, never the bodies
+        already delivered earlier in this turn.
+        """
+
+        scoped = payload.model_copy()
+        if body_kind == "text":
+            scoped = scoped.model_copy(
+                update={
+                    "reply": scoped.reply.model_copy(update={"carousel": None}),
+                }
+            )
+        elif body_kind == "carousel":
+            scoped = scoped.model_copy(
+                update={
+                    "reply": scoped.reply.model_copy(update={"text": None}),
+                }
+            )
+
+        return await self._on_failure(
+            payload=scoped,
+            target_url=_GRAPH_API_BASE,
+            attempts_so_far=0,
+            error=error,
+            retryable=retryable,
+            status_code=status_code,
             target="graph_api",
         )
 
@@ -305,9 +484,7 @@ class OutboundSender:
         recipient_id = payload.user_id
 
         if reply.carousel is not None:
-            bodies.append(
-                self._format_generic_template(reply.carousel, recipient_id)
-            )
+            bodies.append(self._format_generic_template(reply.carousel, recipient_id))
 
         text = reply.text or ""
         # Phase 18 — strip [\d+] citation brackets from Messenger outbound
@@ -458,3 +635,79 @@ def set_sender(sender: OutboundSender | None) -> None:
 
     global _sender_singleton
     _sender_singleton = sender
+
+
+# ---------------------------------------------------------------------------
+# Phase 38 — Public comment & private reply dispatchers
+# ---------------------------------------------------------------------------
+
+_GRAPH_COMMENT_REPLY_URL = "https://graph.facebook.com/v21.0/{comment_id}/comments"
+_GRAPH_PRIVATE_REPLY_URL = (
+    "https://graph.facebook.com/v21.0/{comment_id}/private_replies"
+)
+
+
+async def send_public_comment_reply(
+    *, comment_id: str, message: str, access_token: str
+) -> bool:
+    """POST a public reply under a comment. Returns True on success.
+
+    Fail-silent: logs and returns False on any error. Never raises.
+    """
+    url = _GRAPH_COMMENT_REPLY_URL.format(comment_id=comment_id)
+    try:
+        async with httpx.AsyncClient(
+            timeout=settings.outbound_send_timeout_seconds
+        ) as client:
+            response = await client.post(
+                url,
+                params={"access_token": access_token},
+                json={"message": message},
+            )
+        if response.status_code >= 400:
+            _log.warning(
+                "comment_reply.error comment=%s status=%d body=%s",
+                comment_id,
+                response.status_code,
+                response.text[:200],
+            )
+            return False
+        _log.info("comment_reply.delivered comment=%s", comment_id)
+        return True
+    except httpx.HTTPError as exc:
+        _log.warning("comment_reply.transport_error comment=%s err=%s", comment_id, exc)
+        return False
+
+
+async def send_private_reply(
+    *, comment_id: str, message: str, access_token: str
+) -> bool:
+    """Send a private reply (DM) to the author of a comment. Returns True on success.
+
+    Meta restricts private replies to comments posted within 7 days.
+    Error code (#10900) is expected for stale comments — logged and dropped.
+    Fail-silent: logs and returns False on any error. Never raises.
+    """
+    url = _GRAPH_PRIVATE_REPLY_URL.format(comment_id=comment_id)
+    try:
+        async with httpx.AsyncClient(
+            timeout=settings.outbound_send_timeout_seconds
+        ) as client:
+            response = await client.post(
+                url,
+                params={"access_token": access_token},
+                json={"message": message},
+            )
+        if response.status_code >= 400:
+            _log.warning(
+                "private_reply.error comment=%s status=%d body=%s",
+                comment_id,
+                response.status_code,
+                response.text[:200],
+            )
+            return False
+        _log.info("private_reply.delivered comment=%s", comment_id)
+        return True
+    except httpx.HTTPError as exc:
+        _log.warning("private_reply.transport_error comment=%s err=%s", comment_id, exc)
+        return False
