@@ -127,7 +127,8 @@ Second Brain Nexus/                  (Obsidian PARA vault + RAG system)
 - **LLM:** **Groq** — primary `llama-3.3-70b-versatile` (temp 0.3, max 1024); follow-ups `llama-3.1-8b-instant` (temp 0.5, 3 per turn).
 - **Relational/IAM:** SQLAlchemy 2 (asyncio) + **asyncpg** (Postgres) + **Alembic**; `fastapi-users[sqlalchemy]` (Phase 27).
 - **Object storage:** `aioboto3` + Pillow — MinIO-backed avatar uploads (Phase 28).
-- **Graph/wikilinks:** on-disk SQLite at `rag/data/nexus_graph.db` via `rag/ingest_v2/graph_db.py` (`aiosqlite`; planned fold into Postgres).
+- **Retrieval arms (`rag/retrieval/`):** `dense.py` (Qdrant cosine), `sparse.py` (BM25 via `rank_bm25`, in-mem cache `BM25_CACHE_TTL_SECONDS=3600`), `rrf.py` (`reciprocal_rank_fusion`, `DEFAULT_K=60`), `graph.py` (Phase 31 Postgres-backed one-hop wikilink walk on `app.document_links`, tenant-scoped), `rerank.py` (fastembed `TextCrossEncoder`).
+- **Graph/wikilinks:** Phase 31 moved graph retrieval to **Postgres** (`app.document_links`, tenant-scoped) — see `rag/retrieval/graph.py`. The legacy on-disk SQLite `rag/data/nexus_graph.db` (`rag/ingest_v2/graph_db.py`) is being retired; `aiosqlite` stays pinned only for the ingest-side resolver until that lands.
 - **Tokenizer:** `tiktoken` (cl100k). **PDF:** `pypdf` + `pymupdf`. **Frontmatter:** `python-frontmatter`. **Watcher:** `watchdog`.
 - **Auth tokens:** `python-jose[cryptography]`, `python-multipart`.
 
@@ -145,7 +146,15 @@ Migrated from the old CLAUDE.md. Every PR in `rag/` should close a gap or harden
 4. **Cross-encoder rerank** — `ms-marco-MiniLM-L-6-v2` (or BGE reranker), top-50 → `TOP_K=6`; optional recency bias (λ default 0.0); log bm25/dense/rrf/rerank scores.
 5. **Generation** — Groq streaming with strict `[n]` citation enforcement; SSE event order `status → sources → token×N → followups → done`.
 
-**Implementation baseline (per old CLAUDE.md, as of 2026-05-14):** ingestion = header walk + 400/50 (no semantic detector/fence preservation yet); metadata = partial; retrieval = **pure dense** (BM25+RRF missing); rerank = present via fastembed; generation = shipped (Groq streaming + citations + follow-ups); observability/evals = trace store + RAGAS still to build. **Verify current state against code before quoting — phases 27–37 have shipped since.**
+**Implementation status (verified against code at HEAD 3c4d7f2, 2026-05-31):**
+- Ingestion: header walk + 400/50 chunking shipped; semantic-boundary detector + code-fence preservation still gaps.
+- Metadata: partial (file, folder, title, heading, tags, content_hash); wikilinks/aliases/source_kind/language partial.
+- **Retrieval: HYBRID shipped** — dense (Qdrant) + sparse (BM25) + RRF fusion (`k=60`) + Phase 31 Postgres graph arm. This is **past** the old "pure dense" baseline.
+- Rerank: shipped (fastembed `TextCrossEncoder`).
+- Generation: shipped (Groq streaming + `[n]` citations + follow-ups).
+- Observability/evals: trace store partial; RAGAS harness still to build.
+
+> The old CLAUDE.md "as of 2026-05-14" baseline is superseded — phases 27–37 shipped IAM, MinIO, hybrid+graph retrieval, messenger/HITL, sales tools, sentiment. Always confirm against `rag/` before quoting.
 
 ## Subsystems (recent phase work, from CHANGELOG / Dev Logs)
 
@@ -216,15 +225,15 @@ This context was mined from, and should be reconciled against, these in-repo sou
 
 ## Open Questions / Outstanding Work
 
-Target-vs-shipped gaps (from the RAG pipeline spec — confirm against code before acting):
+Real remaining gaps (verified against code at HEAD 3c4d7f2 — hybrid retrieval and graph arm are NOT gaps, they shipped):
 
-- **Hybrid retrieval incomplete** — BM25 sparse arm + RRF fusion not shipped; retrieval is pure dense. (Stage 3 gap.)
 - **Ingestion** — semantic-boundary detector and code-fence preservation not yet implemented (Stage 1 gap).
 - **Metadata** — wikilinks index, aliases, `source_kind`, `language` only partially populated (Stage 2 gap).
+- **BM25 persistence** — sparse arm is shipped but in-memory only; `sparse.py` notes "Phase 4 will swap this for a persisted `rank_bm25` snapshot." Until then BM25 rebuilds per-process.
+- **Graph DB migration tail** — graph *retrieval* is Postgres now (Phase 31); the legacy SQLite `rag/data/nexus_graph.db` ingest-side resolver still exists, keeping the `aiosqlite` pin alive until it's folded in.
 - **Evals** — no RAGAS harness, golden set, or CI regression gate yet (`rag/scripts/eval/` planned).
 - **Observability** — append-only JSONL trace store + OTel spans only partially in place.
-- **Graph DB** — `rag/data/nexus_graph.db` (SQLite) is slated to fold into Postgres; the `aiosqlite` pin drops when it does.
-- **Operating-contract reconciliation** — RIPER-5 (CLAUDE.md) now coexists with the legacy "THE BUILDER / Command Chain" contract (`.vibecode-backup/CLAUDE.md`). Decide which governs the live workflow long-term.
+- **Operating-contract reconciliation** — RESOLVED 2026-05-31: RIPER-5 (CLAUDE.md) is the chosen live workflow; the legacy "THE BUILDER / Command Chain" contract is archived at `.vibecode-backup/CLAUDE.md` for reference only.
 
 ---
 
