@@ -3,6 +3,118 @@
 All notable changes to the NEXUS Knowledge Base.
 This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.11.0] - 2026-05-31
+
+### Added
+- **Phase 38 — Stateless Public Comment Triage Engine.** The Messenger webhook now listens for `feed` events (public comments on Page posts), which arrive under `entry[].changes[]` rather than `entry[].messaging[]`. Each new comment is dispatched to a stateless, single-shot LLM triage call that bypasses LangGraph entirely (no state, no checkpointer, no Qdrant) and classifies intent into one of three routes: `public_only` (praise → warm public reply), `public_and_private` (product inquiry / complaint → public acknowledgement + a private DM to the commenter), or `ignore` (spam / tags). Replies are sent via the Graph API v21.0 `…/{comment_id}/comments` and `…/{comment_id}/private_replies` endpoints. Gated behind the default-off `comment_triage_enabled` flag. A strict echo guard (`from.id == page_id`) prevents the Page from triaging its own comment replies. Every failure path — unset flag, empty comment, LLM error, malformed JSON, missing page token, Graph API 4xx/5xx (including Meta's `(#10900)` stale-comment error on private replies older than 7 days) — is caught and logged; comment triage can never crash or block the DM pipeline.
+- `rag/messenger/triage.py` — new module. `triage_comment(comment_text)` calls `chat_complete` on the fast 8B model (`settings.followup_model`, temperature 0.1, JSON mode via `response_format={"type": "json_object"}`) and returns a frozen `TriageResult(action, public_reply, private_reply)`. Fails closed to `TriageResult("ignore", None, None)` on any error; normalises `"null"` / empty reply strings to `None`.
+- `rag/messenger/sender.py` — two standalone, fail-silent dispatchers `send_public_comment_reply` and `send_private_reply` (Graph API v21.0; `access_token` as query param; `{"message": ...}` body). They return `True`/`False` and never raise.
+- `rag/messenger/routers/webhook.py` — `messenger_inbound_direct` now iterates `entry[].changes[]` for `field == "feed"` / `item == "comment"` / `verb == "add"`, applies the page echo guard, and schedules the new `_handle_comment_triage` background task (triage → public reply and, on `public_and_private`, private reply).
+- `rag/config.py` — new setting `comment_triage_enabled: bool = Field(default=False)`.
+- `rag/messenger/tests/test_triage.py` — unit tests for each triage route plus fail-closed paths (LLM error, malformed / non-dict JSON, invalid action, empty comment skips the LLM, `"null"` reply normalisation).
+- `rag/messenger/tests/test_comment_dispatch.py` — dispatcher tests (200 → True, 400 → False, transport error → False; correct URL / token / body) and feed-webhook wiring tests (schedules triage, echo guard, flag-off, empty-message skip, and a `public_and_private` verdict dispatching both senders).
+
+> **Operator action required (not a code change):** enable the `feed` subscription in Meta App Dashboard → Webhooks → Page (separate from `messages`), then set `comment_triage_enabled=true` (and restart `nexus-chat`) to activate the engine.
+
+## [0.10.0] - 2026-05-31
+
+### Added
+- **Phase 37 — HITL Handover & Notification Protocol.** The Messenger bot now steps out of the way when the human owner takes over a thread via Page Inbox / Meta Business Suite, and notifies the owner via n8n the first time it fields a real customer query in a 24h session. Two Redis keys back the behaviour: `nexus:hitl:paused:{sender_id}` (TTL-backed pause flag, default 1h, auto-resume on expiry) and `nexus:hitl:notified:{sender_id}` (SET-NX once-per-24h notify dedupe). All Redis ops fail-open — a Redis outage degrades to "bot keeps replying" rather than total silence. Detection logic discriminates human-owner echoes from our own bot's outbound echoes via Facebook `app_id` matching.
+- `rag/messenger/hitl.py` — new module. `is_bot_paused` / `set_bot_paused` / `clear_bot_paused` manage the pause flag. `notify_owner_if_needed` SET-NX-claims the notify slot, then POSTs `{ sender_id, page_id, thread_key, user_query, bot_answer }` (caps: 500 / 1000 chars) to `settings.n8n_webhook_notify_url`. `is_human_echo(event, our_app_id)` / `is_read_event(event)` parse Meta event shapes.
+- `rag/config.py` — new settings `messenger_app_id`, `n8n_webhook_notify_url`, `hitl_pause_duration_s` (default 3600, bounded 60–86400).
+- `rag/messenger/routers/webhook.py` — `messenger_inbound_direct` now intercepts `read` events and human-owner `is_echo` events at the top of the messaging loop and schedules a background pause via `_hitl_pause_on_human_activity`. The HITL gatekeeper drops inbound customer messages when `is_bot_paused(sender_id)` is True (returns `200 EVENT_RECEIVED` so Meta does not retry; releases the per-thread lock to keep state clean). `_handle_messenger_event` fires `notify_owner_if_needed` immediately after `reply_text` is generated, on both happy-path and abstention-path.
+- `rag/messenger/tests/test_hitl.py` — 15 unit tests against fakeredis covering `is_read_event`, `is_human_echo`, pause set/clear/check, empty-sender short-circuit, TTL respect, webhook-unset / first-call / dedupe / 500-error / payload-cap notification paths.
+- `rag/messenger/tests/test_webhook_direct.py` — `TestHITL` adds four integration tests: read-event pauses the bot and skips the graph; human-echo pauses the recipient; our own bot's echo does NOT pause; a paused sender's inbound is dropped (no graph call, no outbound dispatch).
+
+### Changed
+- `.env.example` — adds `MESSENGER_APP_ID` to the Messenger section and a new `Phase 37 — HITL Handover & Notification` section with `N8N_WEBHOOK_NOTIFY_URL` and `HITL_PAUSE_DURATION_S`.
+
+## [0.9.0] - 2026-05-30
+
+### Added
+- **Phase 36 — Deep Commerce Context (CRM profile enrichment).** New `enrich_customer_profile_node` runs at graph entry (`START → enrich_customer_profile → rewrite_query`) on every turn. POSTs the Messenger `sender_id` (PSID) to `settings.n8n_webhook_profile_url`; n8n queries GoHighLevel CRM and returns the contact record (name, lifetime_spend, last_order_date, order_count, tags, segment, notes). The dict lands on `state["customer_profile"]`. `generate_node` then formats it into a `--- CUSTOMER CRM PROFILE ---` block prepended to the Messenger system prompt on both text-only and multimodal branches. SPA surface is never enriched (CRM data is Messenger-only). The CRM block is **ungated by sentiment** — a frustrated VIP is still recognised as a VIP. On any failure (unset webhook, empty sender_id, HTTP error, timeout, bad shape) the node returns `{"customer_profile": None}` and the graph proceeds without CRM context — never crashes.
+- `rag/orchestrator/state.py` — new fields `sender_id: str` and `customer_profile: dict[str, Any] | None` on `NexusState`.
+- `rag/config.py` — new optional setting `n8n_webhook_profile_url: str | None = None` under the Phase 34 n8n webhook section.
+- `rag/orchestrator/nodes.py` — new helper `_format_customer_profile`; new node `enrich_customer_profile_node`; CRM-block injection in `generate_node` (text-only + vision Messenger branches).
+- `rag/orchestrator/graph.py` — registers `enrich_customer_profile` node; rewires `START → enrich_customer_profile → rewrite_query`; `run_graph` gains a `sender_id: str | None = None` kwarg that, when set, populates `state["sender_id"]`.
+- `rag/messenger/routers/webhook.py` — `_real_graph_runner` now passes `sender_id=payload.user_id` into `run_graph`.
+
+## [0.8.0] - 2026-05-30
+
+### Added
+- **Phase 35 — Cognitive Empathy (sentiment routing).** New `sentiment_analysis_node` runs between `preprocess_vision` and `route_query` and classifies the raw user query into one of `{frustrated, urgent, excited, neutral}` using `settings.followup_model` (8B, `temperature=0.0`, `max_tokens=8`). `generate_node` then appends a per-sentiment behavioral overlay to the Messenger system prompt. For `frustrated`, the SDR persona overlay AND the `SALES_TOOLS_SCHEMA` tool binding are BOTH suppressed (text-only and multimodal paths) so a frustrated customer never sees a checkout CTA. `_CONTINUITY_NOTE` stays ungated by sentiment. On any LLM / parse failure the node returns `"neutral"` — the graph never crashes.
+- `rag/orchestrator/state.py` — new optional `sentiment: str | None` field on `NexusState`.
+- `rag/orchestrator/nodes.py` — new constants `_SENTIMENT_SYSTEM_PROMPT`, `_VALID_SENTIMENTS`, `_FRUSTRATED_OVERLAY`, `_URGENT_OVERLAY`, `_EXCITED_OVERLAY`, `_SENTIMENT_OVERLAYS`; new helper `_get_sentiment_overlay`; new node `sentiment_analysis_node`.
+- `rag/orchestrator/graph.py` — registers `sentiment_analysis` node; rewires `preprocess_vision → sentiment_analysis → route_query`.
+- `rag/tests/test_phase35_sentiment.py` — five tests pinning valid-category return, LLM-error fallback, unparseable-response fallback, empty-query short-circuit, and `_get_sentiment_overlay` mapping.
+
+## [0.7.0] - 2026-05-30
+
+### Added
+- **Phase 34 — Live n8n webhook execution layer for sales SDR tools.** The two Phase 33 mock stubs (`generate_checkout_link`, `capture_lead`) are now live: each function performs an async `httpx.AsyncClient` POST to a configurable n8n webhook (`N8N_WEBHOOK_CHECKOUT_URL`, `N8N_WEBHOOK_LEAD_URL`). The checkout webhook expects an n8n → Stripe Checkout Session workflow that returns `{ "url": ... }` (with `checkout_url` / `payment_url` accepted as fallbacks); the lead webhook expects an n8n → GoHighLevel push. NEXUS remains the brain (LangGraph + LLM tool-call loop); n8n is now the hands (Stripe + CRM side effects). Connect timeout 5s; read timeout 15s for checkout, 10s for lead — chosen for Stripe Checkout cold-path round-trips.
+- `rag/config.py` — new optional settings `n8n_webhook_checkout_url` and `n8n_webhook_lead_url` (both `str | None = None`). When unset, the tools fall back to descriptive mock strings so local dev and Phase 33 baseline tests continue to work without n8n.
+- `.env.example` — documented Phase 34 webhook URL slots under a new "n8n sales SDR webhooks" section.
+- `rag/orchestrator/tests/test_sales_tools.py` — replaced the legacy `"Phase 34"` mock assertions with six new pins (three per function): unconfigured-fallback, configured-success (mocked `httpx.AsyncClient` returning `{ "url": "https://checkout.stripe.com/cs_test_123" }` / `{ "ok": true }`), and network-error (mocked `httpx.TimeoutException`). New `_FakeResponse` / `_FakeAsyncClient` test doubles capture the POST URL and JSON body for round-trip assertion.
+
+### Changed
+- `rag/orchestrator/sales_tools.py` — module docstring updated to reflect live-integration semantics (no longer "mock stubs"). Both functions now branch on configured URL (live POST) vs. unconfigured (mock fallback). Granular exception handling: `httpx.HTTPStatusError`, `httpx.TimeoutException`, generic `Exception` (`# noqa: BLE001`) — every error path returns a descriptive string and never raises into the tool-call loop. The existing `execute_tool_call` outer safety net is preserved.
+
+## [0.6.3] - 2026-05-30
+
+### Fixed
+- **Phase 33.3 — Messenger SDR conversational continuity & "yes" ambiguity.** Two production failures on the Messenger SDR surface, both rooted in the multi-turn pipeline blindly re-injecting product context: (1) every turn re-introduced the same catalogued product because `inject_product_context_node` unconditionally prepended `[Product Catalog Match]` chunks regardless of whether the LLM already presented them, and (2) the "yes" affirmation crashed because `ExactMatchValidator` flagged 8 anime proper nouns (`King`, `Artist`, `Special`, `Version` × 2 products) past the Phase 33.1 Messenger ceiling of 5, sending the reply to the human-handover fallback.
+  - `rag/orchestrator/product_branch.py` — new `_products_already_in_history(products, history)` helper. `inject_product_context_node` now checks the most recent assistant turn; if it already mentions every current product name, the synthetic `[Product Catalog Match]` chunks are NOT prepended to `state["reranked"]`. The cached `_enriched_products` is still returned so `build_carousel_node` keeps zero round-trips.
+  - `rag/orchestrator/nodes.py` — new module-level `_CONTINUITY_NOTE` and `_history_mentions_any_product(history, products)` helper. `generate_node` appends the continuity hint to the Messenger system prompt (both text-only and vision paths) whenever a prior assistant turn already mentioned any product in `state["_enriched_products"]`. Greeting / abstain turns alone do not trigger it.
+  - `rag/orchestrator/nodes.py` — `guardrails_node` now extracts every `[Product Catalog Match]` chunk from `state["reranked"]` and threads the concatenated catalog text into the `query` argument passed to `_GUARDRAILS.validate(...)`. `ExactMatchValidator._retrieved_text_blob(extra=query)` then includes the full product names so franchise / anime proper nouns inside catalog names ("King", "Artist", "Special", "Version") count as grounded and never trip the suspicious-token ceiling.
+
+### Added
+- `rag/tests/test_phase32_5_product_context_injection.py` — `test_inject_node_skips_when_history_already_mentions_product`, `test_inject_node_injects_when_history_lacks_product_mention`, `test_inject_node_injects_when_history_empty`, `test_inject_node_skip_requires_ALL_product_names_in_history` (multi-product partial-mention case).
+- `rag/orchestrator/tests/test_generate_sales.py` — `test_messenger_continuity_note_fires_when_history_mentions_product`, `test_messenger_continuity_note_absent_when_history_lacks_product` (greeting-only history), `test_messenger_continuity_note_absent_on_first_turn`, `test_spa_surface_never_gets_continuity_note`, `test_messenger_vision_continuity_note_fires_with_history_mention`.
+- `rag/guardrails/tests/test_pipeline.py::TestCatalogTextThreading` — pins that the production "King / Artist / Special / Version" failure stays unblocked once `guardrails_node` threads the catalog text into the validator's query.
+
+## [0.6.2] - 2026-05-30
+
+### Fixed
+- **Phase 33.2 — Messenger vision path no longer abstains on hallucinated `[n]` indices.** The vision model routinely emits out-of-bounds citation indices (e.g. `[11]` against a 4-chunk context) because multimodal models are weaker at structural formatting than text-only ones. Under Phase 33.1's `max_suspicious=5` bump the exact-match path is fine, but `CitationValidator` (severity=critical) still blocked every Messenger turn that included an image. `GuardrailsPipeline.validate()` now accepts `has_attachments: bool = False`; when `surface == "messenger" and has_attachments`, the `citation` validator is bypassed with `reason="vision-path bypass"`. `cited_ids` is still extracted from any in-bounds `[n]` markers so the Messenger surface adapter can still render source tags; out-of-bounds indices are silently dropped (the whole point of the bypass). `exact_match` and `entropy` continue to run on the vision path — grounding comes from the image itself plus the `product_branch` catalog injection, not RAG citation indices.
+- `guardrails_node` now reads `state["attachments"]` and forwards `has_attachments=bool(state.get("attachments"))` to the pipeline.
+
+### Added
+- `rag/guardrails/tests/test_pipeline.py::TestVisionPathCitationBypass` — pins the four invariants: (1) Messenger+vision bypasses citation, (2) bypass preserves in-bounds `cited_ids` and drops out-of-bounds ones, (3) Messenger text-only does NOT bypass (gate on `has_attachments`), (4) SPA+vision does NOT bypass (gate on `surface`).
+
+## [0.6.1] - 2026-05-30
+
+### Fixed
+- **Phase 33.1 — SDR / guardrail clash on Messenger.** The Phase 33 SDR persona instructs the LLM to end every Messenger reply with a CTA ("Would you like me to check stock?"), which routinely bled 3–4 common verbs and franchise nouns past `ExactMatchValidator`'s `max_suspicious=2` threshold and triggered the human-handover fallback on otherwise valid sales responses. `GuardrailsPipeline.validate()` now accepts a `surface: str = ""` kwarg; on `"messenger"` it temporarily bumps `ExactMatchValidator.max_suspicious` 2 → 5 for the duration of that call (save/restore on the singleton instance via `try/finally`, so a validator raising mid-call never leaks the bumped threshold across requests). SPA surface stays at 2.
+- **Phase 33.1 — Tool calls stripped on Messenger multimodal path.** `generate_node` was passing `extra={"tools": SALES_TOOLS_SCHEMA, ...}` to `chat_complete()` even when the request carried an image. Vision models mix `image_url` content arrays with `tools` unreliably across providers, and the SDR overlay is already injected into `system_content` on the vision branch. Tool binding is now gated on `surface == "messenger" and not images`.
+- **Phase 33.1 — Expanded `_PROPER_NOUN_ALLOWLIST`** with conversational SDR filler (`Would`, `Could`, `Shall`, `Should`, `Let`, `Just`, `Also`, `Sure`, `Great`, `Absolutely`, `Definitely`, `Happy`, `Like`, `Want`, `Need`, `Check`, `Look`, `Help`). Franchise-specific nouns like `One`/`Piece` are intentionally **not** added — those are handled structurally by the surface-aware threshold, not by allowlisting individual domains.
+
+### Added
+- `rag/guardrails/tests/test_pipeline.py::TestSurfaceAwareThreshold` — pins the Messenger 2→5 bump, the SPA-stays-strict invariant, and the singleton save/restore so a future refactor can't silently leak the bumped threshold across requests.
+
+## [0.6.0] - 2026-05-30
+
+### Added
+- **Phase 33 — Autonomous Sales SDR (Messenger only).** Messenger persona is now a proactive sales rep that can autonomously call three OpenAI-compatible tools: `check_inventory` (live Postgres lookup by name within the tenant catalog), `generate_checkout_link` (mock — Phase 34 wires to Stripe/PayMongo/GCash), and `capture_lead` (mock — Phase 34 wires to CRM). SPA surface is untouched.
+- `rag/orchestrator/sales_tools.py` — tool functions, OpenAI function-calling schema (`SALES_TOOLS_SCHEMA`), dispatcher with safe JSON-args parsing (`execute_tool_call`), and the `SDR_PERSONA_OVERLAY` constant that `nodes.py` appends to the Messenger system prompt at runtime (keeps `system_brix.md` neutral for non-tool flows).
+- `rag/orchestrator/tests/test_sales_tools.py` and `rag/orchestrator/tests/test_generate_sales.py` — pin tool dispatch, schema shape, surface-gated tool binding, the multimodal+SDR overlay path, the 3-iteration tool-call loop cap, and the abstain-on-tool-followup-LLM-error path.
+
+### Changed
+- `LLMResult` gained an optional `tool_calls: list[dict[str, Any]] | None = None` field. `chat_complete()` now extracts `choices[0].message.tool_calls` when present so callers can react to tool invocations. Existing callers are unaffected (field defaults to `None`).
+- `generate_node` now branches on `surface == "messenger"` to (a) append the SDR persona overlay to the system prompt (both text-only and multimodal paths) and (b) pass `extra={"tools": SALES_TOOLS_SCHEMA, "tool_choice": "auto"}` to `chat_complete()`. A while-loop (max 3 rounds) executes any returned tool calls and re-prompts the LLM for a final text answer; the follow-up call omits `tools` to force termination. A tool-followup LLM error abstains with `handover_reason="tool followup llm error: ..."`.
+
+## [0.5.1] - 2026-05-29
+
+### Fixed
+- **Messenger carousel + text bubble both deliver.** `GET /api/objects/{token}` now also answers `HEAD`, returning `Content-Type`/`Content-Length` from `head_object` without draining the S3 body. Meta's Send API HEAD-probes `image_url` before queueing template messages; the prior GET-only route 405'd that probe, so Meta rejected every carousel with `(#100) ... should represent a valid URL` and DLQ'd the whole reply.
+- **Text bubble no longer hostage to carousel validation.** `_dispatch_graph_api` now ships each Send API body independently — a non-retryable 400 on the carousel logs the failure and continues to the text body. Transport / 5xx / rate-limit failures enqueue only the failing body for retry instead of re-sending the bodies that already delivered.
+
+### Added
+- `rag/tests/test_objects_router.py` — pins HEAD/GET parity, 404 on missing keys, 401 on bad tokens.
+- `rag/messenger/tests/test_sender_graph_api.py` — pins per-body dispatch isolation + `image_urls`/`image_fingerprint` log fields.
+
+### Changed
+- `outbound.graph_api` info log now emits `image_urls=<n>` and `image_fingerprint=<sha256[:12]>` on every dispatch so future Meta validation regressions are debuggable from logs alone.
+
 ## [0.5.0] - 2026-05-28
 
 ### Fixed

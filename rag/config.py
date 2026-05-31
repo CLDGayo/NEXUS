@@ -236,6 +236,12 @@ class Settings(BaseSettings):
     messenger_verify_token: str | None = None
     messenger_page_access_token: str | None = None
 
+    # Phase 37 — Facebook App ID. Used by HITL to distinguish a human-owner
+    # echo (sent via Page Inbox / Business Suite; has no app_id OR a
+    # different app_id) from our bot's own outbound echo (carries this
+    # exact app_id). Found in Meta App Dashboard > Settings > Basic.
+    messenger_app_id: str | None = None
+
     # ---- Outbound automation webhook (Phase 6 — n8n / Make delivery) ----
     make_webhook_url: str | None = None
     outbound_dispatch_enabled: bool = Field(default=False)
@@ -247,6 +253,36 @@ class Settings(BaseSettings):
     outbound_dlq_key: str = Field(default="nexus:outbound:dead")
     outbound_worker_poll_seconds: float = Field(default=2.0, gt=0.0, le=60.0)
     outbound_worker_batch_size: int = Field(default=16, ge=1, le=256)
+
+    # ---- Phase 34 — n8n sales webhook endpoints ----
+    # Checkout: n8n receives product+qty, calls Stripe, returns session URL.
+    # Lead:     n8n receives email, pushes to GoHighLevel CRM.
+    # Both default to None so the system boots without them configured.
+    n8n_webhook_checkout_url: str | None = None
+    n8n_webhook_lead_url: str | None = None
+
+    # Phase 36 — Customer profile enrichment via GoHighLevel CRM.
+    # n8n receives ``{ sender_id }`` and returns the CRM contact record
+    # (name, lifetime_spend, last_order_date, tags, segment, etc.).
+    # Defaults to None so the system boots without it configured;
+    # ``enrich_customer_profile_node`` short-circuits on unset.
+    n8n_webhook_profile_url: str | None = None
+
+    # Phase 37 — HITL owner notification webhook.
+    # n8n receives { sender_id, page_id, thread_key, user_query, bot_answer }
+    # and pushes a notification to the owner (email / Slack / SMS).
+    # Defaults to None so the system boots without it configured.
+    n8n_webhook_notify_url: str | None = None
+
+    # Phase 37 — how long (seconds) the bot pauses after the human owner
+    # reads or replies in the thread. Default 3600 = 1 hour. TTL-backed
+    # via Redis so the pause auto-clears without a cron / cleanup job.
+    hitl_pause_duration_s: int = Field(default=3600, ge=60, le=86400)
+
+    # Phase 38 — Public comment triage engine.
+    # Enables the stateless LLM-based triage of public Facebook Page comments.
+    # When False, feed/comment webhook events are silently dropped (200 OK).
+    comment_triage_enabled: bool = Field(default=False)
 
     def outbound_backoff_seconds(self) -> list[int]:
         """Parse the CSV into ordered backoff intervals."""

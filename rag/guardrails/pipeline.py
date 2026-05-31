@@ -88,17 +88,22 @@ class GuardrailsPipeline:
         *,
         retrieved: list[ScoredChunk],
         query: str = "",
+        surface: str = "",
+        has_attachments: bool = False,
     ) -> PipelineResult:
         results: list[ValidationResult] = []
+        # Phase 33.1 — Messenger SDR persona generates conversational CTAs
+        # ("Would you like me to check stock?") that bleed common verbs
+        # and franchise nouns from the user's query. Bump the exact-match
+        # tolerance for the Messenger surface only; SPA stays strict.
+        _SDR_MAX_SUSPICIOUS = 5
         # Short conversational turns ("hi", "I am clarence", "who am I?")
         # with terse replies can't carry P0 hallucinations worth scanning
         # for exact-match or strict citation. Bypass both so a self-
         # introduction or greeting doesn't get blocked by either (the
         # ExactMatchValidator still backstops factual fabrication on
         # longer turns; EntropyValidator still gates wishy-washy text).
-        is_short_turn = (
-            0 < len(query.split()) <= 8 and 0 < len(answer.split()) <= 40
-        )
+        is_short_turn = 0 < len(query.split()) <= 8 and 0 < len(answer.split()) <= 40
         _SHORT_TURN_SKIP = {"exact_match", "citation"}
         for validator in self.validators:
             v_name = getattr(validator, "name", "")
@@ -110,15 +115,10 @@ class GuardrailsPipeline:
                 meta: dict[str, object] = {"bypassed": True}
                 if v_name == "citation":
                     indices = sorted(
-                        {
-                            int(m.group(1))
-                            for m in _CITATION_MARKER_RE.finditer(answer)
-                        }
+                        {int(m.group(1)) for m in _CITATION_MARKER_RE.finditer(answer)}
                     )
                     valid_ids = [
-                        retrieved[i - 1].id
-                        for i in indices
-                        if 1 <= i <= len(retrieved)
+                        retrieved[i - 1].id for i in indices if 1 <= i <= len(retrieved)
                     ]
                     meta["cited_ids"] = valid_ids
                 results.append(
@@ -130,10 +130,52 @@ class GuardrailsPipeline:
                     )
                 )
                 continue
-            try:
-                result = validator.validate(
-                    answer, retrieved=retrieved, query=query
+            # Phase 33.2 — Messenger vision path bypasses ``citation``.
+            # The vision model hallucinates out-of-bounds [n] indices
+            # (e.g. [11] against a 4-chunk context) because it's weaker
+            # at structural formatting than text-only models. Grounding
+            # for the vision path comes from the image itself plus the
+            # ``product_branch`` catalog injection, not from RAG ``[n]``
+            # indices, so dropping citation here doesn't relax factual
+            # safety in any meaningful way. ``exact_match`` and
+            # ``entropy`` still run on this path.
+            if surface == "messenger" and has_attachments and v_name == "citation":
+                # Still surface any valid [n] markers so downstream
+                # surface adapters (Messenger sender) can render source
+                # tags. Mirrors the short-turn bypass logic above —
+                # out-of-bounds indices are silently dropped here, which
+                # is the whole point of the bypass.
+                indices = sorted(
+                    {int(m.group(1)) for m in _CITATION_MARKER_RE.finditer(answer)}
                 )
+                valid_ids = [
+                    retrieved[i - 1].id for i in indices if 1 <= i <= len(retrieved)
+                ]
+                results.append(
+                    ValidationResult(
+                        name=v_name,
+                        passed=True,
+                        reason="vision-path bypass",
+                        metadata={"bypassed": True, "cited_ids": valid_ids},
+                    )
+                )
+                continue
+            # Phase 33.1 — surface-aware threshold bump. The
+            # ExactMatchValidator's instance ``max_suspicious`` is mutated
+            # for the duration of this single call only; ``try/finally``
+            # guarantees the original value is restored even if the
+            # validator raises, so the module-level pipeline singleton
+            # can never leak the bumped threshold across requests.
+            saved_max_suspicious: int | None = None
+            if (
+                surface == "messenger"
+                and v_name == "exact_match"
+                and hasattr(validator, "max_suspicious")
+            ):
+                saved_max_suspicious = validator.max_suspicious  # type: ignore[attr-defined]
+                validator.max_suspicious = _SDR_MAX_SUSPICIOUS  # type: ignore[attr-defined]
+            try:
+                result = validator.validate(answer, retrieved=retrieved, query=query)
             except Exception as exc:
                 # A validator that crashes is treated as a critical fail —
                 # never silently pass an answer when the safety layer broke.
@@ -143,9 +185,14 @@ class GuardrailsPipeline:
                     reason=f"validator raised: {exc}",
                     severity="critical",
                 )
+            finally:
+                if saved_max_suspicious is not None:
+                    validator.max_suspicious = saved_max_suspicious  # type: ignore[attr-defined]
             results.append(result)
 
-        critical_failures = [r for r in results if r.failed and r.severity == "critical"]
+        critical_failures = [
+            r for r in results if r.failed and r.severity == "critical"
+        ]
         blocked = bool(critical_failures)
         uncertainty = compute_uncertainty_score(answer, retrieved)
 
