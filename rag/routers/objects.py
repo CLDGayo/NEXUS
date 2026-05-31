@@ -11,6 +11,13 @@ This route exists because production MinIO runs only on the internal
 docker network. If a public MinIO endpoint is added later, the products
 router will pick up ``settings.minio_public_base_url`` first and the
 proxy becomes a no-op fallback.
+
+Phase 32.6 — adds HEAD support. Meta's Send API validates ``image_url``
+via a HEAD probe before queueing carousel deliveries; a GET-only route
+responds 405 and Meta surfaces ``(#100) ... should represent a valid
+URL``, 400-DLQ'ing every carousel send. HEAD uses ``head_object`` so we
+return the right headers (``Content-Type``, ``Content-Length``) without
+paying the body-fetch cost on every validation probe.
 """
 
 from __future__ import annotations
@@ -18,8 +25,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response, StreamingResponse
 
 from rag.services import object_proxy, object_store
 
@@ -28,9 +35,44 @@ _log = logging.getLogger(__name__)
 router = APIRouter(tags=["objects"])
 
 
-@router.get("/objects/{token}")
-async def get_object(token: str) -> StreamingResponse:
+@router.api_route("/objects/{token}", methods=["GET", "HEAD"])
+async def get_object(token: str, request: Request) -> Response:
     bucket, key = object_proxy.decode_token(token)
+
+    if request.method == "HEAD":
+        async with object_store.s3_client() as client:
+            try:
+                head: dict[str, Any] = await client.head_object(Bucket=bucket, Key=key)
+            except client.exceptions.NoSuchKey as exc:  # type: ignore[attr-defined]
+                raise HTTPException(status_code=404, detail="object_not_found") from exc
+            except Exception as exc:  # noqa: BLE001 — surface a clean 502 to the caller
+                # botocore raises ClientError with a 404-coded response for
+                # Minio HEAD misses (the typed NoSuchKey alias isn't always
+                # populated for head_object). Treat any "Code: 404/NoSuchKey/
+                # NotFound" as a clean 404 so Meta gets a deterministic signal.
+                response_meta = getattr(exc, "response", None)
+                err_code: str | None = None
+                if isinstance(response_meta, dict):
+                    err_code = str(response_meta.get("Error", {}).get("Code") or "")
+                if err_code in {"404", "NoSuchKey", "NotFound"}:
+                    raise HTTPException(
+                        status_code=404, detail="object_not_found"
+                    ) from exc
+                _log.warning(
+                    "objects.head_failed bucket=%s key=%s detail=%s", bucket, key, exc
+                )
+                raise HTTPException(status_code=502, detail="object_fetch_failed") from exc
+
+        content_type = head.get("ContentType") or "application/octet-stream"
+        content_length = int(head.get("ContentLength") or 0)
+        return Response(
+            status_code=200,
+            media_type=content_type,
+            headers={
+                "Cache-Control": "private, max-age=3600",
+                "Content-Length": str(content_length),
+            },
+        )
 
     async with object_store.s3_client() as client:
         try:
