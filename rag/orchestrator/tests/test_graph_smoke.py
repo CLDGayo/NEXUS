@@ -35,7 +35,9 @@ def _stub_chunks(prefix: str) -> list[ScoredChunk]:
     ]
 
 
-def _llm_result(text: str, *, prompt_tokens: int = 120, completion_tokens: int = 24) -> LLMResult:
+def _llm_result(
+    text: str, *, prompt_tokens: int = 120, completion_tokens: int = 24
+) -> LLMResult:
     return LLMResult(
         content=text,
         model="groq-llama-3.3-70b",
@@ -67,7 +69,9 @@ async def test_graph_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
 
     async def fake_chat(*_args, **_kwargs):
         # Grounded answer — $99 + onboarding both appear in stub chunks above.
-        return _llm_result("Our plan starts at $99 per month [1] and includes onboarding [2].")
+        return _llm_result(
+            "Our plan starts at $99 per month [1] and includes onboarding [2]."
+        )
 
     monkeypatch.setattr("rag.orchestrator.nodes.chat_complete", fake_chat)
 
@@ -157,6 +161,10 @@ async def test_graph_abstains_on_fabricated_facts(
     # Phase 19.1 raised the default `max_suspicious` from 0 → 2 and added a
     # short-turn bypass; we now need 3+ fabrications and a multi-word query
     # to still trigger the block, which is the contract this test pins.
+    # Phase 33.1 bumped the Messenger surface to ``max_suspicious=5`` for the
+    # SDR persona, so this test now exercises the SPA surface (still strict
+    # at 2) to keep the regression coverage honest. The "fabrication blocks"
+    # contract is what matters; surface choice is incidental.
     async def fabricated(*_a, **_kw):
         return _llm_result(
             "Pricing is exactly $147.99 per month [1], jumping to $258.50 "
@@ -172,7 +180,7 @@ async def test_graph_abstains_on_fabricated_facts(
         query="tell me about the full pricing schedule across all of our annual tiers",
         thread_key="psid_test_3",
         correlation_id="corr_3",
-        surface="messenger",
+        surface="spa",
         tenant_id="hunter",
     )
 
@@ -227,6 +235,7 @@ async def test_graph_abstains_on_uncited_claim(
 # Phase 7 — 3-arm RRF fusion regression
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 async def test_graph_three_arm_fusion(monkeypatch: pytest.MonkeyPatch) -> None:
     """Distinct stubs for each arm. The fused list visible to rerank must
@@ -255,7 +264,9 @@ async def test_graph_three_arm_fusion(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "rag.orchestrator.nodes.chat_complete",
         lambda *a, **kw: _async_return(
-            _llm_result("Our plan starts at $99 per month [1] including onboarding [2].")
+            _llm_result(
+                "Our plan starts at $99 per month [1] including onboarding [2]."
+            )
         ),
     )
 
@@ -279,6 +290,7 @@ async def test_graph_three_arm_fusion(monkeypatch: pytest.MonkeyPatch) -> None:
 # ---------------------------------------------------------------------------
 # Phase 15 — multimodal attachments propagate to generate
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 async def test_graph_threads_attachments_to_generate(
@@ -335,6 +347,7 @@ async def test_graph_threads_attachments_to_generate(
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 async def _async_return(value):
     return value
 
@@ -344,6 +357,7 @@ async def _async_return(value):
 # only sees raw conversational text, never the dense [Image Analysis: ...]
 # block emitted by preprocess_vision_node.
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 async def test_graph_orders_rewrite_before_vision_on_multimodal_followup(
@@ -429,15 +443,12 @@ async def test_graph_orders_rewrite_before_vision_on_multimodal_followup(
 
     # 1. Rewrite must be first and must use the 8B followup model.
     assert turn2[0] is rewrite_call, (
-        f"first LLM call on turn 2 should be the rewrite, "
-        f"got {turn2[0]['model']!r}"
+        f"first LLM call on turn 2 should be the rewrite, got {turn2[0]['model']!r}"
     )
     assert rewrite_call["model"] == _settings.followup_model
 
     # 2. Rewrite must see ONLY clean conversational text — never the caption.
-    rewrite_user_msg = next(
-        m for m in rewrite_call["messages"] if m["role"] == "user"
-    )
+    rewrite_user_msg = next(m for m in rewrite_call["messages"] if m["role"] == "user")
     rewrite_user_content = rewrite_user_msg["content"]
     assert isinstance(rewrite_user_content, str)
     assert "hi i'm clarence and this is my photo" in rewrite_user_content
@@ -447,9 +458,7 @@ async def test_graph_orders_rewrite_before_vision_on_multimodal_followup(
 
     # 3. Vision caption call must come AFTER rewrite and use vision_model.
     assert vision_call["model"] == _settings.vision_model
-    vision_user_msg = next(
-        m for m in vision_call["messages"] if m["role"] == "user"
-    )
+    vision_user_msg = next(m for m in vision_call["messages"] if m["role"] == "user")
     assert isinstance(vision_user_msg["content"], list)
     assert any(p.get("type") == "image_url" for p in vision_user_msg["content"])
 
@@ -463,6 +472,7 @@ async def test_graph_orders_rewrite_before_vision_on_multimodal_followup(
 # ---------------------------------------------------------------------------
 # Phase 18 — Conversational history and query contextualization
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 async def test_graph_query_contextualization_and_history(
@@ -491,7 +501,11 @@ async def test_graph_query_contextualization_and_history(
     async def fake_chat(messages, *, model, **kw):
         chat_calls.append((messages, model))
         # Check if this is the query contextualization call (system prompt has 'standalone')
-        is_contextualize = any("standalone" in m.get("content", "") for m in messages if m.get("role") == "system")
+        is_contextualize = any(
+            "standalone" in m.get("content", "")
+            for m in messages
+            if m.get("role") == "system"
+        )
         if is_contextualize:
             return _llm_result("pricing and plans details")
         return _llm_result(
@@ -520,7 +534,10 @@ async def test_graph_query_contextualization_and_history(
     assert h0["content"] == "pricing?"
     assert isinstance(h0["timestamp"], float)
     assert h1["role"] == "assistant"
-    assert h1["content"] == "Our plan starts at $99 per month [1] including onboarding [2]."
+    assert (
+        h1["content"]
+        == "Our plan starts at $99 per month [1] including onboarding [2]."
+    )
     assert isinstance(h1["timestamp"], float)
 
     # Second turn: Ask a follow-up "yes please"
@@ -537,7 +554,11 @@ async def test_graph_query_contextualization_and_history(
     # Check that one of the chat completions was the contextualization one
     contextualize_call = None
     for msgs, model in chat_calls:
-        if any("standalone" in m.get("content", "") for m in msgs if m.get("role") == "system"):
+        if any(
+            "standalone" in m.get("content", "")
+            for m in msgs
+            if m.get("role") == "system"
+        ):
             contextualize_call = msgs
             break
     assert contextualize_call is not None
@@ -599,9 +620,7 @@ async def test_graph_separates_search_query_from_user_query(
         # string so we can prove generation did NOT inherit it.
         if "standalone search query" in system_text:
             return _llm_result("Clarence Gayo projects list")
-        return _llm_result(
-            "His projects include Atlas [1] and the Q3 redesign [2]."
-        )
+        return _llm_result("His projects include Atlas [1] and the Q3 redesign [2].")
 
     monkeypatch.setattr("rag.orchestrator.nodes.chat_complete", fake_chat)
 
@@ -687,7 +706,9 @@ async def test_graph_first_turn_retrieves_with_original_query(
     monkeypatch.setattr(
         "rag.orchestrator.nodes.chat_complete",
         lambda *a, **kw: _async_return(
-            _llm_result("Our plan starts at $99 per month [1] including onboarding [2].")
+            _llm_result(
+                "Our plan starts at $99 per month [1] including onboarding [2]."
+            )
         ),
     )
 
@@ -700,4 +721,3 @@ async def test_graph_first_turn_retrieves_with_original_query(
     )
 
     assert retriever_queries == ["pricing?"]
-

@@ -252,6 +252,37 @@ async def _format_carousel(
     return ProductCarouselBlock(elements=elements)
 
 
+def _products_already_in_history(
+    products: list[Product],
+    history: list[dict[str, Any]] | None,
+) -> bool:
+    """Return True when the most recent assistant message in ``history``
+    already mentions every product name in ``products``.
+
+    Phase 33.3 — defends against the "repetitive preamble" bug where
+    every turn re-prepends a fresh ``[Product Catalog Match]`` chunk for
+    a product the LLM already introduced. If the last assistant turn
+    mentions all current product names, skip re-injection; the carousel
+    builder still gets the cached enriched list via
+    ``_enriched_products``.
+    """
+    if not history or not products:
+        return False
+    last_assistant: str | None = None
+    for msg in reversed(history):
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") == "assistant":
+            content = msg.get("content")
+            if isinstance(content, str) and content.strip():
+                last_assistant = content
+            break
+    if not last_assistant:
+        return False
+    blob = last_assistant.lower()
+    return all((p.name or "").lower() in blob for p in products if p.name)
+
+
 def _product_chunk(product: Product, tenant_slug: str) -> ScoredChunk:
     """Build a synthetic ``ScoredChunk`` carrying the structured Postgres
     catalog row so the LLM can quote price / stock / availability with a
@@ -303,6 +334,19 @@ async def inject_product_context_node(state: NexusState) -> dict[str, Any]:
     products = await _enrich(candidate_ids, tenant_slug)
     if not products:
         return {}
+
+    # Phase 33.3 — skip re-injection when the conversation already
+    # established these products in a prior assistant turn. The carousel
+    # builder still receives ``_enriched_products`` so the UI surface
+    # stays consistent across turns.
+    history = state.get("history") or []
+    if _products_already_in_history(products, history):
+        _log.info(
+            "product_branch.context_skipped_repeat tenant=%s products=%d",
+            tenant_slug,
+            len(products),
+        )
+        return {"_enriched_products": products}
 
     product_chunks = [_product_chunk(p, tenant_slug) for p in products]
     existing = list(state.get("reranked") or [])

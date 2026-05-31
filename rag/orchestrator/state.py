@@ -94,9 +94,7 @@ def append_history(
             "content": str(item["content"]),
         }
         raw_ts = item.get("timestamp") if isinstance(item, dict) else None
-        entry["timestamp"] = (
-            float(raw_ts) if isinstance(raw_ts, (int, float)) else now
-        )
+        entry["timestamp"] = float(raw_ts) if isinstance(raw_ts, (int, float)) else now
         accepted.append(entry)
     if dropped:
         _log.warning("state.history.dropped_nontext count=%d", dropped)
@@ -232,3 +230,25 @@ class NexusState(TypedDict, total=False):
     # reads this key and attaches the carousel to the ReplyBlock; absent
     # on every surface but messenger.
     product_carousel: dict[str, Any]
+
+    # Phase 35 — Cognitive Empathy. Populated by ``sentiment_analysis_node``
+    # with one of {"frustrated", "urgent", "excited", "neutral"} or None
+    # (node didn't run / parse failure). ``generate_node`` reads this to
+    # apply behavioral overlays and optionally suppress the SDR persona.
+    sentiment: str | None
+
+    # Phase 36 — Deep Commerce Context. ``sender_id`` is the raw Messenger
+    # PSID (or SPA user id) forwarded by the surface adapter; the enrichment
+    # node uses it as the lookup key against GoHighLevel via n8n. Identical
+    # in value to ``thread_key`` on the Messenger surface today, but kept
+    # as a discrete field so a future SPA surface can decouple session
+    # threading from the CRM identity.
+    sender_id: str
+
+    # Phase 36 — Deep Commerce Context. Populated by
+    # ``enrich_customer_profile_node`` with whatever JSON the n8n →
+    # GoHighLevel webhook returns (name, lifetime_spend, last_order_date,
+    # tags, segment, etc.). ``None`` means the lookup didn't run (webhook
+    # not configured) or failed; ``generate_node`` then skips the CRM
+    # block silently so the pipeline never crashes on enrichment failure.
+    customer_profile: dict[str, Any] | None

@@ -45,6 +45,10 @@ class LLMResult:
     completion_tokens: int
     total_tokens: int
     latency_ms: int
+    # Phase 33 — OpenAI-style tool_calls when the model invokes a bound
+    # tool. Absent on text-only completions; present when ``extra`` carried
+    # a ``tools`` array and the LLM elected to call one.
+    tool_calls: list[dict[str, Any]] | None = None
 
 
 def _extract_usage(body: dict[str, Any]) -> tuple[int, int, int]:
@@ -94,7 +98,9 @@ def _record_langfuse_generation(
         payload["trace_id"] = trace_id
     try:
         langfuse.generation(**payload)
-    except Exception as exc:  # pragma: no cover - never let observability crash the LLM call
+    except (
+        Exception
+    ) as exc:  # pragma: no cover - never let observability crash the LLM call
         _log.debug("langfuse generation emit failed: %s", exc)
 
 
@@ -144,9 +150,16 @@ async def chat_complete(
 
     body = response.json()
     try:
-        content = body["choices"][0]["message"]["content"] or ""
+        message = body["choices"][0]["message"]
+        content = message.get("content") or ""
     except (KeyError, IndexError, TypeError) as exc:
         raise LLMError(f"unexpected litellm response shape: {body!r}") from exc
+
+    # Phase 33 — surface tool_calls when the model called a bound tool.
+    raw_tool_calls = message.get("tool_calls")
+    tool_calls: list[dict[str, Any]] | None = (
+        raw_tool_calls if isinstance(raw_tool_calls, list) and raw_tool_calls else None
+    )
 
     prompt_tokens, completion_tokens, total_tokens = _extract_usage(body)
     latency_ms = int((time.perf_counter() - started) * 1000)
@@ -170,4 +183,5 @@ async def chat_complete(
         completion_tokens=completion_tokens,
         total_tokens=total_tokens,
         latency_ms=latency_ms,
+        tool_calls=tool_calls,
     )

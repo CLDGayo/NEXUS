@@ -21,6 +21,7 @@ from rag.orchestrator.nodes import (
     abstain_node,
     accumulate_context_node,
     direct_fanout_node,
+    enrich_customer_profile_node,
     fuse_node,
     generate_node,
     guardrails_node,
@@ -37,6 +38,7 @@ from rag.orchestrator.nodes import (
     rewrite_query_node,
     route_decision,
     route_query_node,
+    sentiment_analysis_node,
 )
 from rag.orchestrator.product_branch import (
     build_carousel_node,
@@ -100,8 +102,10 @@ def build_graph() -> Any:
     # accumulate_context → (loop or generate)``. Direct mode skips the planner
     # entirely via the ``direct_fanout`` pass-through; the accumulator still
     # runs once so generate reads a uniform ``accumulated_context``.
+    graph.add_node("enrich_customer_profile", enrich_customer_profile_node)
     graph.add_node("rewrite_query", rewrite_query_node)
     graph.add_node("preprocess_vision", preprocess_vision_node)
+    graph.add_node("sentiment_analysis", sentiment_analysis_node)
     graph.add_node("route_query", route_query_node)
     graph.add_node("direct_fanout", direct_fanout_node)
     graph.add_node("plan_research", plan_research_node)
@@ -127,9 +131,11 @@ def build_graph() -> Any:
     # so we don't re-query Qdrant + Postgres here.
     graph.add_node("build_carousel", build_carousel_node)
 
-    graph.add_edge(START, "rewrite_query")
+    graph.add_edge(START, "enrich_customer_profile")
+    graph.add_edge("enrich_customer_profile", "rewrite_query")
     graph.add_edge("rewrite_query", "preprocess_vision")
-    graph.add_edge("preprocess_vision", "route_query")
+    graph.add_edge("preprocess_vision", "sentiment_analysis")
+    graph.add_edge("sentiment_analysis", "route_query")
 
     # Route into one of two fan-out preludes. Both preludes fan out to the
     # same three retrieval arms; ``fuse`` is the barrier that waits for all
@@ -207,6 +213,7 @@ async def run_graph(
     surface: str = "messenger",
     attachments: list[dict] | None = None,
     tenant_id: str | None = None,
+    sender_id: str | None = None,
 ) -> dict[str, Any]:
     """Public entrypoint used by surface adapters (webhook, SPA).
 
@@ -233,7 +240,21 @@ async def run_graph(
         state["attachments"] = attachments
     if tenant_id:
         state["tenant_id"] = tenant_id
-    config = {"configurable": {"thread_id": thread_key}}
+    if sender_id:
+        state["sender_id"] = sender_id
+    # Phase 35 — bump LangGraph recursion_limit above default 25. Each
+    # research-mode iteration burns ~6 super-steps (next_subquery →
+    # retrieve fan-out → fuse → rerank → inject_product_context →
+    # accumulate_context) on top of the pre-loop chain (rewrite_query,
+    # preprocess_vision, sentiment_analysis, route_query, plan_research)
+    # and the post-loop chain (generate, guardrails, respond,
+    # build_carousel). Three iterations land at 27 super-steps, just
+    # over the default — set a generous cap so future nodes don't have
+    # to re-revisit this.
+    config = {
+        "configurable": {"thread_id": thread_key},
+        "recursion_limit": 50,
+    }
 
     graph = get_graph()
     try:

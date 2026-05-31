@@ -23,6 +23,7 @@ import time
 from pathlib import Path
 from typing import Any, Literal
 
+import httpx
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from rag.config import settings
@@ -33,6 +34,11 @@ from rag.guardrails.handover import (
 )
 from rag.guardrails.pipeline import default_pipeline
 from rag.orchestrator.llm import LLMError, LLMResult, chat_complete
+from rag.orchestrator.sales_tools import (
+    SALES_TOOLS_SCHEMA,
+    SDR_PERSONA_OVERLAY,
+    execute_tool_call,
+)
 from rag.orchestrator.state import NexusState
 from rag.observability.decorators import traced
 from rag.retrieval.dense import dense_search
@@ -60,12 +66,9 @@ def _tenant_filter(state: NexusState) -> Filter:
             "populate it at graph entry (Phase 29 strict tenancy)."
         )
     return Filter(
-        must=[
-            FieldCondition(
-                key="tenant_id", match=MatchValue(value=tenant_id)
-            )
-        ]
+        must=[FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id))]
     )
+
 
 _log = logging.getLogger(__name__)
 
@@ -129,6 +132,166 @@ _VISION_INTENT_SPA = (
 )
 
 
+# Phase 33.3 — conversational continuity hint for multi-turn SDR.
+# Appended to the Messenger system prompt when the same product was
+# already introduced in an earlier assistant turn, so the LLM stops
+# re-describing it and the customer-facing reply stays action-oriented.
+_CONTINUITY_NOTE = (
+    "\n\n[Continuity Note: The products above have already been "
+    "presented to the customer in prior turns. Do NOT re-describe "
+    "them. Respond directly to the customer's latest question or "
+    "intent. Keep your reply short and action-oriented.]"
+)
+
+
+# ---------------------------------------------------------------------------
+# Phase 35 — Cognitive Empathy: sentiment classification prompt + overlays
+# ---------------------------------------------------------------------------
+
+_SENTIMENT_SYSTEM_PROMPT = (
+    "You classify the emotional tone of a customer message into exactly "
+    "one category.\n\n"
+    "Categories:\n"
+    "- frustrated: angry, upset, complaining, demanding a fix, expressing "
+    "dissatisfaction, using profanity or ALL CAPS\n"
+    "- urgent: time-sensitive, deadline-driven, needs immediate help, "
+    "uses words like 'ASAP', 'now', 'emergency', 'hurry'\n"
+    "- excited: enthusiastic, positive, eager to buy, using exclamation "
+    "marks, expressing delight\n"
+    "- neutral: calm, informational, standard inquiry, no strong emotion\n\n"
+    "Respond with ONLY the category name (one word). No punctuation, no "
+    "explanation. If uncertain, respond 'neutral'."
+)
+
+_VALID_SENTIMENTS: frozenset[str] = frozenset(
+    {"frustrated", "urgent", "excited", "neutral"}
+)
+
+_FRUSTRATED_OVERLAY = (
+    "\n\n--- PRIORITY SUPPORT MODE ---\n"
+    "The customer appears frustrated or upset. Follow these rules:\n"
+    "1. Do NOT use emojis, exclamation marks, or overly cheerful language.\n"
+    "2. Acknowledge their frustration briefly and empathetically in your "
+    "opening sentence.\n"
+    "3. Prioritize resolution: lead with the direct answer or solution.\n"
+    "4. Do NOT attempt any upselling, cross-selling, or sales CTAs.\n"
+    "5. Do NOT suggest additional products or prompt for a purchase.\n"
+    "6. Keep your tone professional, calm, and solution-focused.\n"
+    "7. If you cannot resolve the issue, offer to connect them with a "
+    "human agent immediately.\n"
+)
+
+_URGENT_OVERLAY = (
+    "\n\n--- URGENT REQUEST MODE ---\n"
+    "The customer's request is time-sensitive. Follow these rules:\n"
+    "1. Lead with the most actionable information immediately.\n"
+    "2. Skip preamble and pleasantries — be direct and concise.\n"
+    "3. If multiple steps are needed, number them clearly.\n"
+    "4. If you cannot provide an instant resolution, state the expected "
+    "timeline or next step.\n"
+)
+
+_EXCITED_OVERLAY = (
+    "\n\n--- ENGAGED CUSTOMER MODE ---\n"
+    "The customer is enthusiastic and engaged. Follow these rules:\n"
+    "1. Match their energy — be warm and enthusiastic in return.\n"
+    "2. Proactively suggest next steps (checkout, related products).\n"
+    "3. Reinforce their excitement about the product or service.\n"
+)
+
+_SENTIMENT_OVERLAYS: dict[str, str] = {
+    "frustrated": _FRUSTRATED_OVERLAY,
+    "urgent": _URGENT_OVERLAY,
+    "excited": _EXCITED_OVERLAY,
+}
+
+
+def _get_sentiment_overlay(sentiment: str | None) -> str:
+    """Return the behavioral overlay for the detected sentiment, or empty."""
+    return _SENTIMENT_OVERLAYS.get(sentiment or "", "")
+
+
+# ---------------------------------------------------------------------------
+# Phase 36 — Deep Commerce Context: CRM profile formatter
+# ---------------------------------------------------------------------------
+
+
+def _format_customer_profile(profile: dict[str, Any] | None) -> str:
+    """Render the GoHighLevel CRM record into a system-prompt block.
+
+    Returns the empty string when the profile is missing / empty so the
+    caller can ``+=`` it unconditionally. Only emits keys that are
+    present and non-empty — partial CRM records (e.g. ``lifetime_spend``
+    unknown for a new lead) shrink gracefully.
+    """
+    if not profile or not isinstance(profile, dict):
+        return ""
+
+    lines: list[str] = []
+    name = profile.get("name") or profile.get("full_name")
+    if name:
+        lines.append(f"- Name: {name}")
+    segment = profile.get("segment")
+    if segment:
+        lines.append(f"- Segment: {segment}")
+    lifetime_spend = profile.get("lifetime_spend")
+    if lifetime_spend is not None:
+        lines.append(f"- Lifetime Spend: {lifetime_spend}")
+    last_order = profile.get("last_order_date")
+    if last_order:
+        lines.append(f"- Last Order: {last_order}")
+    order_count = profile.get("order_count")
+    if order_count is not None:
+        lines.append(f"- Total Orders: {order_count}")
+    tags = profile.get("tags")
+    if tags and isinstance(tags, (list, tuple)):
+        lines.append(f"- Tags: {', '.join(str(t) for t in tags)}")
+    notes = profile.get("notes")
+    if notes:
+        lines.append(f"- CRM Notes: {notes}")
+
+    if not lines:
+        return ""
+
+    return (
+        "\n\n--- CUSTOMER CRM PROFILE ---\n"
+        "The following CRM context is known about this customer. Use it "
+        "to personalise tone, prioritise high-LTV customers, reference "
+        "past orders when relevant, and avoid asking for information "
+        "you already have. Do NOT recite this profile verbatim to the "
+        "customer.\n" + "\n".join(lines) + "\n"
+    )
+
+
+def _history_mentions_any_product(
+    history: list[dict[str, Any]],
+    products: list[Any],
+) -> bool:
+    """True when any prior assistant turn includes the name of any product
+    currently being presented this turn. Gates the [Continuity Note]
+    injection so the LLM only sees it when products were actually
+    referenced in earlier prose, not on plain greeting / abstain turns.
+    """
+    if not history or not products:
+        return False
+    names = [(getattr(p, "name", "") or "").strip().lower() for p in products]
+    names = [n for n in names if n]
+    if not names:
+        return False
+    for msg in history:
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") != "assistant":
+            continue
+        content = msg.get("content")
+        if not isinstance(content, str):
+            continue
+        blob = content.lower()
+        if any(name in blob for name in names):
+            return True
+    return False
+
+
 def _load_prompt(surface: str) -> str:
     name = "system_brix.md" if surface == "messenger" else "system_internal.md"
     path = _PROMPTS_DIR / name
@@ -140,11 +303,7 @@ def _format_context(chunks: list[ScoredChunk]) -> str:
         return "(no retrieved context)"
     lines: list[str] = []
     for index, chunk in enumerate(chunks, start=1):
-        source = (
-            chunk.metadata.get("title")
-            or chunk.metadata.get("file")
-            or chunk.id
-        )
+        source = chunk.metadata.get("title") or chunk.metadata.get("file") or chunk.id
         body = chunk.text.strip().replace("\n\n", "\n")
         lines.append(f"[{index}] source: {source}\n{body}")
     return "\n\n".join(lines)
@@ -153,6 +312,7 @@ def _format_context(chunks: list[ScoredChunk]) -> str:
 # ---------------------------------------------------------------------------
 # Retrieval nodes
 # ---------------------------------------------------------------------------
+
 
 def _retrieval_query(state: NexusState) -> str:
     """Query string the retrieval+rerank arms search on.
@@ -249,6 +409,7 @@ async def rerank_node(state: NexusState) -> dict:
 # Generation
 # ---------------------------------------------------------------------------
 
+
 def _collect_image_attachments(state: NexusState) -> list[dict]:
     """Return only valid image attachments, capped at ``vision_max_attachments``."""
 
@@ -332,13 +493,13 @@ _AFFIRMATION_REWRITE_SYSTEM_PROMPT = (
     "vector knowledge base.\n\n"
     "Rules:\n"
     "- If the latest message is an affirmation, agreement, or short "
-    "continuation (\"yes\", \"yes please\", \"ok\", \"sure\", \"go on\", "
-    "\"tell me more\", \"and then?\", \"please do\", etc.), YOU MUST replace "
+    'continuation ("yes", "yes please", "ok", "sure", "go on", '
+    '"tell me more", "and then?", "please do", etc.), YOU MUST replace '
     "it with the subject the assistant just offered or asked about, phrased "
     "as a direct question or noun phrase. Do not return the affirmation "
     "as-is.\n"
-    "- If the latest message contains pronouns (\"it\", \"that\", \"they\", "
-    "\"this\", \"those\", \"them\") whose antecedents are in the history, "
+    '- If the latest message contains pronouns ("it", "that", "they", '
+    '"this", "those", "them") whose antecedents are in the history, '
     "resolve them to the concrete noun.\n"
     "- If the latest message is already self-contained and unambiguous, "
     "return it exactly as-is.\n"
@@ -416,6 +577,102 @@ async def rewrite_query_node(state: NexusState) -> dict:
     return {"search_query": rewritten}
 
 
+@traced("graph.node.sentiment_analysis", kind="llm")
+async def sentiment_analysis_node(state: NexusState) -> dict:
+    """Classify the user's emotional tone for downstream prompt tuning.
+
+    Uses the same fast 8B model as ``rewrite_query_node``. On any
+    failure (LLM error, unparseable response), defaults to ``neutral``
+    so the graph never crashes and the generation path is never blocked.
+    """
+
+    query = (state.get("query") or "").strip()
+    if not query:
+        return {"sentiment": "neutral"}
+
+    messages = [
+        {"role": "system", "content": _SENTIMENT_SYSTEM_PROMPT},
+        {"role": "user", "content": query},
+    ]
+
+    try:
+        result = await chat_complete(
+            messages,
+            model=settings.followup_model,
+            temperature=0.0,
+            max_tokens=8,
+        )
+    except LLMError as exc:
+        _log.warning("sentiment_analysis.failed defaulting to neutral: %s", exc)
+        return {"sentiment": "neutral"}
+
+    raw = result.content.strip().lower().rstrip(".")
+    sentiment = raw if raw in _VALID_SENTIMENTS else "neutral"
+
+    _log.info(
+        "sentiment_analysis.classified sentiment=%s raw=%r query=%r",
+        sentiment,
+        result.content,
+        query[:120],
+    )
+    return {"sentiment": sentiment}
+
+
+@traced("graph.node.enrich_customer_profile", kind="enrichment")
+async def enrich_customer_profile_node(state: NexusState) -> dict:
+    """Fetch the customer's CRM profile from GoHighLevel via n8n.
+
+    POSTs ``{ "sender_id": ... }`` to ``settings.n8n_webhook_profile_url``
+    and writes the returned JSON dict to ``state["customer_profile"]``.
+    Silently returns an empty update (no profile) when the webhook URL
+    is not configured, the sender_id is empty, or any HTTP / parse /
+    network error occurs — the graph must never crash on enrichment
+    failure. Downstream nodes treat absence as "no CRM context".
+    """
+
+    webhook_url = settings.n8n_webhook_profile_url
+    if not webhook_url:
+        return {"customer_profile": None}
+
+    sender_id = (state.get("sender_id") or "").strip()
+    if not sender_id:
+        _log.info("enrich_customer_profile.skip reason=empty_sender_id")
+        return {"customer_profile": None}
+
+    payload = {"sender_id": sender_id}
+    try:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=5.0, read=10.0, write=5.0, pool=5.0),
+        ) as client:
+            resp = await client.post(webhook_url, json=payload)
+            resp.raise_for_status()
+            body = resp.json()
+    except httpx.HTTPStatusError as exc:
+        _log.warning(
+            "enrich_customer_profile.http_error status=%d body=%r",
+            exc.response.status_code,
+            exc.response.text[:200],
+        )
+        return {"customer_profile": None}
+    except httpx.TimeoutException:
+        _log.warning("enrich_customer_profile.timeout sender_id=%s", sender_id)
+        return {"customer_profile": None}
+    except Exception as exc:  # noqa: BLE001 — never crash the graph
+        _log.warning("enrich_customer_profile.failed err=%s", exc)
+        return {"customer_profile": None}
+
+    if not isinstance(body, dict):
+        _log.warning("enrich_customer_profile.bad_shape type=%s", type(body).__name__)
+        return {"customer_profile": None}
+
+    _log.info(
+        "enrich_customer_profile.ok sender_id=%s keys=%s",
+        sender_id,
+        sorted(body.keys()),
+    )
+    return {"customer_profile": body}
+
+
 _HISTORY_INJECT_MAX_TURNS = 10
 
 
@@ -455,6 +712,18 @@ async def generate_node(state: NexusState) -> dict:
     context_block = _format_context(chunks_for_prompt)
     images = _collect_image_attachments(state)
     history_msgs = _history_messages_for_llm(state)
+    sentiment = state.get("sentiment")
+    customer_profile = state.get("customer_profile")
+    crm_block = _format_customer_profile(customer_profile)
+
+    # Phase 33.3 — Messenger continuity gate. Fires when any prior
+    # assistant turn already mentioned a product currently in this
+    # turn's enriched_products list (populated by
+    # ``inject_product_context_node`` for both inject and dedup paths).
+    enriched_products: list[Any] = list(state.get("_enriched_products") or [])
+    include_continuity = surface == "messenger" and _history_mentions_any_product(
+        history_msgs, enriched_products
+    )
 
     messages: list[dict[str, Any]]
     if images:
@@ -467,15 +736,26 @@ async def generate_node(state: NexusState) -> dict:
         # Phase 17 — inject surface-specific vision intent overlay.
         if surface == "messenger":
             system_content += _VISION_INTENT_MESSENGER
+            # Phase 33 — SDR persona (Messenger + vision path).
+            # Phase 35 — suppress SDR for frustrated customers.
+            if sentiment != "frustrated":
+                system_content += SDR_PERSONA_OVERLAY
+            if include_continuity:
+                system_content += _CONTINUITY_NOTE
+            # Phase 35 — sentiment behavioral overlay.
+            overlay = _get_sentiment_overlay(sentiment)
+            if overlay:
+                system_content += overlay
+            # Phase 36 — Deep Commerce Context CRM block.
+            if crm_block:
+                system_content += crm_block
         else:
             system_content += _VISION_INTENT_SPA
         user_parts: list[dict[str, Any]] = [
             {"type": "text", "text": state["query"]},
         ]
         for img in images:
-            user_parts.append(
-                {"type": "image_url", "image_url": {"url": img["url"]}}
-            )
+            user_parts.append({"type": "image_url", "image_url": {"url": img["url"]}})
         messages = [{"role": "system", "content": system_content}]
         # Phase 22 — prior text turns sit between the system contract and
         # the current multimodal user turn so the model has full
@@ -495,23 +775,92 @@ async def generate_node(state: NexusState) -> dict:
         messages.extend(history_msgs)
         model = settings.generation_model
 
+    # Phase 33 — bind sales tools for Messenger surface only.
+    # Phase 33.1 — also gate on ``not images``: the vision model path
+    # mixes ``image_url`` content arrays with ``tools`` unreliably across
+    # providers, and the multimodal SDR overlay is already appended to
+    # ``system_content`` in the ``if images`` branch above.
+    extra: dict[str, Any] | None = None
+    if surface == "messenger" and not images:
+        # Phase 35 — suppress SDR persona AND tool binding for frustrated
+        # customers. A frustrated user must never see a checkout CTA.
+        if sentiment != "frustrated":
+            extra = {"tools": SALES_TOOLS_SCHEMA, "tool_choice": "auto"}
+            messages[0]["content"] = str(messages[0]["content"]) + SDR_PERSONA_OVERLAY
+        if include_continuity:
+            messages[0]["content"] = str(messages[0]["content"]) + _CONTINUITY_NOTE
+        # Phase 35 — sentiment behavioral overlay.
+        overlay = _get_sentiment_overlay(sentiment)
+        if overlay:
+            messages[0]["content"] = str(messages[0]["content"]) + overlay
+        # Phase 36 — Deep Commerce Context CRM block.
+        if crm_block:
+            messages[0]["content"] = str(messages[0]["content"]) + crm_block
+
     try:
         result: LLMResult = await chat_complete(
             messages,
             model=model,
             temperature=settings.generation_temperature,
             max_tokens=settings.generation_max_tokens,
+            extra=extra,
         )
     except LLMError as exc:
-        _log.warning(
-            "generation failed; abstaining: %s (vision=%s)", exc, bool(images)
-        )
+        _log.warning("generation failed; abstaining: %s (vision=%s)", exc, bool(images))
         return {
             "answer": handover_fallback_text(),
             "abstained": True,
             "requires_human_handover": True,
             "handover_reason": f"llm error: {exc}",
         }
+
+    # Phase 33 — tool-call execution loop (Messenger only, max 3 rounds).
+    # If the LLM returned tool_calls instead of content, execute them,
+    # append the results, and re-call the LLM for the final text answer.
+    # Follow-up calls omit ``tools`` to force a text completion and prevent
+    # infinite loops.
+    _tool_loop_max = 3
+    tool_loop = 0
+    tenant_id = state.get("tenant_id", "")
+    while result.tool_calls and surface == "messenger" and tool_loop < _tool_loop_max:
+        tool_loop += 1
+        _log.info(
+            "generate.tool_loop iteration=%d tool_calls=%d",
+            tool_loop,
+            len(result.tool_calls),
+        )
+
+        messages.append(
+            {
+                "role": "assistant",
+                "content": result.content or None,
+                "tool_calls": result.tool_calls,
+            }
+        )
+
+        for tc in result.tool_calls:
+            tool_result = await execute_tool_call(tc, tenant_id=tenant_id)
+            messages.append(tool_result)
+
+        try:
+            result = await chat_complete(
+                messages,
+                model=model,
+                temperature=settings.generation_temperature,
+                max_tokens=settings.generation_max_tokens,
+            )
+        except LLMError as exc:
+            _log.warning(
+                "generation.tool_followup_failed iteration=%d: %s",
+                tool_loop,
+                exc,
+            )
+            return {
+                "answer": handover_fallback_text(),
+                "abstained": True,
+                "requires_human_handover": True,
+                "handover_reason": f"tool followup llm error: {exc}",
+            }
 
     content = result.content.strip()
     if not content:
@@ -545,13 +894,42 @@ async def generate_node(state: NexusState) -> dict:
 # Guardrails + routing
 # ---------------------------------------------------------------------------
 
+
 @traced("graph.node.guardrails", kind="guardrails")
 async def guardrails_node(state: NexusState) -> dict:
     answer = state.get("answer", "")
     reranked = state.get("reranked", [])
     query = state.get("query", "") or ""
+    # Phase 33.1 — surface-aware threshold for the SDR persona. Messenger
+    # tolerates 5 suspicious tokens (vs. 2 on SPA) because the SDR closing
+    # CTAs routinely include conversational verbs the validator can't
+    # cross-check against the retrieved product chunks.
+    # Phase 33.2 — also pass ``has_attachments`` so the pipeline can
+    # bypass the citation validator on the vision path (the vision model
+    # hallucinates out-of-bounds [n] indices; grounding is the image +
+    # product_branch catalog injection, not RAG citation indices).
+    surface = state.get("surface", "")
+    has_attachments = bool(state.get("attachments"))
+    # Phase 33.3 — thread the ``[Product Catalog Match]`` chunk text into
+    # the validator's ``query`` (which the ExactMatchValidator forwards
+    # to ``_retrieved_text_blob(extra=...)``). Anime / franchise proper
+    # nouns inside product names ("King", "Artist", "Special",
+    # "Version") then count as grounded and don't trip the suspicious-
+    # token ceiling that previously sent legitimate SDR replies to the
+    # human-handover fallback.
+    catalog_parts: list[str] = []
+    for c in reranked:
+        if isinstance(c.text, str) and c.text.startswith("[Product Catalog Match]"):
+            catalog_parts.append(c.text)
+    catalog_text = "\n".join(catalog_parts)
+    combined_query = f"{query}\n{catalog_text}" if catalog_text else query
+
     pipeline_result = _GUARDRAILS.validate(
-        answer, retrieved=reranked, query=query
+        answer,
+        retrieved=reranked,
+        query=combined_query,
+        surface=surface,
+        has_attachments=has_attachments,
     )
 
     failed_names = pipeline_result.failed_names
@@ -605,6 +983,7 @@ def _format_pipeline_reason(pipeline_result) -> str | None:
 # Terminal nodes
 # ---------------------------------------------------------------------------
 
+
 @traced("graph.node.respond", kind="terminal")
 async def respond_node(state: NexusState) -> dict:
     answer = state.get("answer", "")
@@ -648,6 +1027,7 @@ async def abstain_node(state: NexusState) -> dict:
 # Conditional router
 # ---------------------------------------------------------------------------
 
+
 def guardrails_router(state: NexusState) -> Literal["respond", "abstain"]:
     if state.get("guardrail_passed"):
         return "respond"
@@ -685,7 +1065,7 @@ _ROUTE_SYSTEM_PROMPT = (
     "trade-offs, or broad ideas where paraphrase matters more than "
     "exact tokens (favors dense vector retrieval).\n"
     "- mixed: a combination of both, or ambiguous.\n\n"
-    "When uncertain, prefer is_research_mode=false and intent=\"mixed\".\n\n"
+    'When uncertain, prefer is_research_mode=false and intent="mixed".\n\n'
     "Respond ONLY with the JSON object, e.g. "
     '{"is_research_mode": false, "intent": "factual"}.'
 )
@@ -874,9 +1254,7 @@ async def plan_research_node(state: NexusState) -> dict:
             max_tokens=256,
         )
     except LLMError as exc:
-        _log.warning(
-            "plan_research.failed falling back to single-pass: %s", exc
-        )
+        _log.warning("plan_research.failed falling back to single-pass: %s", exc)
         return {"sub_queries": [target]}
 
     sub_queries = _parse_plan_response(result.content, fallback=target)

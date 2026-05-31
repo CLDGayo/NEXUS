@@ -326,9 +326,7 @@ def test_build_carousel_node_uses_cached_products(monkeypatch) -> None:
             ProductCarouselBlock,
         )
 
-        return ProductCarouselBlock(
-            elements=[GenericTemplateElement(title="ok")]
-        )
+        return ProductCarouselBlock(elements=[GenericTemplateElement(title="ok")])
 
     monkeypatch.setattr(product_branch, "_format_carousel", stub_carousel)
 
@@ -346,3 +344,129 @@ def test_build_carousel_node_uses_cached_products(monkeypatch) -> None:
 def test_build_carousel_node_empty_when_no_cached_products() -> None:
     state = {"surface": "messenger", "tenant_id": "x"}
     assert _run(product_branch.build_carousel_node(state)) == {}
+
+
+# ── Phase 33.3 — history-aware dedup ───────────────────────────────────────
+
+
+def test_inject_node_skips_when_history_already_mentions_product(monkeypatch) -> None:
+    """Phase 33.3 — re-injection suppressed when the last assistant turn
+    already mentions every current product name. ``_enriched_products``
+    still surfaces so the carousel builder reuses the cache."""
+    product = _stub_product(name="Luffy Gear 4 Bound man")
+
+    async def fake_candidates(*_a, **_kw):
+        return [product.id]
+
+    async def fake_enrich(*_a, **_kw):
+        return [product]
+
+    monkeypatch.setattr(product_branch, "_candidate_product_ids", fake_candidates)
+    monkeypatch.setattr(product_branch, "_enrich", fake_enrich)
+
+    state = {
+        "query": "yes",
+        "surface": "messenger",
+        "tenant_id": "cozy-downloads-store",
+        "reranked": [],
+        "history": [
+            {"role": "user", "content": "do you have luffy?"},
+            {
+                "role": "assistant",
+                "content": (
+                    "Yes! The Luffy Gear 4 Bound man is in stock for JPY 2,100."
+                ),
+            },
+        ],
+    }
+    result = _run(product_branch.inject_product_context_node(state))
+    assert "reranked" not in result
+    assert result["_enriched_products"] == [product]
+
+
+def test_inject_node_injects_when_history_lacks_product_mention(monkeypatch) -> None:
+    """Different product → re-injection still runs even with assistant history."""
+    product = _stub_product(name="Luffy Gear 5 King")
+
+    async def fake_candidates(*_a, **_kw):
+        return [product.id]
+
+    async def fake_enrich(*_a, **_kw):
+        return [product]
+
+    monkeypatch.setattr(product_branch, "_candidate_product_ids", fake_candidates)
+    monkeypatch.setattr(product_branch, "_enrich", fake_enrich)
+
+    state = {
+        "query": "what about gear 5?",
+        "surface": "messenger",
+        "tenant_id": "cozy-downloads-store",
+        "reranked": [],
+        "history": [
+            {"role": "user", "content": "do you have gear 4?"},
+            {
+                "role": "assistant",
+                "content": "Yes! Luffy Gear 4 Bound man is JPY 2,100.",
+            },
+        ],
+    }
+    result = _run(product_branch.inject_product_context_node(state))
+    assert "reranked" in result
+    assert len(result["reranked"]) == 1
+
+
+def test_inject_node_injects_when_history_empty(monkeypatch) -> None:
+    product = _stub_product()
+
+    async def fake_candidates(*_a, **_kw):
+        return [product.id]
+
+    async def fake_enrich(*_a, **_kw):
+        return [product]
+
+    monkeypatch.setattr(product_branch, "_candidate_product_ids", fake_candidates)
+    monkeypatch.setattr(product_branch, "_enrich", fake_enrich)
+
+    state = {
+        "query": "luffy?",
+        "surface": "messenger",
+        "tenant_id": "cozy-downloads-store",
+        "reranked": [],
+        "history": [],
+    }
+    result = _run(product_branch.inject_product_context_node(state))
+    assert "reranked" in result
+
+
+def test_inject_node_skip_requires_ALL_product_names_in_history(monkeypatch) -> None:
+    """When this turn carries multiple products, only one of which was
+    mentioned previously, we must re-inject so the second product still
+    lands in the LLM context."""
+    p1 = _stub_product(name="Luffy Gear 4 Bound man")
+    p2 = _stub_product(name="Luffy Gear 5 King")
+
+    async def fake_candidates(*_a, **_kw):
+        return [p1.id, p2.id]
+
+    async def fake_enrich(*_a, **_kw):
+        return [p1, p2]
+
+    monkeypatch.setattr(product_branch, "_candidate_product_ids", fake_candidates)
+    monkeypatch.setattr(product_branch, "_enrich", fake_enrich)
+
+    state = {
+        "query": "show me both",
+        "surface": "messenger",
+        "tenant_id": "cozy-downloads-store",
+        "reranked": [],
+        "history": [
+            {"role": "user", "content": "luffy?"},
+            {
+                "role": "assistant",
+                "content": "Yes! Luffy Gear 4 Bound man is available.",
+            },
+        ],
+    }
+    result = _run(product_branch.inject_product_context_node(state))
+    assert "reranked" in result
+    assert len(result["reranked"]) == 2
