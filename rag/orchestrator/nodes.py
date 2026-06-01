@@ -725,6 +725,59 @@ async def generate_node(state: NexusState) -> dict:
         history_msgs, enriched_products
     )
 
+    # Phase 40 — Proactive Cart Recovery surface. Load the dedicated recovery
+    # prompt, inject cart context as a SYSTEM overlay, and bypass SDR tool
+    # binding entirely. The checkout URL is supplied in the cart_context dict
+    # so no generate_checkout_link tool call is needed or desired here.
+    if surface == "outbound_recovery":
+        recovery_prompt_path = _PROMPTS_DIR / "system_recovery.md"
+        recovery_template = recovery_prompt_path.read_text(encoding="utf-8")
+        cart_ctx = state.get("cart_context") or {}
+        raw_items: list[Any] = cart_ctx.get("cart_items") or []
+        cart_items_block = (
+            "\n".join(str(item) for item in raw_items) if raw_items else "(no items)"
+        )
+        checkout_url = str(cart_ctx.get("checkout_url") or "")
+        rendered_recovery = recovery_template.replace(
+            "{cart_items_block}", cart_items_block
+        ).replace("{checkout_url}", checkout_url)
+        recovery_messages: list[dict[str, Any]] = [
+            {"role": "system", "content": rendered_recovery}
+        ]
+        recovery_messages.extend(history_msgs)
+        try:
+            recovery_result: LLMResult = await chat_complete(
+                recovery_messages,
+                model=settings.generation_model,
+                temperature=settings.generation_temperature,
+                max_tokens=settings.generation_max_tokens,
+                extra=None,
+            )
+        except LLMError as exc:
+            _log.warning("generate.recovery_failed; abstaining: %s", exc)
+            return {
+                "answer": handover_fallback_text(),
+                "abstained": True,
+                "requires_human_handover": True,
+                "handover_reason": f"llm error (recovery): {exc}",
+            }
+        recovery_content = recovery_result.content.strip()
+        if not recovery_content:
+            _log.warning(
+                "generate.recovery_empty_completion model=%s prompt_tokens=%d",
+                recovery_result.model,
+                recovery_result.prompt_tokens,
+            )
+        return {
+            "answer": recovery_content,
+            "abstained": False,
+            "llm_model": recovery_result.model,
+            "llm_prompt_tokens": recovery_result.prompt_tokens,
+            "llm_completion_tokens": recovery_result.completion_tokens,
+            "llm_total_tokens": recovery_result.total_tokens,
+            "llm_latency_ms": recovery_result.latency_ms,
+        }
+
     messages: list[dict[str, Any]]
     if images:
         # Multimodal path: instructions+context on system, question+images

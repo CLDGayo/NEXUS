@@ -333,3 +333,72 @@ class TestCatalogTextThreading:
             f"catalog threading should prevent block; failed={out.failed_names} "
             f"reasons={[r.reason for r in out.results if r.failed]}"
         )
+
+
+@pytest.mark.unit
+class TestOutboundRecoveryBypass:
+    """Phase 40 — outbound_recovery surface bypasses citation and exact_match;
+    entropy validator must still run."""
+
+    # Persuasive copy with checkout URL — no RAG citations, would normally
+    # trip both citation (no [n] markers against non-empty retrieved) and
+    # exact_match (CTA vocabulary echoes query tokens).
+    #
+    # IMPORTANT: the answer must be > 40 words so the pre-existing short-turn
+    # bypass (0 < query_words <= 8 AND 0 < answer_words <= 40) does NOT fire
+    # before the Phase 40 outbound_recovery branch is reached.  The query is
+    # deliberately kept as the sentinel "[outbound_recovery]" (1 word) to
+    # mirror real production traffic; lengthening the answer alone is
+    # sufficient to disable the short-turn bypass.
+    _ANSWER = (
+        "Hey! We noticed you left a Brix Signature Tee in your cart earlier today. "
+        "We saved it for you because we know great finds like this do not last long. "
+        "Complete your order now and we will make sure it ships out today: "
+        "https://example.com/checkout/abc"
+    )
+    _QUERY = "[outbound_recovery]"
+
+    def test_outbound_recovery_bypass_citation_exact_match(self) -> None:
+        """citation and exact_match must be bypassed; entropy still runs."""
+        pipeline = default_pipeline()
+        out = pipeline.validate(
+            self._ANSWER,
+            retrieved=[],  # no RAG chunks — citation would block without bypass
+            query=self._QUERY,
+            surface="outbound_recovery",
+        )
+
+        # citation must be bypassed
+        citation_r = next(r for r in out.results if r.name == "citation")
+        assert citation_r.passed, (
+            f"citation must be bypassed for outbound_recovery; reason={citation_r.reason}"
+        )
+        assert citation_r.reason == "outbound_recovery_bypass"
+        assert citation_r.metadata.get("bypassed") is True
+
+        # exact_match must be bypassed
+        exact_r = next(r for r in out.results if r.name == "exact_match")
+        assert exact_r.passed, (
+            f"exact_match must be bypassed for outbound_recovery; reason={exact_r.reason}"
+        )
+        assert exact_r.reason == "outbound_recovery_bypass"
+        assert exact_r.metadata.get("bypassed") is True
+
+        # entropy validator must NOT be bypassed (it ran normally)
+        entropy_r = next(r for r in out.results if r.name == "entropy")
+        assert entropy_r.metadata.get("bypassed") is not True, (
+            "entropy must NOT be bypassed for outbound_recovery"
+        )
+
+    def test_non_recovery_surface_still_blocked_without_citation(self) -> None:
+        """Confirm bypass is surface-gated: spa surface is still blocked on
+        the same answer with no retrieved chunks (citation validator fires)."""
+        pipeline = default_pipeline()
+        out = pipeline.validate(
+            self._ANSWER,
+            retrieved=[],
+            query=self._QUERY,
+            surface="spa",
+        )
+        assert out.blocked, "spa surface must NOT receive the outbound_recovery bypass"
+        assert "citation" in out.failed_names

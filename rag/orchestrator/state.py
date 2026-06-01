@@ -15,7 +15,7 @@ from rag.retrieval.types import ScoredChunk
 
 _log = logging.getLogger(__name__)
 
-Surface = Literal["messenger", "spa", "test"]
+Surface = Literal["messenger", "spa", "test", "outbound_recovery"]
 
 # Phase 21 — history is JSON-serialized to the Postgres checkpointer on
 # every state write. Keep it tight so a multi-month thread doesn't bloat
@@ -252,3 +252,9 @@ class NexusState(TypedDict, total=False):
     # not configured) or failed; ``generate_node`` then skips the CRM
     # block silently so the pipeline never crashes on enrichment failure.
     customer_profile: dict[str, Any] | None
+
+    # Phase 40 — Proactive Cart Recovery. Populated at graph entry by the outbound
+    # cart-recovery adapter. Contains ``cart_items`` (list[str]) and
+    # ``checkout_url`` (str). ``None`` on every inbound surface turn. The
+    # ``append_history`` reducer does not touch this field; no history leakage.
+    cart_context: dict[str, Any] | None

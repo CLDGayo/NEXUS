@@ -130,6 +130,21 @@ class GuardrailsPipeline:
                     )
                 )
                 continue
+            # Phase 40 — outbound_recovery surface bypasses citation and
+            # exact_match. The checkout URL and persuasive copy in the
+            # recovery message are not RAG-cited content; the CTA vocabulary
+            # would trip the exact_match validator. Entropy still runs —
+            # wishy-washy copy is still a real quality signal.
+            if surface == "outbound_recovery" and v_name in {"citation", "exact_match"}:
+                results.append(
+                    ValidationResult(
+                        name=v_name,
+                        passed=True,
+                        reason="outbound_recovery_bypass",
+                        metadata={"bypassed": True},
+                    )
+                )
+                continue
             # Phase 33.2 — Messenger vision path bypasses ``citation``.
             # The vision model hallucinates out-of-bounds [n] indices
             # (e.g. [11] against a 4-chunk context) because it's weaker

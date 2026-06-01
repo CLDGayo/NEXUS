@@ -67,6 +67,7 @@ from rag.auth import (  # noqa: E402
 from rag.config import settings  # noqa: E402
 from rag.database.engine import dispose_engine  # noqa: E402
 from rag.messenger.routers import health as v2_health  # noqa: E402
+from rag.messenger.routers import outbound as v2_outbound  # noqa: E402
 from rag.messenger.routers import webhook as v2_webhook  # noqa: E402
 from rag.observability.tracing import init_tracing  # noqa: E402
 from rag.routers import admin_users as v2_admin_users  # noqa: E402
@@ -174,9 +175,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                     len(pending),
                     drain_timeout,
                 )
-                done, still_pending = await asyncio.wait(
-                    pending, timeout=drain_timeout
-                )
+                done, still_pending = await asyncio.wait(pending, timeout=drain_timeout)
                 if still_pending:
                     _log.warning(
                         "lifespan.drain.timeout cancelled=%d completed=%d",
@@ -212,13 +211,14 @@ app.add_middleware(
 # OTEL + Langfuse bootstrap (no-op when keys absent).
 init_tracing(app, service_name="nexus-api")
 
-# v2 routers — health (/, /api/health, /health/ready) + webhook.
+# v2 routers — health (/, /api/health, /health/ready) + webhook + outbound.
 app.include_router(v2_health.router)
 app.include_router(v2_webhook.router, prefix="/webhook")
+app.include_router(v2_outbound.router, prefix="/webhook")
 
 # v1 routers — admin + SPA chat surface. ``routers.health`` is intentionally
 # dropped: v2's health router already serves /health + /api/health.
-app.include_router(auth.router,          prefix="/api/auth")
+app.include_router(auth.router, prefix="/api/auth")
 
 # Phase 27 — fastapi-users routes coexist with the legacy admin login. The
 # legacy POST /api/auth/login stays mounted (decommissioned in Part 2 once
@@ -249,20 +249,20 @@ app.include_router(v2_admin_users.router, prefix="/api/admin", tags=["admin"])
 # prefix; mount with no extra prefix here.
 app.include_router(v2_tenants.router)
 
-app.include_router(chat.router,          prefix="/api/chat")
-app.include_router(chat_uploads.router,  prefix="/api/chat")
-app.include_router(dashboard.router,     prefix="/api/dashboard")
-app.include_router(documents.router,     prefix="/api")
-app.include_router(uploads.router,       prefix="/api")
+app.include_router(chat.router, prefix="/api/chat")
+app.include_router(chat_uploads.router, prefix="/api/chat")
+app.include_router(dashboard.router, prefix="/api/dashboard")
+app.include_router(documents.router, prefix="/api")
+app.include_router(uploads.router, prefix="/api")
 app.include_router(conversations.router, prefix="/api")
-app.include_router(logs.router,          prefix="/api")
-app.include_router(v1_settings.router,   prefix="/api/settings")
-app.include_router(changelog.router,     prefix="/api/changelog")
-app.include_router(integrations.router,  prefix="/api/integrations")
-app.include_router(api_tokens.router,    prefix="/api/tokens")
-app.include_router(resources.router,     prefix="/api/resources")
-app.include_router(products.router,      prefix="/api")
-app.include_router(objects.router,        prefix="/api")
+app.include_router(logs.router, prefix="/api")
+app.include_router(v1_settings.router, prefix="/api/settings")
+app.include_router(changelog.router, prefix="/api/changelog")
+app.include_router(integrations.router, prefix="/api/integrations")
+app.include_router(api_tokens.router, prefix="/api/tokens")
+app.include_router(resources.router, prefix="/api/resources")
+app.include_router(products.router, prefix="/api")
+app.include_router(objects.router, prefix="/api")
 
 # React SPA assets + widget mounts. The catch-all must be registered last so
 # that named API/asset routes win the match. Vite emits hashed bundles under

@@ -214,6 +214,7 @@ async def run_graph(
     attachments: list[dict] | None = None,
     tenant_id: str | None = None,
     sender_id: str | None = None,
+    cart_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Public entrypoint used by surface adapters (webhook, SPA).
 
@@ -242,6 +243,8 @@ async def run_graph(
         state["tenant_id"] = tenant_id
     if sender_id:
         state["sender_id"] = sender_id
+    if cart_context:
+        state["cart_context"] = cart_context
     # Phase 35 — bump LangGraph recursion_limit above default 25. Each
     # research-mode iteration burns ~6 super-steps (next_subquery →
     # retrieve fan-out → fuse → rerank → inject_product_context →

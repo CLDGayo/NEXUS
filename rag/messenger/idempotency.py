@@ -76,6 +76,7 @@ class LockVerdict:
 # Body-hash idempotency (broker path)
 # ---------------------------------------------------------------------------
 
+
 def _key_for(payload: InboundMessage) -> str:
     canonical = payload.model_dump_json()
     body_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
@@ -100,6 +101,7 @@ async def check_idempotency(payload: InboundMessage) -> IdempotencyVerdict:
 # ---------------------------------------------------------------------------
 # Content-keyed idempotency (Meta direct path)
 # ---------------------------------------------------------------------------
+
 
 def _normalize_text(text: str | None) -> str:
     if not text:
@@ -161,6 +163,7 @@ async def claim_content_idempotency(payload: InboundMessage) -> IdempotencyVerdi
 # Per-thread serialization lock
 # ---------------------------------------------------------------------------
 
+
 def thread_lock_key(thread_key: str) -> str:
     return f"messenger:lock:{thread_key}"
 
@@ -188,3 +191,26 @@ async def release_thread_lock(thread_key: str) -> None:
         await redis.delete(key)
     except Exception:  # noqa: BLE001
         return
+
+
+# ---------------------------------------------------------------------------
+# Phase 40 — cart-level idempotency (outbound cart recovery)
+# ---------------------------------------------------------------------------
+
+
+async def claim_cart_idempotency(cart_id: str) -> IdempotencyVerdict:
+    """Atomic cart-level idempotency claim.
+
+    Keys off ``cart_id`` from the n8n payload. TTL = 86400s (24h).
+    Returns ``duplicate=True`` if a prior claim exists. Falls back to
+    ``duplicate=False`` on Redis error (same fail-open policy as
+    ``claim_content_idempotency``) so a Redis outage degrades gracefully.
+    """
+
+    key = f"cart:idemp:{cart_id}"
+    redis = get_redis()
+    try:
+        set_ok = await redis.set(key, "1", nx=True, ex=86400)
+    except Exception:  # noqa: BLE001
+        return IdempotencyVerdict(duplicate=False, key=key)
+    return IdempotencyVerdict(duplicate=not bool(set_ok), key=key)

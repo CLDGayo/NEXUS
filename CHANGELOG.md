@@ -3,6 +3,29 @@
 All notable changes to the NEXUS Knowledge Base.
 This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.13.0] - 2026-06-02
+
+### Added
+- **Phase 40 — Proactive Cart Recovery.** An n8n abandoned-cart workflow can now POST to a new outbound webhook that runs the existing Seina LangGraph orchestrator against the customer's existing PSID Messenger thread (continuous memory preserved) and dispatches a warm, empathetic recovery message via the Meta Graph API — all inside Meta's 24-hour standard messaging window. The endpoint returns HTTP 202 immediately; graph invocation and dispatch run in a background task registered with the same drain-on-SIGTERM registry the inbound webhook uses.
+- `rag/messenger/routers/outbound.py` — new router. `POST /webhook/outbound/cart-recovery`, gated by the existing `require_webhook_api_key` (`X-Webhook-Api-Key`) dependency. `CartRecoveryRequest` / `CartItem` Pydantic models validate a non-empty `cart_id` / `psid` / `page_id`, an `AnyHttpUrl` `checkout_url`, and at least one cart item. Resolves the tenant via `resolve_tenant_for_page` and returns **422 `no_tenant_mapping`** synchronously if the `page_id` is unmapped, otherwise schedules `_run_cart_recovery` through `_default_scheduler` and returns **202** (`CartRecoveryAck`). Dispatch uses a minimal `send_text_message` httpx helper (`messaging_type:"RESPONSE"`, lawful only inside the 24h window) and logs every send as `outbound_type=cart_recovery` for future policy audit.
+- **The 4 Locks — strict sequential, abort-early pre-flight gates** in `_run_cart_recovery`, each with a structured log key:
+  1. **Idempotency** — `claim_cart_idempotency(cart_id)` (Redis `SET NX EX 86400`); a duplicate n8n retry within 24h is deduplicated (`cart_recovery.duplicate`).
+  2. **HITL** — `is_bot_paused(psid)`; never appends an automated message to a human-handled thread (`cart_recovery.suppressed_hitl_active`).
+  3. **24h window + cold PSID** — reads the Postgres checkpointer snapshot via `graph.aget_state`; aborts on empty history / no prior thread (`cart_recovery.cold_psid`), on a last-user-message timestamp older than 24h (`cart_recovery.window_expired`), and **fails closed** when no usable timestamp exists or the snapshot read errors (`cart_recovery.snapshot_failed`).
+  4. **Thread lock** — wraps the graph invocation in `acquire_thread_lock(psid)` (try/finally `release_thread_lock`) to serialize against a concurrent inbound turn and prevent last-writer-wins checkpoint corruption (`cart_recovery.lock_contention`).
+- `rag/messenger/idempotency.py` — new `claim_cart_idempotency(cart_id)`: atomic cart-level claim keyed `cart:idemp:{cart_id}`, TTL 86400s, fail-open on Redis error (same policy as `claim_content_idempotency`).
+- `rag/orchestrator/state.py` — `Surface` literal extended with `"outbound_recovery"` (mypy-strict safe); new `cart_context: dict[str, Any] | None` state field (carries `cart_items` + `checkout_url`, never touched by the `append_history` reducer — no history leakage).
+- `rag/orchestrator/graph.py` — `run_graph()` gains a `cart_context` kwarg, threaded into state at graph entry.
+- `rag/orchestrator/prompts/system_recovery.md` — new dedicated recovery persona prompt (warm Seina, ≤200 chars, plain prose, no tools), with `{cart_items_block}` and `{checkout_url}` template slots.
+- `rag/orchestrator/nodes.py` — `generate_node` detects `surface == "outbound_recovery"`, loads `system_recovery.md`, injects the cart context as a **SYSTEM overlay** (the directive never enters conversation history as a user turn), and **bypasses SDR tool binding** (the checkout URL is supplied directly, so no `generate_checkout_link` call). LLM errors abstain to the handover fallback.
+- `rag/guardrails/pipeline.py` — the `outbound_recovery` surface bypasses the `citation` and `exact_match` validators (persuasive recovery copy + checkout URL are not RAG-cited content and would trip exact-match); the `entropy` validator still runs.
+- `rag/messenger/tests/test_cart_recovery.py` (12 tests) — all four locks (idempotency duplicate, HITL paused, window-expired, cold PSID, lock contention), auth 401, payload validation, tenant-miss 422, and `thread_key == psid` identity / 202 + background dispatch.
+- `rag/orchestrator/tests/test_generate_node_recovery.py` (5 tests) — recovery prompt loaded, no SDR tools bound, history non-pollution, guardrail bypass, checkout-URL injection.
+- `rag/guardrails/tests/test_pipeline.py` — `TestOutboundRecoveryBypass`: confirms `outbound_recovery` bypasses citation/exact_match while entropy still runs, and that the bypass is surface-gated (a `spa` turn on the same long answer is still blocked on citation).
+- Wired in `rag/main.py` (`include_router(v2_outbound.router, prefix="/webhook")`).
+
+> **v1 scope note:** token dispatch uses the single-tenant `current_page_access_token()` overlay; the payload carries `page_id` (and the endpoint resolves+validates the tenant) for forward-compatible multi-tenant token dispatch, which is deferred. No `MESSAGE_TAG` path (24h window only); no dedicated retry/DLQ beyond the existing send-error handling.
+
 ## [0.12.0] - 2026-06-01
 
 ### Added
