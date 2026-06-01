@@ -265,6 +265,40 @@ Controller rules:
 4. If the risk gate says `mustStopBeforeFinalize: true`, do not imply the work is fully proven until the pack exists and the reviewer decision is present.
 5. Keep this manual-first. Do not invent a blocking hook or alternate workflow owner.
 
+## Session-Limit Resume and Subagent Continuity
+
+### Session-limit resume pattern
+
+Multi-session EXECUTE work (session-limit drops, socket disconnects) recovers cleanly only when
+durable artifacts stay current throughout execution.
+
+Rules:
+
+1. Keep the active plan file and Dev Log updated after each completed step — not just at the end.
+   A cold resume must be able to reconstruct what is done and what is pending from disk state alone.
+2. Before continuing a recovered session, run `git status` and `git diff --stat` to confirm which
+   files actually landed on disk. Do not rely on in-session recollection of what "should" be there.
+3. Identify the last verified-complete step from the plan checklist, then resume from the next
+   uncompleted step. Never re-run a completed step without first verifying the file state.
+4. After a recovery, treat the first act as a durable-artifact reconciliation pass: plan file,
+   Dev Log, and git status must all agree before any new code touches the codebase.
+
+### SendMessage cross-session constraint
+
+Continuing a previously spawned subagent via SendMessage relies on that agent still being alive
+in the same session. After a session-limit drop or socket disconnect, prior agent IDs are stale
+and cannot be resumed.
+
+Rules:
+
+1. Never depend on SendMessage continuity across session boundaries.
+2. After any session break, spawn a FRESH agent with the full re-stated context — plan file path,
+   relevant phase excerpt, last completed step, files to modify, acceptance criteria.
+3. Pass the active plan file as the execution anchor so the fresh agent can self-orient without
+   relying on conversational state from the dropped session.
+4. If a subagent reported partial completion before the drop, pass that partial state explicitly
+   in the fresh spawn prompt (e.g., "Steps 1-7 complete per git status; resume from Step 8").
+
 ## Research First for Service-Shaped Features
 
 When a user proposes a new server, daemon, sidecar, agent, worker, or background process, route to research first before innovate or plan.

@@ -63,6 +63,26 @@ Auto-stop rule:
 
 This contract is manual-first and opt-in by risk class. It is not a default blocking hook.
 
+## Test Fixture Correctness
+
+### Short-turn bypass footgun
+
+The NEXUS guardrail pipeline (`rag/guardrails/pipeline.py`) includes a pre-existing short-turn
+bypass: if `query ≤ 8 words AND answer ≤ 40 words`, `citation` and `exact_match` validators are
+skipped with `reason="short-turn bypass"` regardless of surface.
+
+This means a test fixture that uses a short query string and a short answer string will trigger
+the bypass and never reach a surface-specific bypass branch (e.g., `outbound_recovery_bypass`).
+The test will appear to pass while proving nothing about the real code path.
+
+Rule: when testing a surface-specific guardrail bypass, use an answer that exceeds 40 words
+to ensure the short-turn bypass does not fire first. Also assert on the `reason` string returned
+by the validator — `"outbound_recovery_bypass"`, `"vision_bypass"`, etc. — not just `passed=True`.
+
+General principle: before writing a bypass test, identify every *prior* bypass that could fire
+for the fixture's input shape. Size the fixture to avoid those prior gates, so the test proves
+the intended gate is the operative mechanism.
+
 ## Commit Hygiene
 
 - Keep commits focused on the requested change.
