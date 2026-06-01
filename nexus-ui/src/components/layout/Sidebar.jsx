@@ -11,6 +11,7 @@ import {
   Settings,
   Building2,
   Sparkles,
+  Newspaper,
   Shield,
   LogOut,
 } from 'lucide-react';
@@ -37,7 +38,8 @@ const OWNER_NAV = [
 ];
 
 const TRAILING_NAV = [
-  { to: '/changelog',           label: "What's New", Icon: Sparkles },
+  { to: '/whats-new',           label: "What's New", Icon: Sparkles },
+  { to: '/changelog',           label: 'Changelog',  Icon: Newspaper },
 ];
 
 const ADMIN_NAV_ITEM = { to: '/admin/users', label: 'Admin', Icon: Shield };

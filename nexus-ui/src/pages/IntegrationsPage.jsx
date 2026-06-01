@@ -1,6 +1,7 @@
 import MessengerPanel from '../components/integrations/MessengerPanel.jsx';
 import WebhookIntegrationsList from '../components/integrations/WebhookIntegrationsList.jsx';
 import ApiTokensList from '../components/integrations/ApiTokensList.jsx';
+import PremiumIntegrationsGrid from '../components/integrations/PremiumIntegrationsGrid.jsx';
 
 export default function IntegrationsPage() {
   return (
@@ -9,6 +10,7 @@ export default function IntegrationsPage() {
         <MessengerPanel />
         <WebhookIntegrationsList />
         <ApiTokensList />
+        <PremiumIntegrationsGrid />
       </div>
     </div>
   );

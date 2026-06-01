@@ -20,6 +20,7 @@ import ProductEditPage from './pages/ProductEditPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import SettingsWorkspacesPage from './pages/SettingsWorkspacesPage.jsx';
 import ChangelogPage from './pages/ChangelogPage.jsx';
+import WhatsNewPage from './pages/WhatsNewPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 
@@ -55,6 +56,7 @@ export default function App() {
                 element={<SettingsWorkspacesPage />}
               />
             </Route>
+            <Route path="/whats-new" element={<WhatsNewPage />} />
             <Route path="/changelog" element={<ChangelogPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route

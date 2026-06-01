@@ -87,24 +87,16 @@ def _serialize(integration: Integration) -> dict[str, Any]:
         "type": integration.type,
         "name": integration.name,
         "config": _redact(integration.type, dict(config)),
-        "events": [
-            e for e in (integration.events_csv or "").split(",") if e
-        ],
+        "events": [e for e in (integration.events_csv or "").split(",") if e],
         "enabled": bool(integration.enabled),
         "created_at": (
-            integration.created_at.isoformat()
-            if integration.created_at
-            else None
+            integration.created_at.isoformat() if integration.created_at else None
         ),
         "updated_at": (
-            integration.updated_at.isoformat()
-            if integration.updated_at
-            else None
+            integration.updated_at.isoformat() if integration.updated_at else None
         ),
         "last_fired_at": (
-            integration.last_fired_at.isoformat()
-            if integration.last_fired_at
-            else None
+            integration.last_fired_at.isoformat() if integration.last_fired_at else None
         ),
         "last_status": integration.last_status,
     }
@@ -140,6 +132,60 @@ async def list_integrations(
 @router.get("/events")
 async def list_events(_: Tenant = Depends(require_owner)) -> dict:
     return {"events": list(EVENT_NAMES), "types": sorted(VALID_TYPES)}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 39 — Premium connector catalog (read-only stubs)
+#
+# Hunter (lead verification) and Akiro (analytics) are NOT provisioned
+# integrations — they have no provider, no DB row, and no secrets. This
+# endpoint returns a static catalog so the frontend can render polished
+# "available / inactive" empty-state cards instead of guessing. It never
+# reads the DB or env config, so a missing key can't raise here, and the
+# core Messenger / LangGraph loops are entirely unaffected.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class CatalogConnector(BaseModel):
+    key: str
+    name: str
+    category: str
+    description: str
+    status: str = "inactive"
+    configured: bool = False
+    api_token: str | None = None
+    tier: str = "enterprise"
+
+
+_PREMIUM_CATALOG: tuple[CatalogConnector, ...] = (
+    CatalogConnector(
+        key="hunter",
+        name="Hunter",
+        category="Automated Lead Verification",
+        description=(
+            "Validate inbound lead emails in real time before they enter your "
+            "GoHighLevel pipeline — cutting bounce rates and protecting sender "
+            "reputation."
+        ),
+    ),
+    CatalogConnector(
+        key="akiro",
+        name="Akiro",
+        category="Advanced Analytics Processing",
+        description=(
+            "Stream conversation and conversion events into an analytics "
+            "warehouse for cohort, funnel, and revenue-attribution reporting."
+        ),
+    ),
+)
+
+
+@router.get("/catalog")
+async def get_integration_catalog(
+    _: Tenant = Depends(require_owner),
+) -> dict[str, list[dict[str, Any]]]:
+    """Static premium-connector catalog. Read-only; no DB, no secrets."""
+    return {"connectors": [c.model_dump() for c in _PREMIUM_CATALOG]}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -252,12 +298,16 @@ async def list_messenger_pages(
 ) -> list[dict[str, Any]]:
     """List the Facebook pages bound to the active tenant."""
     rows = (
-        await db.execute(
-            select(MessengerPageTenant)
-            .where(MessengerPageTenant.tenant_id == tenant.id)
-            .order_by(MessengerPageTenant.created_at.desc())
+        (
+            await db.execute(
+                select(MessengerPageTenant)
+                .where(MessengerPageTenant.tenant_id == tenant.id)
+                .order_by(MessengerPageTenant.created_at.desc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return [_serialize_page(r) for r in rows]
 
 
