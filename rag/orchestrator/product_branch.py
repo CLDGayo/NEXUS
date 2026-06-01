@@ -256,31 +256,35 @@ def _products_already_in_history(
     products: list[Product],
     history: list[dict[str, Any]] | None,
 ) -> bool:
-    """Return True when the most recent assistant message in ``history``
+    """Return True when any of the last 3 assistant messages in ``history``
     already mentions every product name in ``products``.
 
-    Phase 33.3 — defends against the "repetitive preamble" bug where
-    every turn re-prepends a fresh ``[Product Catalog Match]`` chunk for
-    a product the LLM already introduced. If the last assistant turn
-    mentions all current product names, skip re-injection; the carousel
-    builder still gets the cached enriched list via
-    ``_enriched_products``.
+    Expanded from Phase 33.3 (last-1 check) to last-3 check — defends
+    against the case where the most recent assistant reply was a short
+    follow-up answer (pronouns only) that didn't repeat the product name,
+    causing the deduplication gate to miss and re-inject the full chunk.
     """
     if not history or not products:
         return False
-    last_assistant: str | None = None
+    product_names = [(p.name or "").lower() for p in products if p.name]
+    if not product_names:
+        return False
+    assistant_turns_checked = 0
     for msg in reversed(history):
         if not isinstance(msg, dict):
             continue
-        if msg.get("role") == "assistant":
-            content = msg.get("content")
-            if isinstance(content, str) and content.strip():
-                last_assistant = content
+        if msg.get("role") != "assistant":
+            continue
+        content = msg.get("content")
+        if not isinstance(content, str) or not content.strip():
+            continue
+        blob = content.lower()
+        if all(name in blob for name in product_names):
+            return True
+        assistant_turns_checked += 1
+        if assistant_turns_checked >= 3:
             break
-    if not last_assistant:
-        return False
-    blob = last_assistant.lower()
-    return all((p.name or "").lower() in blob for p in products if p.name)
+    return False
 
 
 def _product_chunk(product: Product, tenant_slug: str) -> ScoredChunk:
