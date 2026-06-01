@@ -3,6 +3,29 @@
 All notable changes to the NEXUS Knowledge Base.
 This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.12.0] - 2026-06-01
+
+### Added
+- **Phase 39 — SaaS Showcase Polish (integration empty states + What's New showcase).** Single-user RAG tool evolved to a presentable SaaS surface: premium integration slots with enterprise-tier upsell and a curated capability showcase page that replaces the scroll-through changelog as the default "what did we ship" surface.
+- `rag/routers/integrations.py` — new read-only `GET /api/integrations/catalog` endpoint returning two static premium-connector stubs: "Hunter" (Automated Lead Verification) and "Akiro" (Advanced Analytics Processing), each `{status:"inactive", configured:false, api_token:null, tier:"enterprise"}`. New `CatalogConnector` Pydantic model. Gated by the existing `require_owner` dep. No DB, no env reads, no new settings — Messenger/LangGraph runtime loops completely untouched.
+- `rag/tests/test_phase39_integrations_catalog.py` — asserts the stub contract (two connectors, all inactive/unconfigured/null token) plus a structural guard that the handler reads no DB or secrets.
+- `nexus-ui/src/components/integrations/IntegrationCard.jsx` — dimmed card with status badge, min-h CLS guard, and `isConnectorConnected()` that normalises `boolean|null|undefined|""` → disconnected.
+- `nexus-ui/src/components/integrations/PremiumConnectModal.jsx` — enterprise-tier upsell modal with escape/backdrop close; never fires a real connect request.
+- `nexus-ui/src/components/integrations/PremiumIntegrationsGrid.jsx` — fetches `/integrations/catalog`, renders skeleton at same fixed card height as live card (CLS guard), and falls back to static stubs on fetch failure.
+- `nexus-ui/src/pages/WhatsNewPage.jsx` — curated "What's New" showcase page (separate from the existing dynamic `/changelog` feed). Two sections: four active capabilities (Seina SDR, Comment Triage, HITL, GoHighLevel CRM sync) and four locked roadmap cards (multi-tenant dashboard, conversion analytics, token metering, persona studio) with `backdrop-blur-sm` + lock badge.
+- `nexus-ui/src/components/whatsnew/CapabilityCard.jsx` — active feature highlight card.
+- `nexus-ui/src/components/whatsnew/RoadmapCard.jsx` — locked roadmap card with `backdrop-blur-sm` overlay and lock badge.
+- `nexus-ui/src/lib/whatsNew.js` — static content manifest: 4 active capabilities + 4 locked roadmap entries, all with code-grounded copy.
+- Route `/whats-new` added in `nexus-ui/src/App.jsx`. `nexus-ui/src/components/layout/Sidebar.jsx`: added "What's New" nav entry → `/whats-new`, and renamed the OLD nav entry (which pointed at `/changelog` and was mislabeled "What's New") to "Changelog".
+- `PremiumIntegrationsGrid` mounted in `nexus-ui/src/pages/IntegrationsPage.jsx`.
+
+## [0.11.1] - 2026-06-01
+
+### Changed
+- **Phase 38.x — Seina persona rewrite + last-3 product dedup fix.**
+- `rag/orchestrator/prompts/system_brix.md` — Messenger system prompt fully rewritten. Renamed persona to "Seina" (was an unnamed "customer service representative") and shifted tone to a warm, proactive sales rep. Added an explicit "Product recall (critical — prevents repetition)" section: state a product's name/price/stock on first mention, then use pronouns ("it", "the figure", "this one") on all subsequent turns unless the customer asks again or a new product enters the conversation. Added "Greeting & warmth" rules (bare greetings get a welcome response, never a product dump), "CRM memory & personalisation" guidance (use customer history naturally, never say "According to my records"), and "Transactional grace" guidance for checkout and lead-capture flows.
+- `rag/orchestrator/product_branch.py` — `_products_already_in_history` expanded from a last-1 assistant-message check to a last-3 assistant-message check. Fixes the repetition bug where the most recent assistant turn was a pronoun-only follow-up that didn't repeat the product name, allowing the full `[Product Catalog Match]` chunk to be re-injected on the very next turn.
+
 ## [0.11.0] - 2026-05-31
 
 ### Added

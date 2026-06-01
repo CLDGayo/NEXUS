@@ -1,6 +1,6 @@
 # NEXUS - All Context
 
-Last updated: 2026-05-31 (STUDY phase, HEAD 3c4d7f2)
+Last updated: 2026-06-01 (Phases 38.x + 39 shipped, HEAD 784e059)
 
 This file is the root context entrypoint for the repo.
 
@@ -154,15 +154,17 @@ Migrated from the old CLAUDE.md. Every PR in `rag/` should close a gap or harden
 - Generation: shipped (Groq streaming + `[n]` citations + follow-ups).
 - Observability/evals: trace store partial; RAGAS harness still to build.
 
-> The old CLAUDE.md "as of 2026-05-14" baseline is superseded — phases 27–37 shipped IAM, MinIO, hybrid+graph retrieval, messenger/HITL, sales tools, sentiment. Always confirm against `rag/` before quoting.
+> The old CLAUDE.md "as of 2026-05-14" baseline is superseded — phases 27–39 shipped IAM, MinIO, hybrid+graph retrieval, messenger/HITL, sales tools, sentiment, Seina persona, and SaaS showcase. Always confirm against `rag/` before quoting.
 
 ## Subsystems (recent phase work, from CHANGELOG / Dev Logs)
 
-- **Messenger (`rag/messenger/`):** Meta Messenger webhook, Graph-API sender, **triage**, **HITL** handover (Phase 37 — owner notification + pause), comment dispatch. New since last commit: `hitl.py`, `triage.py` + tests.
+- **Messenger (`rag/messenger/`):** Meta Messenger webhook, Graph-API sender, **triage**, **HITL** handover (Phase 37 — owner notification + pause), comment dispatch. Modules: `hitl.py`, `triage.py`.
 - **Sales/SDR (`rag/orchestrator/sales_tools.py`):** `generate_checkout_link()` / `capture_lead()` POST to n8n webhooks (Stripe + GoHighLevel CRM) — Phase 34.
+- **Seina persona (`rag/orchestrator/prompts/system_brix.md`):** Phase 38.x — Messenger system prompt rewritten; persona named "Seina"; product-recall pronoun rules; greeting/CRM/transactional-grace guidance. `product_branch.py` dedup gate expanded to last-3 assistant messages.
 - **Sentiment / Cognitive Empathy (Phase 35):** sentiment node + dynamic prompt routing.
 - **Product context (Phase 32.x):** catalog rows hoisted into LLM context, carousel image URLs Meta-fetchable, payload normalization/backfill.
 - **Guardrails (`rag/guardrails/`):** input/output validators + pipeline.
+- **SaaS showcase (`nexus-ui/`, Phase 39):** `/whats-new` curated capability page (4 active + 4 locked roadmap cards). Premium integration empty states: `PremiumIntegrationsGrid` + `IntegrationCard` + `PremiumConnectModal` mounted in `IntegrationsPage`. `GET /api/integrations/catalog` read-only stub endpoint (Hunter + Akiro, enterprise tier, no DB/env).
 
 ## Key Patterns and Conventions
 
