@@ -3,6 +3,22 @@
 All notable changes to the NEXUS Knowledge Base.
 This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.14.0] - 2026-06-02
+
+### Added
+- **Phase 42 — Glassmorphic App Shell + Cmd+K Command Palette + Collapsible Sidebar.** The NEXUS UI transitions from a flat white shell to a frosted-glass SaaS interface. All glass classes (`glass-rail`, `glass-header`, `glass-dialog`, `glass-overlay`, `glass-pane`) were already shipped as Phase 41 foundation tokens; Phase 42 activates them across the live app shell.
+- `nexus-ui/src/lib/nav.js` — DRY nav data module. Moves `CORE_NAV`, `OWNER_NAV`, `TRAILING_NAV`, and `ADMIN_NAV_ITEM` (with their lucide-react icon imports) out of `Sidebar.jsx` into a pure `.js` module, making both the sidebar and the command palette share one authoritative nav source.
+- `nexus-ui/src/context/SidebarProvider.jsx` — sidebar collapse state provider mirroring the `AuthProvider` idiom. `collapsed` boolean lazy-initialized from `localStorage.getItem('nexus.sidebar.collapsed')`, persisted to localStorage on change, memoized context value `{ collapsed, toggle, setCollapsed }`.
+- `nexus-ui/src/hooks/useSidebar.js` — guarded `useContext(SidebarContext)` hook (throws if used outside `<SidebarProvider>`), matching the `useAuth.js` / `useTenant.js` pattern.
+- `nexus-ui/src/hooks/useCommandPalette.js` — owns palette open state and a StrictMode-safe global `keydown` listener: `(e.metaKey || e.ctrlKey) && e.key === 'k'` → `e.preventDefault()` + toggle. Returns `{ open, setOpen }`.
+- `nexus-ui/src/components/command/commands.js` — `buildCommands({ isOwner, isSuperuser })` factory; derives nav commands from `nav.js` (role-gated: OWNER_NAV only if `isOwner`, ADMIN only if `isSuperuser`) plus one `{ id:'logout', kind:'action' }` command. No `/graph` entry (Phase 43).
+- `nexus-ui/src/components/command/CommandPalette.jsx` — Radix `@radix-ui/react-dialog`-based command palette. Features: case-insensitive filter, `activeIndex` keyboard navigation (ArrowUp/Down/Enter), autofocused search input, empty-state row, nav commands route via `useNavigate`, action commands (sign-out) call `logout()`. Radix provides focus-trap, Esc close, scroll-lock, and overlay-click-close. Accessible `Dialog.Title` (sr-only). Styled with `glass-dialog` + `glass-overlay`.
+
+### Changed
+- `nexus-ui/src/components/layout/AppShell.jsx` — wraps the shell in `<SidebarProvider>`, mounts ambient gradient backdrop (`bg-gradient-to-br from-blue-100/50 via-slate-50 to-violet-100/40`, `absolute -z-10`) as first child, passes `onOpenCommand` to `PageHeader`, and mounts `<CommandPalette>` as last child. Root div gains `relative` and `text-slate-900`. `<main>` and Outlet wrapper are unchanged (load-bearing for Phase 43 graph height). No `/graph` TITLES entry added.
+- `nexus-ui/src/components/layout/Sidebar.jsx` — nav arrays removed from inline definitions; imported from `nav.js`. `useSidebar()` drives collapse. Root `<aside>` switches from `w-60 border-r bg-white` to `glass-rail transition-[width] duration-300` + `w-16` (collapsed) / `w-60` (expanded). Header collapses to a centered "N" glyph. Nav items wrapped in `<Tooltip.Provider>`: collapsed = icon-only NavLink + Radix right-side tooltip (`glass-pane` styled); expanded = icon + label NavLink. Footer: collapsed = stacked avatar + logout icon; expanded = current avatar/name/role/logout layout.
+- `nexus-ui/src/components/layout/PageHeader.jsx` — signature gains `onOpenCommand`. Header switches from `border-b bg-white` to `glass-header sticky top-0 z-20`. Left group: `PanelLeft` hamburger button calling `useSidebar().toggle` + title. Right group: pill-shaped Cmd+K search trigger (desktop) + icon-only trigger (mobile) + existing `{right}` / `<WorkspaceSwitcher/>` / `<HealthBadge/>`.
+
 ## [0.13.0] - 2026-06-02
 
 ### Added

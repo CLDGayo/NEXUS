@@ -1,0 +1,124 @@
+import { useEffect, useRef, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth.js';
+import { useTenant } from '../../hooks/useTenant.js';
+import { buildCommands } from './commands.js';
+
+export default function CommandPalette({ open, onOpenChange }) {
+  const { isSuperuser, logout } = useAuth();
+  const { activeTenantRole } = useTenant();
+  const navigate = useNavigate();
+
+  const isOwner = activeTenantRole === 'owner';
+  const allCommands = buildCommands({ isOwner, isSuperuser });
+
+  const [query, setQuery] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const inputRef = useRef(null);
+
+  // Reset state whenever the palette opens or closes
+  useEffect(() => {
+    if (open) {
+      setQuery('');
+      setActiveIndex(0);
+    }
+  }, [open]);
+
+  // Reset active index whenever the query changes
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query]);
+
+  const filtered = allCommands.filter((cmd) =>
+    cmd.label.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  function runCommand(cmd) {
+    if (cmd.kind === 'nav') {
+      navigate(cmd.to);
+    } else if (cmd.kind === 'action' && cmd.id === 'logout') {
+      logout();
+    }
+    onOpenChange(false);
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const cmd = filtered[activeIndex];
+      if (cmd) runCommand(cmd);
+    }
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="glass-overlay" />
+        <Dialog.Content
+          className="fixed left-1/2 top-24 z-50 w-full max-w-lg -translate-x-1/2 glass-dialog overflow-hidden focus:outline-none"
+          aria-describedby={undefined}
+          onOpenAutoFocus={(e) => {
+            // Manually focus the input; prevent Radix from focusing the content div
+            e.preventDefault();
+            inputRef.current?.focus();
+          }}
+        >
+          <Dialog.Title className="sr-only">Command palette</Dialog.Title>
+
+          {/* Search input */}
+          <div className="flex items-center border-b border-white/40 px-4">
+            <input
+              ref={inputRef}
+              type="text"
+              className="flex-1 bg-transparent py-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              placeholder="Type a command or search…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <kbd className="hidden shrink-0 rounded border border-slate-200 bg-white/60 px-1.5 py-0.5 text-[10px] text-slate-500 sm:inline-block">
+              ESC
+            </kbd>
+          </div>
+
+          {/* Command list */}
+          <div className="max-h-72 overflow-y-auto p-2">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-6 text-center text-sm text-slate-400">
+                No matching commands
+              </div>
+            ) : (
+              filtered.map((cmd, idx) => {
+                const isActive = idx === activeIndex;
+                return (
+                  <button
+                    key={cmd.id}
+                    type="button"
+                    className={[
+                      'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-left transition-colors',
+                      isActive
+                        ? 'bg-nexus-accent/10 text-nexus-accent'
+                        : 'text-slate-700 hover:bg-slate-100/70',
+                    ].join(' ')}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    onClick={() => runCommand(cmd)}
+                  >
+                    <cmd.Icon size={16} className="shrink-0" />
+                    <span>{cmd.label}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
