@@ -3,6 +3,23 @@
 All notable changes to the NEXUS Knowledge Base.
 This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.16.0] - 2026-06-03
+
+### Added
+- **Phase 44 — Motion choreography + Radix polish.** Final phase of the `nexus-ui` UI/UX Modernization umbrella program: the Phase 41 GSAP hooks are wired into pages and controls, and the two hand-rolled dropdowns are upgraded to Radix. The app now reads as a kinetic, premium SaaS surface instead of a static dashboard.
+- Page-mount choreography — `usePageMountTimeline()` (fade/scale-in + `data-animate` child cascade) attached to `GraphPage`, `DashboardPage`, `WhatsNewPage`, and `IntegrationsPage`. All animation routes through `useGsapContext` (`ctx.revert()`), so React StrictMode double-mounts never orphan an element at `opacity:0` (verified live — 0 stuck across pages). Honors `prefers-reduced-motion`.
+- Tactile micro-interactions — `useTactilePress()` (scale `.95` on pointerdown, elastic release) on the `GraphViewSwitcher` pills (extracted into a `GraphViewPill` sub-component so the hook gets one ref per button), the `IntegrationCard` Connect button, the `WorkspaceSwitcher` trigger, and the `PremiumConnectModal` CTA.
+- New unified sidebar profile dropdown — `@radix-ui/react-dropdown-menu` replaces the static profile `Link` + separate logout button in `Sidebar.jsx` with a single `glass-pane` menu (Profile + Log out).
+- Header tooltips — `@radix-ui/react-tooltip` glass tooltips on the bare header icon buttons (hamburger + mobile Cmd+K), backed by a single root `Tooltip.Provider` in `App.jsx` (the Sidebar's local provider was removed as redundant).
+
+### Changed
+- `nexus-ui/src/components/tenant/WorkspaceSwitcher.jsx` — refactored from a `useState` + click-outside menu to `@radix-ui/react-dropdown-menu` (Radix owns open/close, outside-dismiss, focus); `glass-pane` content; tenant list + owner-only Manage-workspaces link preserved; selecting a workspace still calls `setActiveTenant`.
+- `nexus-ui/src/components/integrations/PremiumIntegrationsGrid.jsx` — the `PremiumConnectModal` is now conditionally mounted (was always-mounted, returning `null` when closed) so the CTA is in the DOM when `useTactilePress` wires its listeners.
+- `nexus-ui/src/components/graph/GraphViewSwitcher.jsx` — pills use `transition-colors` instead of `transition-all` so the CSS transition no longer fights GSAP over `transform`.
+
+### Notes
+- Intentional deviations from the literal plan, all to avoid jank or broken wiring: Integrations cascades at **panel level** (not per-card) to avoid nesting a `gsap.from` transform inside the grid panel's own transform; Dashboard marks only its always-present header because the KPI/chart blocks load async after the mount timeline runs.
+
 ## [0.15.0] - 2026-06-02
 
 ### Added
