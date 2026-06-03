@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthProvider.jsx';
 import { TenantProvider } from './context/TenantProvider.jsx';
@@ -23,6 +24,11 @@ import ChangelogPage from './pages/ChangelogPage.jsx';
 import WhatsNewPage from './pages/WhatsNewPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
+import GlassSpinner from './components/graph/GlassSpinner.jsx';
+
+// GraphPage is lazy-loaded to code-split react-force-graph-2d + d3-force
+// out of the main bundle. All other pages remain static imports.
+const GraphPage = lazy(() => import('./pages/GraphPage.jsx'));
 
 export default function App() {
   return (
@@ -47,6 +53,14 @@ export default function App() {
             <Route path="/logs" element={<LogsPage />} />
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/resources" element={<ResourcesPage />} />
+            <Route
+              path="/graph"
+              element={
+                <Suspense fallback={<GlassSpinner />}>
+                  <GraphPage />
+                </Suspense>
+              }
+            />
             <Route element={<RequireOwner />}>
               <Route path="/products" element={<ProductsDashboardPage />} />
               <Route path="/products/:id" element={<ProductEditPage />} />

@@ -4,7 +4,7 @@ import { CORE_NAV, OWNER_NAV, TRAILING_NAV, ADMIN_NAV_ITEM } from '../../lib/nav
 /**
  * Build the command list for the Cmd+K palette.
  * Role gates: OWNER_NAV only if isOwner; ADMIN_NAV_ITEM only if isSuperuser.
- * No /graph command — that route lands in Phase 43.
+ * /graph is auto-derived from CORE_NAV (added Phase 43).
  *
  * @param {{ isOwner: boolean, isSuperuser: boolean }} flags
  * @returns {{ id: string, label: string, Icon: React.ComponentType, kind: string, to?: string }[]}

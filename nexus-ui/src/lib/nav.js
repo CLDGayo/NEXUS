@@ -6,6 +6,7 @@ import {
   ListChecks,
   Plug,
   Library,
+  Network,
   Package,
   Settings,
   Building2,
@@ -22,6 +23,7 @@ export const CORE_NAV = [
   { to: '/logs',          label: 'Logs',          Icon: ListChecks },
   { to: '/integrations',  label: 'Integrations',  Icon: Plug },
   { to: '/resources',     label: 'Resources',     Icon: Library },
+  { to: '/graph',         label: 'Graph',         Icon: Network },
 ];
 
 // Phase 31 — owner-only nav items. Rendered conditionally on

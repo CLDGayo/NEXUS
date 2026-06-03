@@ -3,6 +3,26 @@
 All notable changes to the NEXUS Knowledge Base.
 This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.15.0] - 2026-06-02
+
+### Added
+- **Phase 43 — Relation Graph Engine (`/graph`).** NEXUS now ships an interactive, physics-based force-directed graph at a new `/graph` route, visualising the real backend topology across three swappable views.
+- `nexus-ui/src/lib/topology.js` — static graph spine. Exports `GRAPH_COLORS` (hex bridge mirroring `tailwind.config.js colors.nexus.*` for Canvas rendering) and three faithful subgraphs built from real backend node names: `LANGGRAPH_RUNTIME` (20 nodes, LangGraph orchestrator with conditional/barrier/loop edges), `CONVERSION_LIFECYCLE` (12 nodes, FB comment → triage → HITL → LangGraph → Stripe/GHL → cart recovery), and `ECOSYSTEM` (8 nodes, client/workspace/integration relationships + external connectors including Hunter and Akiro stubs). `SUBGRAPHS` registry + `VIEW_META` exported for switcher consumption.
+- `nexus-ui/src/components/graph/graphTheme.js` — Canvas style functions for `react-force-graph-2d`: `nodeColor`, `nodeCanvasObject` (crisp circle + halo-backed label scaled by `globalScale`), `linkColor` (amber/conditional, violet/barrier, cyan/loop, slate/normal), `linkDirectionalParticles` (3 particles only when both endpoints are `state:'active'`), `linkDirectionalParticleColor`, `linkWidth`.
+- `nexus-ui/src/components/graph/useGraphDimensions.js` — `ResizeObserver` hook returning `{ width, height }` from a `containerRef`; returns `width:0` until first measurement so callers can guard against mounting `<ForceGraph2D>` with a zero-dimension canvas; re-measures on sidebar collapse (reflows the flex `main`) without extra wiring; StrictMode-safe (`disconnect()` in cleanup).
+- `nexus-ui/src/components/graph/RelationGraph.jsx` — `ForceGraph2D` wrapper. Owns `containerRef` + `useGraphDimensions`; renders container `div` always but mounts `<ForceGraph2D>` only when `width > 0`; transparent background; wires all theme fns; `onNodeDragEnd` pins nodes (`node.fx = node.x; node.fy = node.y`); lifts `onNodeClick` to parent.
+- `nexus-ui/src/components/graph/GraphViewSwitcher.jsx` — segmented glass pill (`LangGraph Runtime | Conversion Lifecycle | Ecosystem`); controlled `value`+`onChange`; active segment accent-filled.
+- `nexus-ui/src/components/graph/GraphLegend.jsx` — `glass-pane` overlay with 5 state swatches (healthy/active/paused/abstain/stub) and their meanings; bottom-left corner; `pointer-events-none`.
+- `nexus-ui/src/components/graph/NodeDetailPanel.jsx` — `glass-card` panel on node click: label, state badge, group, in/out edge lists with `kind` tags; dismissible via close button; null-renders when no node selected.
+- `nexus-ui/src/components/graph/GlassSpinner.jsx` — minimal `glass-pane` + lucide `Loader2 animate-spin` loader; backs the `<Suspense>` fallback while the async graph chunk loads.
+- `nexus-ui/src/pages/GraphPage.jsx` — workspace assembly: `h-full overflow-hidden` container, active-view state (default `runtime`) + selected-node state; renders `RelationGraph` (fills area), `GraphViewSwitcher` (top center), `GraphLegend` (bottom-left), `NodeDetailPanel` (top-right, conditional). No backend calls — static topology only.
+- `react-force-graph-2d` added to `nexus-ui/package.json` (2D Canvas variant; pulls `d3-force`; no three.js).
+
+### Changed
+- `nexus-ui/src/App.jsx` — `lazy`/`Suspense` imported from `react`; `GlassSpinner` imported; `GraphPage` declared as `lazy(() => import('./pages/GraphPage.jsx'))`; `/graph` route added inside the `AppShell` protected block (after `/resources`, not owner-gated) wrapped in `<Suspense fallback={<GlassSpinner/>}>`.
+- `nexus-ui/src/lib/nav.js` — `Network` added to lucide-react import; `{ to:'/graph', label:'Graph', Icon:Network }` appended to `CORE_NAV`. Auto-populates the Cmd+K palette via `buildCommands()` with no further change.
+- `nexus-ui/src/components/command/commands.js` — stale comment "No /graph command — that route lands in Phase 43" replaced with accurate note that `/graph` is auto-derived from `CORE_NAV` (Phase 43).
+
 ## [0.14.0] - 2026-06-02
 
 ### Added
