@@ -90,11 +90,23 @@ async def _real_graph_runner(payload: InboundMessage, correlation_id: str) -> di
     filter), not the UUID. The direct webhook handler populates
     ``tenant_slug`` from the resolver before scheduling the background
     task; tests inject it explicitly on the stub ``InboundMessage``.
+
+    Phase 45 — loads ``ai_settings`` for the tenant and threads the merged
+    blob into ``run_graph`` so ``generate_node`` can apply lifecycle prompts.
+    Uses the same ``get_sessionmaker()`` pattern as ``product_branch``.
     """
 
     # Imported lazily so test environments that override this dependency
     # never trigger the heavy orchestrator import chain.
+    from rag.database.engine import get_sessionmaker
+    from rag.orchestrator.ai_settings import load_ai_settings
     from rag.orchestrator.graph import run_graph
+
+    ai_settings: dict | None = None
+    if payload.tenant_slug:
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            ai_settings = await load_ai_settings(payload.tenant_slug, db)
 
     return await run_graph(
         query=payload.message_text,
@@ -104,6 +116,7 @@ async def _real_graph_runner(payload: InboundMessage, correlation_id: str) -> di
         attachments=payload.attachments,
         tenant_id=payload.tenant_slug,
         sender_id=payload.user_id,
+        ai_settings=ai_settings,
     )
 
 

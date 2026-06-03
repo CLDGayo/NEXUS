@@ -32,7 +32,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import AnyHttpUrl, BaseModel, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from rag.database.engine import get_async_session
+from rag.database.engine import get_async_session, get_sessionmaker
 from rag.messenger.hitl import is_bot_paused
 from rag.messenger.idempotency import (
     acquire_thread_lock,
@@ -43,6 +43,7 @@ from rag.messenger.routers.webhook import _default_scheduler
 from rag.messenger.security import require_webhook_api_key
 from rag.messenger.tenant_resolver import resolve_tenant_for_page
 from rag.messenger_overlay import current_page_access_token
+from rag.orchestrator.ai_settings import load_ai_settings
 from rag.orchestrator.graph import get_graph, run_graph
 
 _log = logging.getLogger(__name__)
@@ -218,6 +219,14 @@ async def _run_cart_recovery(
             "checkout_url": str(payload.checkout_url),
         }
 
+        # Phase 45 — load ai_settings so generate_node can apply the tenant's
+        # core_behavior overlay even on the outbound recovery surface.
+        ai_settings_blob: dict | None = None
+        if tenant_slug:
+            sm = get_sessionmaker()
+            async with sm() as db:
+                ai_settings_blob = await load_ai_settings(tenant_slug, db)
+
         result = await run_graph(
             query="[outbound_recovery]",
             thread_key=payload.psid,
@@ -226,6 +235,7 @@ async def _run_cart_recovery(
             tenant_id=tenant_slug,
             sender_id=payload.psid,
             cart_context=cart_context,
+            ai_settings=ai_settings_blob,
         )
 
         reply_text = (result.get("answer") or "").strip()

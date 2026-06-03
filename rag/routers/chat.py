@@ -35,6 +35,7 @@ from resources_store import load_active_system_prompt
 from rag.auth import current_active_user, get_current_tenant
 from rag.database.engine import get_async_session
 from rag.database.models import ChatSession, Conversation, Message, Tenant, User
+from rag.orchestrator.ai_settings import merged_ai_settings
 from rag.retrieval.types import ScoredChunk
 
 router = APIRouter(tags=["chat"])
@@ -125,9 +126,7 @@ async def _resolve_session(
                 if row is None:
                     # Pathological: the conflicting row vanished between the
                     # failed insert and the re-read. Treat as a hard error.
-                    raise HTTPException(
-                        status_code=409, detail="session_id conflict"
-                    )
+                    raise HTTPException(status_code=409, detail="session_id conflict")
             else:
                 await db.refresh(row)
         if row.user_id != user.id or row.tenant_id != tenant.id:
@@ -158,6 +157,7 @@ async def _stream_graph_events(
     system_prompt: str | None,  # accepted for parity; surface-aware prompt
     # selection lives inside the graph (rag/orchestrator/nodes.py).
     attachments: list[dict] | None = None,
+    ai_settings: dict[str, Any] | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Drive the LangGraph orchestrator and translate node lifecycle events
     into the v1 SSE payload shape (``status / sources / token / followups``).
@@ -177,6 +177,10 @@ async def _stream_graph_events(
         "correlation_id": correlation_id,
         "surface": "spa",
         "tenant_id": tenant_slug,
+        # Phase 45 — inject merged ai_settings so generate_node can apply
+        # tenant lifecycle prompts. Caller supplies tenant.ai_settings from
+        # the already-resolved Tenant ORM — no extra DB query needed.
+        "ai_settings": merged_ai_settings(ai_settings),
     }
     if attachments:
         state["attachments"] = attachments
@@ -290,8 +294,7 @@ async def chat_stream(
         t0 = time.time()
 
         logger.info(
-            f"Chat query user={user_id} thread={thread_key} "
-            f"q={body.question[:80]!r}"
+            f"Chat query user={user_id} thread={thread_key} q={body.question[:80]!r}"
         )
 
         try:
@@ -302,6 +305,7 @@ async def chat_stream(
                 tenant_slug,
                 system_prompt,
                 attachments=body.attachments,
+                ai_settings=tenant.ai_settings,
             ):
                 etype = event.get("type")
                 if etype == "__final__":

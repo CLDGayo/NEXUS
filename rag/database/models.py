@@ -93,15 +93,29 @@ class Tenant(Base):
 
     __tablename__ = "tenants"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     slug: Mapped[str] = mapped_column(
         String(120), nullable=False, unique=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    # Phase 45 — Lifecycle Persona Engine. Carries the full ai_settings blob
+    # (scenario_prompts, active_nodes, model_params). Default is the empty-
+    # string / True / None shape so existing tenants behave byte-identically
+    # to pre-Phase-45. Never mutated mid-run; loaded fresh at graph entry.
+    ai_settings: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text(
+            '\'{"version":1,"scenario_prompts":{"introduction":"","core_behavior":"",'
+            '"checkout_transition":"","human_handoff":""},'
+            '"active_nodes":{"sentiment_analysis":true,"research_mode":true,'
+            '"inject_product_context":true,"build_carousel":true,'
+            '"sdr_persona":true,"hitl_handover":true},'
+            '"model_params":{"temperature":null,"max_tokens":null,"model_choice":null}}\'::jsonb'
+        ),
     )
 
 
@@ -123,9 +137,7 @@ class TenantUser(Base):
         ForeignKey("app.users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    role: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="owner"
-    )
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="owner")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -144,9 +156,7 @@ class MessengerPageTenant(Base):
 
     __tablename__ = "messenger_page_tenants"
 
-    facebook_page_id: Mapped[str] = mapped_column(
-        String(64), primary_key=True
-    )
+    facebook_page_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.tenants.id", ondelete="CASCADE"),
         index=True,
@@ -191,9 +201,7 @@ class Conversation(Base):
 
     __tablename__ = "conversations"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.users.id", ondelete="CASCADE"),
@@ -224,9 +232,7 @@ class Message(Base):
 
     __tablename__ = "messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     conversation_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.conversations.id", ondelete="CASCADE"),
         index=True,
@@ -244,9 +250,7 @@ class Message(Base):
     )
     role: Mapped[str] = mapped_column(String(16), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    sources: Mapped[list[dict[str, Any]] | None] = mapped_column(
-        JSONB, nullable=True
-    )
+    sources: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -267,13 +271,9 @@ class ApiToken(Base):
 
     __tablename__ = "api_tokens"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(80), nullable=False)
-    token_hash: Mapped[str] = mapped_column(
-        String(64), unique=True, nullable=False
-    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     prefix: Mapped[str] = mapped_column(String(32), nullable=False)
     scopes_csv: Mapped[str] = mapped_column(String(512), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -308,9 +308,7 @@ class Integration(Base):
 
     __tablename__ = "integrations"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.tenants.id", ondelete="CASCADE"),
         index=True,
@@ -352,14 +350,10 @@ class Document(Base):
 
     __tablename__ = "documents"
     __table_args__ = (
-        UniqueConstraint(
-            "tenant_id", "file", name="uq_app_documents_tenant_file"
-        ),
+        UniqueConstraint("tenant_id", "file", name="uq_app_documents_tenant_file"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.tenants.id", ondelete="CASCADE"),
         index=True,
@@ -377,9 +371,7 @@ class Document(Base):
     source_kind: Mapped[str] = mapped_column(
         String(32), nullable=False, server_default="note"
     )
-    content_hash: Mapped[str | None] = mapped_column(
-        String(64), nullable=True
-    )
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     chunk_total: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="0"
     )
@@ -408,9 +400,7 @@ class DocumentLink(Base):
 
     __tablename__ = "document_links"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.tenants.id", ondelete="CASCADE"),
         index=True,
@@ -425,9 +415,7 @@ class DocumentLink(Base):
         ForeignKey("app.documents.id", ondelete="SET NULL"),
         nullable=True,
     )
-    anchor: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=""
-    )
+    anchor: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
     alias: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -453,9 +441,7 @@ class Product(Base):
         CheckConstraint("quantity >= 0", name="ck_app_products_qty_nonneg"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.tenants.id", ondelete="CASCADE"),
         index=True,
@@ -463,18 +449,14 @@ class Product(Base):
     )
     name: Mapped[str] = mapped_column(Text, nullable=False)
     slug: Mapped[str] = mapped_column(String(160), nullable=False)
-    description: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=""
-    )
+    description: Mapped[str] = mapped_column(Text, nullable=False, server_default="")
     price_cents: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="0"
     )
     currency: Mapped[str] = mapped_column(
         String(3), nullable=False, server_default="USD"
     )
-    quantity: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=true()
     )
@@ -520,9 +502,7 @@ class ProductImage(Base):
         ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     product_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.products.id", ondelete="CASCADE"),
         index=True,

@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import sys
 
 _log = logging.getLogger("phase46.audit")
@@ -32,18 +31,19 @@ _SHOW_FIRST_N = 20
 
 
 def _build_client():  # type: ignore[return]
-    """Build an AsyncQdrantClient from environment variables.
+    """Build an AsyncQdrantClient from the app settings object.
 
-    Mirrors the pattern used by ``rag/retrieval/dense.py`` — reads
-    ``QDRANT_URL`` and optionally ``QDRANT_API_KEY``.  Does NOT import
-    ``rag.config`` to stay runnable as a standalone script without the
-    full app bootstrap.
+    Uses ``rag.config.settings`` so the same ``.env`` loading path as the
+    running application is used — meaning this script works correctly on
+    the VPS without any extra env-var juggling.
     """
-    url = os.environ.get("QDRANT_URL", "").strip()
+    from rag.config import settings  # noqa: PLC0415
+
+    url = settings.qdrant_url.strip()
     if not url:
         print(
-            "ERROR: QDRANT_URL env var is not set. "
-            "Set it to the Qdrant instance URL (e.g. http://127.0.0.1:6333) "
+            "ERROR: qdrant_url is not set in settings / .env. "
+            "Set QDRANT_URL to the Qdrant instance URL (e.g. http://127.0.0.1:6333) "
             "before running this script.",
             file=sys.stderr,
         )
@@ -53,7 +53,7 @@ def _build_client():  # type: ignore[return]
         AsyncQdrantClient,
     )  # import here; not needed at module level
 
-    api_key = os.environ.get("QDRANT_API_KEY") or None
+    api_key = settings.qdrant_api_key or None
     return AsyncQdrantClient(url=url, api_key=api_key)
 
 
@@ -62,7 +62,9 @@ async def _audit() -> tuple[int, list[str | int]]:
 
     Raises on network errors so the caller can exit with code 2.
     """
-    collection = os.environ.get("QDRANT_COLLECTION", "nexus-vault")
+    from rag.config import settings  # noqa: PLC0415
+
+    collection = settings.qdrant_collection
     client = _build_client()
     total = 0
     orphans: list[str | int] = []

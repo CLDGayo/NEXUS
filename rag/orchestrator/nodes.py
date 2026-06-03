@@ -27,6 +27,7 @@ import httpx
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from rag.config import settings
+from rag.orchestrator.ai_settings import assemble_system_prompt
 from rag.guardrails.handover import (
     HandoverSignal,
     emit_handover_signal,
@@ -741,6 +742,14 @@ async def generate_node(state: NexusState) -> dict:
         rendered_recovery = recovery_template.replace(
             "{cart_items_block}", cart_items_block
         ).replace("{checkout_url}", checkout_url)
+        # Phase 45 — outbound_recovery: apply core_behavior only (skip
+        # situational overlays — this surface owns its own lifecycle prompt).
+        _recovery_ai = state.get("ai_settings") or {}
+        _recovery_core = (
+            (_recovery_ai.get("scenario_prompts") or {}).get("core_behavior") or ""
+        ).strip()
+        if _recovery_core:
+            rendered_recovery = rendered_recovery + "\n" + _recovery_core
         recovery_messages: list[dict[str, Any]] = [
             {"role": "system", "content": rendered_recovery}
         ]
@@ -827,6 +836,17 @@ async def generate_node(state: NexusState) -> dict:
         # the ``{question}`` slot, so we do not duplicate it here.
         messages.extend(history_msgs)
         model = settings.generation_model
+
+    # Phase 45 — append lifecycle persona suffix (core_behavior + situational)
+    # BEFORE the existing SDR/sentiment/CRM overlay block. Returns an empty
+    # string for default tenants, preserving byte-identical behavior.
+    _persona_suffix = assemble_system_prompt(
+        base=str(messages[0]["content"]),
+        ai_settings=state.get("ai_settings") or {},
+        state=state,
+    )
+    if _persona_suffix:
+        messages[0]["content"] = str(messages[0]["content"]) + "\n" + _persona_suffix
 
     # Phase 33 — bind sales tools for Messenger surface only.
     # Phase 33.1 — also gate on ``not images``: the vision model path

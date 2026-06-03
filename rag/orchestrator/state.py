@@ -258,3 +258,10 @@ class NexusState(TypedDict, total=False):
     # ``checkout_url`` (str). ``None`` on every inbound surface turn. The
     # ``append_history`` reducer does not touch this field; no history leakage.
     cart_context: dict[str, Any] | None
+
+    # Phase 45 — Lifecycle Persona Engine. Merged ai_settings blob loaded at
+    # graph entry by the surface adapter (SPA: from tenant ORM; Messenger:
+    # from load_ai_settings). Never mutated mid-run. A tenant who has never
+    # opened Prompt Studio gets the all-default blob, which produces an empty
+    # assemble_system_prompt suffix — byte-identical to pre-Phase-45 behavior.
+    ai_settings: dict[str, Any]

@@ -17,6 +17,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from rag.config import settings
+from rag.orchestrator.ai_settings import merged_ai_settings
 from rag.orchestrator.nodes import (
     abstain_node,
     accumulate_context_node,
@@ -215,6 +216,7 @@ async def run_graph(
     tenant_id: str | None = None,
     sender_id: str | None = None,
     cart_context: dict[str, Any] | None = None,
+    ai_settings: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Public entrypoint used by surface adapters (webhook, SPA).
 
@@ -245,6 +247,9 @@ async def run_graph(
         state["sender_id"] = sender_id
     if cart_context:
         state["cart_context"] = cart_context
+    # Phase 45 — always set ai_settings; merged_ai_settings fills defaults
+    # when the caller omits the kwarg (e.g. tests or surfaces not yet wired).
+    state["ai_settings"] = merged_ai_settings(ai_settings)
     # Phase 35 — bump LangGraph recursion_limit above default 25. Each
     # research-mode iteration burns ~6 super-steps (next_subquery →
     # retrieve fan-out → fuse → rerank → inject_product_context →
