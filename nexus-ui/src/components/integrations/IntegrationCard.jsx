@@ -1,4 +1,5 @@
 import { ShieldCheck, BarChart3, Plug, Lock } from 'lucide-react';
+import { useTactilePress } from '../../hooks/useTactilePress.js';
 
 // Icon per known connector key; falls back to a generic plug so an
 // unknown future connector still renders without crashing.
@@ -19,6 +20,9 @@ export function isConnectorConnected(c) {
 export default function IntegrationCard({ connector, onConnect }) {
   const Icon = ICONS[connector?.key] || Plug;
   const connected = isConnectorConnected(connector);
+  // Called unconditionally to keep hook order stable; the ref simply stays
+  // unattached (no-op) on connected cards where the Connect button is absent.
+  const connectRef = useTactilePress();
 
   return (
     <div
@@ -70,12 +74,13 @@ export default function IntegrationCard({ connector, onConnect }) {
           </span>
         ) : (
           <button
+            ref={connectRef}
             type="button"
             onClick={(e) => {
               e.preventDefault();
               onConnect?.(connector);
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
           >
             <Lock size={12} /> Connect Account
           </button>

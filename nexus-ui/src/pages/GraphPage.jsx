@@ -18,8 +18,10 @@ import GraphViewSwitcher from '../components/graph/GraphViewSwitcher.jsx';
 import GraphLegend from '../components/graph/GraphLegend.jsx';
 import NodeDetailPanel from '../components/graph/NodeDetailPanel.jsx';
 import { SUBGRAPHS } from '../lib/topology.js';
+import { usePageMountTimeline } from '../hooks/usePageMountTimeline.js';
 
 export default function GraphPage() {
+  const pageRef = usePageMountTimeline();
   const [activeView, setActiveView] = useState('runtime');
   const [selectedNode, setSelectedNode] = useState(null);
 
@@ -41,7 +43,7 @@ export default function GraphPage() {
   }
 
   return (
-    <div className="relative h-full overflow-hidden">
+    <div ref={pageRef} className="relative h-full overflow-hidden">
       {/* Graph canvas — fills the entire container */}
       <RelationGraph
         graphData={graphData}
@@ -50,7 +52,7 @@ export default function GraphPage() {
 
       {/* View switcher — centered at the top */}
       <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center">
-        <div className="pointer-events-auto">
+        <div data-animate className="pointer-events-auto">
           <GraphViewSwitcher value={activeView} onChange={handleViewChange} />
         </div>
       </div>

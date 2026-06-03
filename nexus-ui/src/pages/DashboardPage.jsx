@@ -7,6 +7,7 @@ import ActivityPanel from '../components/dashboard/ActivityPanel.jsx';
 import QueryVolumeChart from '../components/dashboard/QueryVolumeChart.jsx';
 import IngestionChart from '../components/dashboard/IngestionChart.jsx';
 import RecentActivityTable from '../components/dashboard/RecentActivityTable.jsx';
+import { usePageMountTimeline } from '../hooks/usePageMountTimeline.js';
 
 function SkeletonGrid() {
   return (
@@ -33,6 +34,7 @@ function SkeletonGrid() {
 }
 
 export default function DashboardPage() {
+  const pageRef = usePageMountTimeline();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,9 +52,9 @@ export default function DashboardPage() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div ref={pageRef} className="h-full overflow-y-auto">
       <div className="mx-auto max-w-6xl space-y-4 p-6">
-        <div className="flex items-center justify-between">
+        <div data-animate className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-slate-700">Live Telemetry</h2>

@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Building2, Check, ChevronDown, Settings2 } from 'lucide-react';
 import { useTenant } from '../../hooks/useTenant.js';
+import { useTactilePress } from '../../hooks/useTactilePress.js';
 
-// Tailwind dropdown in PageHeader. Selecting a workspace triggers
+// Radix dropdown in PageHeader (Phase 44 — was a hand-rolled useState menu).
+// Radix owns open/close, outside-dismiss, and focus management; the content
+// uses the shared .glass-pane surface. Selecting a workspace triggers
 // TenantProvider.setActiveTenant which bumps cacheVersion — pages with
 // per-tenant data refetch on the next render.
 export default function WorkspaceSwitcher() {
@@ -15,83 +18,74 @@ export default function WorkspaceSwitcher() {
     setActiveTenant,
   } = useTenant();
   const isOwner = activeTenantRole === 'owner';
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const handle = (event) => {
-      if (rootRef.current && !rootRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, [open]);
+  const triggerRef = useTactilePress();
 
   if (tenants.length === 0) return null;
 
   const label = activeTenantName || 'Select workspace';
 
   return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 rounded-md border border-nexus-border bg-white px-2.5 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-        title="Switch workspace"
-      >
-        <Building2 size={14} className="text-nexus-accent" />
-        <span className="font-medium truncate max-w-[140px]">{label}</span>
-        <ChevronDown size={14} className="text-slate-500" />
-      </button>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button
+          ref={triggerRef}
+          type="button"
+          className="inline-flex items-center gap-2 rounded-md border border-nexus-border bg-white px-2.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none"
+          title="Switch workspace"
+        >
+          <Building2 size={14} className="text-nexus-accent" />
+          <span className="max-w-[140px] truncate font-medium">{label}</span>
+          <ChevronDown size={14} className="text-slate-500" />
+        </button>
+      </DropdownMenu.Trigger>
 
-      {open && (
-        <div className="absolute right-0 mt-1 w-64 rounded-lg border border-nexus-border bg-white shadow-lg z-40">
-          <div className="px-3 py-2 text-[10px] uppercase tracking-wide text-nexus-muted border-b border-nexus-border">
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={4}
+          className="glass-pane z-50 w-64 overflow-hidden text-sm text-slate-700"
+        >
+          <div className="border-b border-nexus-border px-3 py-2 text-[10px] uppercase tracking-wide text-nexus-muted">
             Workspaces
           </div>
-          <ul className="max-h-72 overflow-y-auto py-1">
+          <div className="max-h-72 overflow-y-auto py-1">
             {tenants.map((tenant) => {
               const isActive = tenant.id === activeTenantId;
               return (
-                <li key={tenant.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTenant(tenant.id);
-                      setOpen(false);
-                    }}
-                    className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50"
-                  >
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">{tenant.name}</div>
-                      <div className="text-xs text-nexus-muted truncate">
-                        {tenant.slug} · {tenant.role}
-                      </div>
+                <DropdownMenu.Item
+                  key={tenant.id}
+                  onSelect={() => setActiveTenant(tenant.id)}
+                  className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left outline-none data-[highlighted]:bg-slate-100/70"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{tenant.name}</div>
+                    <div className="truncate text-xs text-nexus-muted">
+                      {tenant.slug} · {tenant.role}
                     </div>
-                    {isActive && (
-                      <Check size={14} className="text-nexus-accent shrink-0" />
-                    )}
-                  </button>
-                </li>
+                  </div>
+                  {isActive && (
+                    <Check size={14} className="shrink-0 text-nexus-accent" />
+                  )}
+                </DropdownMenu.Item>
               );
             })}
-          </ul>
+          </div>
           {isOwner && (
-            <div className="border-t border-nexus-border">
-              <Link
-                to="/settings/workspaces"
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 text-xs text-nexus-accent hover:bg-slate-50"
-              >
-                <Settings2 size={12} />
-                Manage workspaces
-              </Link>
-            </div>
+            <>
+              <DropdownMenu.Separator className="h-px bg-nexus-border" />
+              <DropdownMenu.Item asChild>
+                <Link
+                  to="/settings/workspaces"
+                  className="flex cursor-pointer items-center gap-2 px-3 py-2 text-xs text-nexus-accent outline-none data-[highlighted]:bg-slate-100/70"
+                >
+                  <Settings2 size={12} />
+                  Manage workspaces
+                </Link>
+              </DropdownMenu.Item>
+            </>
           )}
-        </div>
-      )}
-    </div>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }

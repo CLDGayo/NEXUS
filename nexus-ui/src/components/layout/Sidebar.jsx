@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { LogOut } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { ChevronsUpDown, LogOut, User } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useTenant } from '../../hooks/useTenant.js';
 import { useSidebar } from '../../hooks/useSidebar.js';
@@ -67,9 +68,8 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Nav */}
-      <Tooltip.Provider delayDuration={0}>
-        <nav className="flex-1 p-2 space-y-1">
+      {/* Nav — tooltips use the root Tooltip.Provider in App.jsx */}
+      <nav className="flex-1 p-2 space-y-1">
           {nav.map(({ to, label, Icon }) => {
             const linkClass = ({ isActive }) =>
               [
@@ -110,56 +110,59 @@ export default function Sidebar() {
             );
           })}
         </nav>
-      </Tooltip.Provider>
 
-      {/* Footer */}
+      {/* Footer — unified profile dropdown (Radix) */}
       <div
         className={[
-          'border-t border-nexus-border/60',
-          collapsed
-            ? 'flex flex-col items-center gap-2 py-3 px-2'
-            : 'p-3 flex items-center justify-between',
+          'border-t border-nexus-border/60 p-3',
+          collapsed ? 'flex justify-center' : '',
         ].join(' ')}
       >
-        {collapsed ? (
-          <>
-            <Link
-              to="/profile"
-              className="rounded-full hover:ring-2 hover:ring-nexus-accent/30 transition-shadow"
-              title="Open profile"
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            {collapsed ? (
+              <button
+                className="rounded-full transition-shadow hover:ring-2 hover:ring-nexus-accent/30 focus:outline-none"
+                title="Account"
+              >
+                <Avatar user={user} />
+              </button>
+            ) : (
+              <button className="-m-1 flex w-full items-center gap-2 rounded-md p-1 text-left hover:bg-slate-50 focus:outline-none">
+                <Avatar user={user} />
+                <div className="min-w-0 leading-tight">
+                  <div className="truncate text-sm font-medium">{displayName}</div>
+                  <div className="text-xs text-nexus-muted">{roleLabel}</div>
+                </div>
+                <ChevronsUpDown size={14} className="ml-auto shrink-0 text-slate-400" />
+              </button>
+            )}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              side="top"
+              align={collapsed ? 'center' : 'start'}
+              sideOffset={8}
+              className="glass-pane z-50 min-w-[200px] p-1 text-sm text-slate-700"
             >
-              <Avatar user={user} />
-            </Link>
-            <button
-              onClick={logout}
-              className="flex items-center justify-center text-slate-400 hover:text-red-600 transition-colors"
-              title="Sign out"
-            >
-              <LogOut size={16} />
-            </button>
-          </>
-        ) : (
-          <>
-            <Link
-              to="/profile"
-              className="flex flex-1 items-center gap-2 rounded-md p-1 -m-1 hover:bg-slate-50"
-              title="Open profile"
-            >
-              <Avatar user={user} />
-              <div className="leading-tight min-w-0">
-                <div className="text-sm font-medium truncate">{displayName}</div>
-                <div className="text-xs text-nexus-muted">{roleLabel}</div>
-              </div>
-            </Link>
-            <button
-              onClick={logout}
-              className="text-xs text-slate-500 hover:text-red-600 flex items-center gap-1"
-              title="Sign out"
-            >
-              <LogOut size={14} />
-            </button>
-          </>
-        )}
+              <DropdownMenu.Item asChild>
+                <Link
+                  to="/profile"
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 outline-none data-[highlighted]:bg-slate-100/70"
+                >
+                  <User size={14} /> Profile
+                </Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator className="my-1 h-px bg-nexus-border/60" />
+              <DropdownMenu.Item
+                onSelect={() => logout()}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50"
+              >
+                <LogOut size={14} /> Log out
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </div>
     </aside>
   );

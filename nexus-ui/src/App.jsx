@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import { AuthProvider } from './context/AuthProvider.jsx';
 import { TenantProvider } from './context/TenantProvider.jsx';
 import RequireAuth from './components/auth/RequireAuth.jsx';
@@ -34,6 +35,7 @@ export default function App() {
   return (
     <AuthProvider>
       <TenantProvider>
+        <Tooltip.Provider delayDuration={0}>
         <Routes>
           <Route path="/login" element={<LoginScreen />} />
           <Route
@@ -84,6 +86,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/chat" replace />} />
         </Routes>
+        </Tooltip.Provider>
       </TenantProvider>
     </AuthProvider>
   );

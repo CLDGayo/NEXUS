@@ -1,11 +1,16 @@
 import { useEffect } from 'react';
 import { Lock, X } from 'lucide-react';
+import { useTactilePress } from '../../hooks/useTactilePress.js';
 
 // Premium upsell interceptor — opened by the empty-state cards when a
 // user clicks "Connect Account". It never issues a provisioning request;
 // it only explains how to obtain access. Overlay/escape/backdrop
 // behaviour mirrors WorkspacePickerModal so the app feels consistent.
 export default function PremiumConnectModal({ open, connectorName, onClose }) {
+  // Hook runs before the early return so order stays stable. The grid mounts
+  // this component only while open, so the CTA is in the DOM when the ref wires.
+  const ctaRef = useTactilePress();
+
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
@@ -50,9 +55,10 @@ export default function PremiumConnectModal({ open, connectorName, onClose }) {
 
         <div className="mt-5 flex justify-end">
           <button
+            ref={ctaRef}
             type="button"
             onClick={onClose}
-            className="inline-flex items-center justify-center rounded-md bg-nexus-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="inline-flex items-center justify-center rounded-md bg-nexus-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
           >
             Got it
           </button>

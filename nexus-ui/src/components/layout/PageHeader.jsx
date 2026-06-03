@@ -1,7 +1,28 @@
 import { PanelLeft, Search } from 'lucide-react';
+import * as Tooltip from '@radix-ui/react-tooltip';
 import HealthBadge from './HealthBadge.jsx';
 import WorkspaceSwitcher from '../tenant/WorkspaceSwitcher.jsx';
 import { useSidebar } from '../../hooks/useSidebar.js';
+
+// Glass tooltip for bare icon buttons (no visible text label). The root
+// Tooltip.Provider lives in App.jsx, so these only declare Root/Trigger/Content.
+function IconTooltip({ label, children }) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          side="bottom"
+          sideOffset={6}
+          className="glass-pane z-50 px-2 py-1 text-xs text-slate-700"
+        >
+          {label}
+          <Tooltip.Arrow className="fill-white/70" />
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
+  );
+}
 
 export default function PageHeader({ title, right, onOpenCommand }) {
   const { toggle } = useSidebar();
@@ -10,13 +31,15 @@ export default function PageHeader({ title, right, onOpenCommand }) {
     <header className="glass-header sticky top-0 z-20 flex items-center justify-between px-6 py-3">
       {/* Left group: hamburger + title */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={toggle}
-          className="flex items-center justify-center rounded-md p-1 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors"
-          aria-label="Toggle sidebar"
-        >
-          <PanelLeft size={18} />
-        </button>
+        <IconTooltip label="Toggle sidebar">
+          <button
+            onClick={toggle}
+            className="flex items-center justify-center rounded-md p-1 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors"
+            aria-label="Toggle sidebar"
+          >
+            <PanelLeft size={18} />
+          </button>
+        </IconTooltip>
         <h1 className="text-base font-semibold tracking-tight">{title}</h1>
       </div>
 
@@ -34,13 +57,15 @@ export default function PageHeader({ title, right, onOpenCommand }) {
           </kbd>
         </button>
         {/* Mobile: icon-only trigger */}
-        <button
-          onClick={onOpenCommand}
-          className="flex sm:hidden items-center justify-center rounded-md p-1 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors"
-          aria-label="Open command palette"
-        >
-          <Search size={18} />
-        </button>
+        <IconTooltip label="Search ⌘K">
+          <button
+            onClick={onOpenCommand}
+            className="flex sm:hidden items-center justify-center rounded-md p-1 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors"
+            aria-label="Open command palette"
+          >
+            <Search size={18} />
+          </button>
+        </IconTooltip>
         {right}
         <WorkspaceSwitcher />
         <HealthBadge />

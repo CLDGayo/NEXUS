@@ -2,15 +2,17 @@ import { Sparkles, Rocket } from 'lucide-react';
 import { ACTIVE_CAPABILITIES, ROADMAP_FEATURES } from '../lib/whatsNew.js';
 import CapabilityCard from '../components/whatsnew/CapabilityCard.jsx';
 import RoadmapCard from '../components/whatsnew/RoadmapCard.jsx';
+import { usePageMountTimeline } from '../hooks/usePageMountTimeline.js';
 
 // Curated platform showcase — distinct from the chronological release
 // feed at /changelog. Section A markets shipped capabilities; Section B
 // previews the locked premium roadmap.
 export default function WhatsNewPage() {
+  const pageRef = usePageMountTimeline();
   return (
-    <div className="h-full overflow-y-auto">
+    <div ref={pageRef} className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl space-y-8 p-6">
-        <header>
+        <header data-animate>
           <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900">
             <Sparkles size={18} className="text-nexus-accent" />
             What&apos;s New
@@ -32,7 +34,9 @@ export default function WhatsNewPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {ACTIVE_CAPABILITIES.map((item) => (
-              <CapabilityCard key={item.key} item={item} />
+              <div key={item.key} data-animate>
+                <CapabilityCard item={item} />
+              </div>
             ))}
           </div>
         </section>
@@ -51,7 +55,9 @@ export default function WhatsNewPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {ROADMAP_FEATURES.map((item) => (
-              <RoadmapCard key={item.key} item={item} />
+              <div key={item.key} data-animate>
+                <RoadmapCard item={item} />
+              </div>
             ))}
           </div>
         </section>

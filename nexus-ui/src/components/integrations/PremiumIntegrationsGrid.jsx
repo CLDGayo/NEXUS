@@ -109,11 +109,15 @@ export default function PremiumIntegrationsGrid() {
         )}
       </div>
 
-      <PremiumConnectModal
-        open={modalConnector !== null}
-        connectorName={modalConnector?.name}
-        onClose={() => setModalConnector(null)}
-      />
+      {/* Mounted only while open so the modal CTA's useTactilePress ref wires
+          to a button that is actually in the DOM (hook effect runs on mount). */}
+      {modalConnector !== null && (
+        <PremiumConnectModal
+          open
+          connectorName={modalConnector?.name}
+          onClose={() => setModalConnector(null)}
+        />
+      )}
     </section>
   );
 }
