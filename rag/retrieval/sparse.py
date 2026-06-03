@@ -76,11 +76,7 @@ def _tenant_scroll_filter(tenant_slug: str | None) -> Filter | None:
     if tenant_slug is None:
         return None
     return Filter(
-        must=[
-            FieldCondition(
-                key="tenant_id", match=MatchValue(value=tenant_slug)
-            )
-        ]
+        must=[FieldCondition(key="tenant_id", match=MatchValue(value=tenant_slug))]
     )
 
 
@@ -133,13 +129,27 @@ async def _scroll_corpus(
 
 async def build_corpus(
     tenant_slug: str | None = None,
+    *,
+    allow_all_tenants: bool = False,
 ) -> BM25Corpus | None:
     """Rebuild the in-memory BM25 index for ``tenant_slug`` from Qdrant.
 
     Per-tenant corpus — each tenant gets its own ``BM25Okapi`` instance so
     BM25 idf statistics are computed over the tenant's own chunks instead
     of the global mix. The cache is keyed by slug.
+
+    ``allow_all_tenants=True`` is an **offline-diagnostic escape hatch only**.
+    Never pass it from a request-serving code path — doing so would rebuild
+    a cross-tenant corpus and re-open the Phase 46 zero-trust boundary.
     """
+
+    # Phase 46 — default-closed; refuse a None slug unless the caller
+    # explicitly opts in for diagnostics (audit scripts only).
+    if tenant_slug is None and not allow_all_tenants:
+        raise RuntimeError(
+            "build_corpus requires a tenant_slug (Phase 46 zero-trust). "
+            "Pass allow_all_tenants=True only from offline diagnostic scripts."
+        )
 
     chunks = await _scroll_corpus(tenant_slug)
     chunks = [c for c in chunks if c.text]
@@ -149,13 +159,9 @@ async def build_corpus(
 
     tokens = [tokenize(c.text) for c in chunks]
     index = BM25Okapi(tokens)
-    corpus = BM25Corpus(
-        built_at=time.time(), index=index, chunks=chunks, tokens=tokens
-    )
+    corpus = BM25Corpus(built_at=time.time(), index=index, chunks=chunks, tokens=tokens)
     _corpora[tenant_slug] = corpus
-    _log.info(
-        "bm25 corpus rebuilt: tenant=%s chunks=%d", tenant_slug, len(chunks)
-    )
+    _log.info("bm25 corpus rebuilt: tenant=%s chunks=%d", tenant_slug, len(chunks))
     return corpus
 
 
@@ -189,14 +195,22 @@ async def sparse_search(
     a richer filter would silently be ignored and produce results outside
     the caller's intent. Today only the tenant predicate is required.
 
-    Returns an empty list if the corpus is empty or cannot be built. Never
-    raises so the orchestrator can rely on the dense arm in degraded mode.
+    Returns an empty list if the corpus is empty or cannot be built.
+    Raises ``RuntimeError`` if ``filters`` carries no ``tenant_id``
+    predicate — that is always a caller bug (Phase 46 zero-trust).
     """
 
     if not query.strip():
         return []
 
     tenant_slug = _extract_tenant_slug(filters)
+    # Phase 46 — default-closed zero-trust guard.  A None slug means no
+    # tenant predicate was present in the filter, which would fall through
+    # to the all-tenants corpus and leak cross-tenant BM25 results.
+    if tenant_slug is None:
+        raise RuntimeError(
+            "sparse_search requires a tenant_id predicate in filters (Phase 46 zero-trust)"
+        )
     corpus = await get_corpus(tenant_slug)
     if corpus is None:
         return []
@@ -208,13 +222,16 @@ async def sparse_search(
     scores = corpus.index.get_scores(query_tokens)
     # Rank by score desc; ties broken by chunk id for determinism.
     indexed = sorted(
-        enumerate(scores), key=lambda pair: (pair[1], -ord(corpus.chunks[pair[0]].id[0]) if corpus.chunks[pair[0]].id else 0), reverse=True
+        enumerate(scores),
+        key=lambda pair: (
+            pair[1],
+            -ord(corpus.chunks[pair[0]].id[0]) if corpus.chunks[pair[0]].id else 0,
+        ),
+        reverse=True,
     )
     top = indexed[:k]
     return [
-        corpus.chunks[idx].with_score(float(score))
-        for idx, score in top
-        if score > 0
+        corpus.chunks[idx].with_score(float(score)) for idx, score in top if score > 0
     ]
 
 
@@ -224,8 +241,8 @@ def _extract_tenant_slug(filters: Filter | None) -> str | None:
     The retrieval nodes build the filter as
     ``Filter(must=[FieldCondition(key='tenant_id', match=MatchValue(value=<slug>))])``,
     so we walk ``filter.must`` looking for that shape. Returns ``None`` if
-    no tenant predicate is present — the caller then operates on the
-    legacy "all tenants" corpus (test/diagnostics only)."""
+    no tenant predicate is present — ``sparse_search`` will raise on a
+    ``None`` return (Phase 46 zero-trust)."""
 
     if filters is None:
         return None

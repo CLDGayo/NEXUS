@@ -34,7 +34,7 @@ from sqlalchemy import select
 
 from rag.config import settings
 from rag.database.engine import get_sessionmaker
-from rag.database.models import Product, ProductImage
+from rag.database.models import Product, ProductImage, Tenant
 from rag.messenger.payloads import (
     GenericTemplateButton,
     GenericTemplateElement,
@@ -116,7 +116,12 @@ async def _candidate_product_ids(query: str, tenant_slug: str) -> list[uuid.UUID
 
 
 async def _enrich(product_ids: list[uuid.UUID], tenant_slug: str) -> list[Product]:
-    """Fetch in-stock active products in Qdrant rank order."""
+    """Fetch in-stock active products in Qdrant rank order.
+
+    Phase 46 — defense-in-depth: JOIN ``app.tenants`` and scope by
+    ``tenant_slug`` so the result is safe-by-construction even if the
+    upstream Qdrant filter were bypassed.
+    """
     if not product_ids:
         return []
     sessionmaker = get_sessionmaker()
@@ -124,8 +129,11 @@ async def _enrich(product_ids: list[uuid.UUID], tenant_slug: str) -> list[Produc
         rows = (
             (
                 await db.execute(
-                    select(Product).where(
+                    select(Product)
+                    .join(Tenant, Product.tenant_id == Tenant.id)
+                    .where(
                         Product.id.in_(product_ids),
+                        Tenant.slug == tenant_slug,
                         Product.is_active.is_(True),
                         Product.quantity > 0,
                     )

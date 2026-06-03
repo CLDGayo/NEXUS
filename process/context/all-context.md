@@ -199,6 +199,14 @@ Migrated from the old CLAUDE.md. Every PR in `rag/` should close a gap or harden
 - **Post-deploy verify:** `curl -sSI https://chat.nexus.gayo-sphere.cloud/` → 200; `systemctl is-active nexus-chat` → active; `journalctl -u nexus-chat -n 50`.
 - **MCP servers in play:** Playwright (E2E), `gayo-vps` SSH (deploy/logs), `wordpress-cms`.
 
+## Current Features
+
+Feature folders with 5+ artifacts or multi-phase programs. Stored under `process/features/{feature}/`.
+
+| Feature | Status | Notes |
+|---|---|---|
+| `tenant-ai-customization` | Phase 46 in progress | Phases 45–48 umbrella: Lifecycle Persona Engine, Knowledge Boundary Harden, Workflow Toggles, Model Params |
+
 ## Context Group Lifecycle
 
 Context groups are durable knowledge domains, not feature folders. Create a group when a topic has 3+ durable docs, or a single doc exceeds ~800 lines with separable subtopics. Do not create a group for temporary reports, plans, or feature-specific content (those live in `process/features/...`). Run the `vc-audit-context` skill after any context reorganization.

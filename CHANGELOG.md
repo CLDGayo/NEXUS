@@ -3,6 +3,15 @@
 All notable changes to the NEXUS Knowledge Base.
 This file follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+- **feat(security): Phase 46 — Knowledge Boundary Harden & Audit.** First phase of the Tenant AI Customization umbrella program (Phases 45–48). Closes the sparse-BM25 cross-tenant leak path and adds defense-in-depth to the product-enrichment SQL query.
+- `rag/retrieval/sparse.py` — zero-trust guard in `sparse_search`: raises `RuntimeError` immediately when no `tenant_id` predicate is present in the Qdrant filter, preventing fallthrough to the all-tenants BM25 corpus (Phase 46 zero-trust). `build_corpus` now requires an explicit `allow_all_tenants=True` flag to accept a `None` slug; offline diagnostic scripts must opt in.
+- `rag/orchestrator/product_branch.py` — defense-in-depth tenant scope added to `_enrich`: JOINs `app.tenants` and applies `WHERE Tenant.slug == tenant_slug`, making the result safe-by-construction even if the upstream Qdrant filter were bypassed.
+- `rag/scripts/audit_tenant_payloads.py` — new read-only audit script that scrolls the entire `nexus-vault` Qdrant collection and reports any point missing a `tenant_id` payload (pre-Phase-29 orphans). Exit 0 = clean, 1 = orphans found, 2 = Qdrant unreachable.
+- `rag/tests/test_phase46_tenant_boundary.py` — 7-case hermetic unit test suite: sparse `filters=None` raises; sparse non-tenant filter raises; `_tenant_filter({})` regression guard; `retrieve_graph_node` empty-tenant guard; `_enrich` cross-tenant exclusion; per-tenant corpus isolation; fuzz zero-leak assertion.
+
 ## [0.16.0] - 2026-06-03
 
 ### Added
