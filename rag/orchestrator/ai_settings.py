@@ -214,6 +214,22 @@ def _node_enabled(state: "NexusState", key: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def model_choice_allowlist() -> set[str]:
+    """Return the set of model ids a tenant may pin via ``model_choice``.
+
+    Single source of truth shared by ``resolve_model_params`` (silent
+    fallback on a bad value) and the Prompt Studio PUT handler (explicit
+    400 rejection), so the two never drift.
+    """
+    from rag.config import settings  # noqa: PLC0415  (lazy — avoids circular import)
+
+    return {
+        settings.generation_model,
+        settings.vision_model,
+        settings.followup_model,
+    }
+
+
 def resolve_model_params(
     ai_settings: dict[str, Any],
 ) -> tuple[str, float, int]:
@@ -223,15 +239,11 @@ def resolve_model_params(
     callable but not invoked from any hot path.
 
     Bounds mirror rag/config.py: temp 0-2, max_tokens 64-8192.
-    model_choice must be in _MODEL_ALLOWLIST or settings fallback is used.
+    model_choice must be in the model_choice_allowlist or settings fallback.
     """
     from rag.config import settings  # noqa: PLC0415  (lazy — avoids circular import)
 
-    _MODEL_ALLOWLIST = {
-        settings.generation_model,
-        settings.vision_model,
-        settings.followup_model,
-    }
+    _MODEL_ALLOWLIST = model_choice_allowlist()
 
     mp: dict[str, Any] = (ai_settings or {}).get("model_params") or {}
 

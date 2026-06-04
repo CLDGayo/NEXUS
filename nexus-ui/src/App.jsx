@@ -21,6 +21,7 @@ import ProductsDashboardPage from './pages/ProductsDashboardPage.jsx';
 import ProductEditPage from './pages/ProductEditPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import SettingsWorkspacesPage from './pages/SettingsWorkspacesPage.jsx';
+import SettingsAiStudioPage from './pages/SettingsAiStudioPage.jsx';
 import ChangelogPage from './pages/ChangelogPage.jsx';
 import WhatsNewPage from './pages/WhatsNewPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
@@ -67,6 +68,10 @@ export default function App() {
               <Route path="/products" element={<ProductsDashboardPage />} />
               <Route path="/products/:id" element={<ProductEditPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route
+                path="/settings/ai-studio"
+                element={<SettingsAiStudioPage />}
+              />
               <Route
                 path="/settings/workspaces"
                 element={<SettingsWorkspacesPage />}

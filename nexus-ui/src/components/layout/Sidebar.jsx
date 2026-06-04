@@ -70,7 +70,7 @@ export default function Sidebar() {
 
       {/* Nav — tooltips use the root Tooltip.Provider in App.jsx */}
       <nav className="flex-1 p-2 space-y-1">
-          {nav.map(({ to, label, Icon }) => {
+          {nav.map(({ to, label, Icon, end }) => {
             const linkClass = ({ isActive }) =>
               [
                 'flex items-center rounded-lg px-3 py-2 text-sm transition-colors',
@@ -84,7 +84,7 @@ export default function Sidebar() {
               return (
                 <Tooltip.Root key={to}>
                   <Tooltip.Trigger asChild>
-                    <NavLink to={to} className={linkClass} title={label}>
+                    <NavLink to={to} end={end} className={linkClass} title={label}>
                       <Icon size={16} />
                     </NavLink>
                   </Tooltip.Trigger>
@@ -103,7 +103,7 @@ export default function Sidebar() {
             }
 
             return (
-              <NavLink key={to} to={to} className={linkClass}>
+              <NavLink key={to} to={to} end={end} className={linkClass}>
                 <Icon size={16} />
                 {label}
               </NavLink>

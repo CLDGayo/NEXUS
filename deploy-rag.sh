@@ -124,9 +124,10 @@ curl -sS -o /dev/null -w "  GET  /health                 : HTTP %{http_code}\n" 
 curl -sS -o /dev/null -w "  GET  /                       : HTTP %{http_code}  (React index)\n" "$HOST/"
 curl -sS -o /dev/null -w "  GET  /documents              : HTTP %{http_code}  (SPA catch-all)\n" "$HOST/documents"
 curl -sS -o /dev/null -w "  GET  /integrations           : HTTP %{http_code}  (SPA catch-all)\n" "$HOST/integrations"
-curl -sS -o /dev/null -w "  POST /api/auth/login (wrong) : HTTP %{http_code}\n" \
-  -X POST "$HOST/api/auth/login" \
-  -H 'content-type: application/json' -d '{"password":"__smoke__"}'
+curl -sS -o /dev/null -w "  POST /api/auth/jwt/login(x)  : HTTP %{http_code}  (expect 400/422, route alive)\n" \
+  -X POST "$HOST/api/auth/jwt/login" \
+  -H 'content-type: application/x-www-form-urlencoded' \
+  -d 'username=__smoke__&password=__smoke__'
 
 # Confirm the hashed Vite entry bundle is served — parse <script src="/assets/...">
 echo "→ Verifying Vite bundle URL ..."

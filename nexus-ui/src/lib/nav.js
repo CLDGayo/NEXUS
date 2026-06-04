@@ -10,6 +10,7 @@ import {
   Package,
   Settings,
   Building2,
+  SlidersHorizontal,
   Sparkles,
   Newspaper,
   Shield,
@@ -31,7 +32,10 @@ export const CORE_NAV = [
 // surfaces too; the FE hide is UX, not security.
 export const OWNER_NAV = [
   { to: '/products',            label: 'Products',   Icon: Package },
-  { to: '/settings',            label: 'Settings',   Icon: Settings },
+  // `end: true` — exact-match only, so /settings does not prefix-match its own
+  // nested routes (/settings/workspaces, /settings/ai-studio) and double-highlight.
+  { to: '/settings',            label: 'Settings',   Icon: Settings, end: true },
+  { to: '/settings/ai-studio',  label: 'AI Studio',  Icon: SlidersHorizontal },
   { to: '/settings/workspaces', label: 'Workspaces', Icon: Building2 },
 ];
 

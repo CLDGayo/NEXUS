@@ -92,6 +92,7 @@ from routers import (  # noqa: E402
     resources,
     settings as v1_settings,
     uploads,
+    workspace_ai_settings,
 )
 
 _log = logging.getLogger(__name__)
@@ -260,6 +261,7 @@ app.include_router(v1_settings.router, prefix="/api/settings")
 app.include_router(changelog.router, prefix="/api/changelog")
 app.include_router(integrations.router, prefix="/api/integrations")
 app.include_router(api_tokens.router, prefix="/api/tokens")
+app.include_router(workspace_ai_settings.router, prefix="/api/workspace")
 app.include_router(resources.router, prefix="/api/resources")
 app.include_router(products.router, prefix="/api")
 app.include_router(objects.router, prefix="/api")
