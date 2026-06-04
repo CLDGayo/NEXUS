@@ -27,7 +27,11 @@ import httpx
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from rag.config import settings
-from rag.orchestrator.ai_settings import assemble_system_prompt
+from rag.orchestrator.ai_settings import (
+    _node_enabled,
+    assemble_system_prompt,
+    resolve_model_params,
+)
 from rag.guardrails.handover import (
     HandoverSignal,
     emit_handover_signal,
@@ -585,7 +589,14 @@ async def sentiment_analysis_node(state: NexusState) -> dict:
     Uses the same fast 8B model as ``rewrite_query_node``. On any
     failure (LLM error, unparseable response), defaults to ``neutral``
     so the graph never crashes and the generation path is never blocked.
+
+    Phase 47 — toggleable. Disabled → explicit neutral so downstream
+    sentiment-gated branches (e.g. frustrated-SDR interlock) still
+    behave predictably.
     """
+    # Phase 47 — node toggle.
+    if not _node_enabled(state, "sentiment_analysis"):
+        return {"sentiment": "neutral"}
 
     query = (state.get("query") or "").strip()
     if not query:
@@ -800,7 +811,8 @@ async def generate_node(state: NexusState) -> dict:
             system_content += _VISION_INTENT_MESSENGER
             # Phase 33 — SDR persona (Messenger + vision path).
             # Phase 35 — suppress SDR for frustrated customers.
-            if sentiment != "frustrated":
+            # Phase 47 — sdr_persona node toggle.
+            if sentiment != "frustrated" and _node_enabled(state, "sdr_persona"):
                 system_content += SDR_PERSONA_OVERLAY
             if include_continuity:
                 system_content += _CONTINUITY_NOTE
@@ -824,6 +836,9 @@ async def generate_node(state: NexusState) -> dict:
         # conversational context without losing image grounding.
         messages.extend(history_msgs)
         messages.append({"role": "user", "content": user_parts})
+        # Phase 48 — vision path keeps the vision model, but still honors the
+        # tenant temperature / max_tokens (model_choice is ignored for images).
+        _, temperature, max_tokens = resolve_model_params(state.get("ai_settings"))
         model = settings.vision_model
     else:
         # Text-only fallback unchanged from Phase 5 behaviour.
@@ -835,7 +850,9 @@ async def generate_node(state: NexusState) -> dict:
         # final user query is already embedded in the system prompt via
         # the ``{question}`` slot, so we do not duplicate it here.
         messages.extend(history_msgs)
-        model = settings.generation_model
+        # Phase 48 — resolve per-tenant model / temperature / max_tokens
+        # (falls back to settings.* for default tenants).
+        model, temperature, max_tokens = resolve_model_params(state.get("ai_settings"))
 
     # Phase 45 — append lifecycle persona suffix (core_behavior + situational)
     # BEFORE the existing SDR/sentiment/CRM overlay block. Returns an empty
@@ -857,7 +874,8 @@ async def generate_node(state: NexusState) -> dict:
     if surface == "messenger" and not images:
         # Phase 35 — suppress SDR persona AND tool binding for frustrated
         # customers. A frustrated user must never see a checkout CTA.
-        if sentiment != "frustrated":
+        # Phase 47 — sdr_persona node toggle.
+        if sentiment != "frustrated" and _node_enabled(state, "sdr_persona"):
             extra = {"tools": SALES_TOOLS_SCHEMA, "tool_choice": "auto"}
             messages[0]["content"] = str(messages[0]["content"]) + SDR_PERSONA_OVERLAY
         if include_continuity:
@@ -874,8 +892,8 @@ async def generate_node(state: NexusState) -> dict:
         result: LLMResult = await chat_complete(
             messages,
             model=model,
-            temperature=settings.generation_temperature,
-            max_tokens=settings.generation_max_tokens,
+            temperature=temperature,
+            max_tokens=max_tokens,
             extra=extra,
         )
     except LLMError as exc:
@@ -919,8 +937,8 @@ async def generate_node(state: NexusState) -> dict:
             result = await chat_complete(
                 messages,
                 model=model,
-                temperature=settings.generation_temperature,
-                max_tokens=settings.generation_max_tokens,
+                temperature=temperature,
+                max_tokens=max_tokens,
             )
         except LLMError as exc:
             _log.warning(
@@ -1016,17 +1034,28 @@ async def guardrails_node(state: NexusState) -> dict:
             cited_ids = tuple(r.metadata.get("cited_ids", []))
             break
 
+    # Phase 47 — hitl_handover node toggle. When disabled, guardrails neither
+    # raises a fresh handover flag nor emits the handover signal below; any
+    # upstream flag (e.g. a generate-path LLM error) still rides through, and
+    # a blocked answer still abstains (guardrails_router keys off
+    # ``guardrail_passed``, not ``requires_human_handover``).
+    _hitl_enabled = _node_enabled(state, "hitl_handover")
+
     update: dict = {
         "guardrail_passed": not pipeline_result.blocked,
         "guardrail_reason": _format_pipeline_reason(pipeline_result),
         "uncertainty_score": pipeline_result.uncertainty_score,
         "validator_failures": failed_names,
         "citations": cited_ids,
-        "requires_human_handover": pipeline_result.requires_handover
-        or bool(state.get("requires_human_handover")),
+        "requires_human_handover": (
+            pipeline_result.requires_handover
+            or bool(state.get("requires_human_handover"))
+        )
+        if _hitl_enabled
+        else bool(state.get("requires_human_handover")),
     }
 
-    if pipeline_result.blocked:
+    if pipeline_result.blocked and _hitl_enabled:
         update["handover_reason"] = update["guardrail_reason"]
 
         signal = HandoverSignal(
@@ -1385,8 +1414,13 @@ async def accumulate_context_node(state: NexusState) -> dict:
 
 
 def route_decision(state: NexusState) -> Literal["plan_research", "direct_fanout"]:
-    """Conditional edge after ``route_query_node``."""
+    """Conditional edge after ``route_query_node``.
 
+    Phase 47 — when ``research_mode`` is disabled the loop never starts;
+    control always flows to ``direct_fanout``.
+    """
+    if not _node_enabled(state, "research_mode"):
+        return "direct_fanout"
     return "plan_research" if state.get("is_research_mode") else "direct_fanout"
 
 

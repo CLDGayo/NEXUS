@@ -40,6 +40,7 @@ from rag.messenger.payloads import (
     GenericTemplateElement,
     ProductCarouselBlock,
 )
+from rag.orchestrator.ai_settings import _node_enabled
 from rag.orchestrator.state import NexusState
 from rag.products.sync import product_point_id
 from rag.retrieval.dense import embed_text, get_qdrant_client
@@ -334,6 +335,10 @@ async def inject_product_context_node(state: NexusState) -> dict[str, Any]:
     under the private ``_enriched_products`` key so the downstream
     carousel builder reuses the rows without a second Qdrant + DB hit.
     """
+    # Phase 47 — inject_product_context node toggle.
+    if not _node_enabled(state, "inject_product_context"):
+        return {}
+
     query = (state.get("query") or "").strip()
     tenant_slug = state.get("tenant_id")
     if not query or not tenant_slug:
@@ -386,6 +391,10 @@ async def build_carousel_node(state: NexusState) -> dict[str, Any]:
     respond, messenger-only). Reads the cached ``_enriched_products``
     list to avoid a second Qdrant + Postgres round-trip per turn.
     """
+    # Phase 47 — build_carousel node toggle.
+    if not _node_enabled(state, "build_carousel"):
+        return {}
+
     surface = state.get("surface")
     if surface != "messenger":
         return {}
