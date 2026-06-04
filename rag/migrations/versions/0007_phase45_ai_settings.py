@@ -40,13 +40,20 @@ _DEFAULT_JSON = (
 
 
 def upgrade() -> None:
+    # SQLAlchemy ``text()`` parses ``:word`` as a named bind parameter, so the
+    # JSON scalars (``:1``, ``:true``, ``:null``) were being consumed as binds
+    # and rendered ``NULL`` with the colon dropped, producing invalid JSON.
+    # Escape every colon as ``\:`` so the literal is emitted verbatim; the
+    # trailing ``::jsonb`` cast is appended outside this escaped string and is
+    # exempt (double-colon is not treated as a bind).
+    escaped_default = _DEFAULT_JSON.replace(":", r"\:")
     op.add_column(
         "tenants",
         sa.Column(
             "ai_settings",
             JSONB(),
             nullable=False,
-            server_default=sa.text(f"'{_DEFAULT_JSON}'::jsonb"),
+            server_default=sa.text(f"'{escaped_default}'::jsonb"),
         ),
         schema="app",
     )
