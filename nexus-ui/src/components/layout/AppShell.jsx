@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import Sidebar from './Sidebar.jsx';
+import Sidebar, { MobileSidebar } from './Sidebar.jsx';
 import PageHeader from './PageHeader.jsx';
 import { SidebarProvider } from '../../context/SidebarProvider.jsx';
 import { useCommandPalette } from '../../hooks/useCommandPalette.js';
@@ -43,14 +43,15 @@ function ShellInner() {
   const { open, setOpen } = useCommandPalette();
 
   return (
-    <div className="relative h-screen flex bg-slate-50 text-slate-900">
+    <div className="relative h-screen flex bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       {/* Ambient gradient backdrop — paints above root bg, below glass panes */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-100/50 via-slate-50 to-violet-100/40"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-blue-100/50 via-slate-50 to-violet-100/40 dark:from-blue-950/30 dark:via-slate-950 dark:to-violet-950/30"
       />
 
       <Sidebar />
+      <MobileSidebar />
 
       <main className="flex-1 flex flex-col min-w-0">
         <PageHeader title={title} onOpenCommand={() => setOpen(true)} />

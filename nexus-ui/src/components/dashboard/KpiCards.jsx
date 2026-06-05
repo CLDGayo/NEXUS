@@ -11,13 +11,13 @@ import {
 function Card({ icon: Icon, label, value, sub, accent }) {
   const ring = accent ?? 'bg-blue-50 text-nexus-accent';
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-nexus-border bg-white px-4 py-3 shadow-sm transition hover:shadow-md">
-      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${ring}`}>
+    <div className="flex items-center gap-3 rounded-xl border border-nexus-border bg-white px-4 py-3 shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-slate-900/50">
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${ring}`}>
         <Icon size={16} />
       </div>
       <div className="min-w-0">
-        <div className="text-[11px] font-medium uppercase tracking-wide text-nexus-muted">{label}</div>
-        <div className="text-lg font-semibold leading-tight text-slate-800">{value}</div>
+        <div className="truncate text-[11px] font-medium uppercase tracking-wide text-nexus-muted">{label}</div>
+        <div className="truncate text-lg font-semibold leading-tight text-slate-800 dark:text-slate-100">{value}</div>
         {sub && <div className="truncate text-[11px] text-nexus-muted">{sub}</div>}
       </div>
     </div>
@@ -29,7 +29,7 @@ const fmt = (n) => (n ?? 0).toLocaleString();
 export default function KpiCards({ kpis }) {
   const k = kpis || {};
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-7">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-7">
       <Card icon={FileText} label="Total Notes" value={fmt(k.total_notes)} />
       <Card icon={Layers} label="Vector Chunks" value={fmt(k.total_chunks)} />
       <Card

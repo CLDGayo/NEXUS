@@ -12,15 +12,19 @@ html, body, #root {
      text contrast. Dark tint is reserved for the modal scrim (.glass-overlay). */
   .glass-pane {
     @apply rounded-xl border border-white/60 bg-white/70 shadow-glass backdrop-blur-md;
+    @apply dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100;
   }
   .glass-card {
     @apply rounded-2xl border border-white/50 bg-white/75 shadow-glass-lg backdrop-blur-lg;
+    @apply dark:border-white/10 dark:bg-slate-900/55;
   }
   .glass-header {
     @apply border-b border-nexus-border/70 bg-white/65 shadow-glass-sm backdrop-blur-xl;
+    @apply dark:border-white/10 dark:bg-slate-950/55;
   }
   .glass-rail {
     @apply border-r border-nexus-border/60 bg-white/60 backdrop-blur-xl;
+    @apply dark:border-white/10 dark:bg-slate-950/50;
   }
   /* The ONLY correct place for a dark tint: a scrim sitting OVER content. */
   .glass-overlay {
@@ -28,6 +32,7 @@ html, body, #root {
   }
   .glass-dialog {
     @apply rounded-2xl border border-white/60 bg-white/90 shadow-glass-lg backdrop-blur-2xl;
+    @apply dark:border-white/10 dark:bg-slate-900/85;
   }
   .glass-hover {
     @apply transition-shadow duration-300 hover:shadow-glass-glow;

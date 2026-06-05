@@ -1,7 +1,7 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { ChevronsUpDown, LogOut, User } from 'lucide-react';
+import { ChevronsUpDown, LogOut, User, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useTenant } from '../../hooks/useTenant.js';
 import { useSidebar } from '../../hooks/useSidebar.js';
@@ -29,10 +29,20 @@ function Avatar({ user }) {
   );
 }
 
-export default function Sidebar() {
+// Foolproof active check: exact match for items flagged `end`, otherwise a
+// segment-boundary prefix so e.g. /chat never matches /chatx and /settings
+// never double-highlights with /settings/workspaces.
+function isNavActive(pathname, item) {
+  if (item.end) return pathname === item.to;
+  return pathname === item.to || pathname.startsWith(item.to + '/');
+}
+
+// Shared inner content for both the desktop rail and the mobile drawer.
+// `collapsed` controls the narrow icon-only rail; the drawer passes false.
+function SidebarContent({ collapsed, onNavigate }) {
   const { user, isSuperuser, logout } = useAuth();
   const { activeTenantRole } = useTenant();
-  const { collapsed } = useSidebar();
+  const { pathname } = useLocation();
 
   const isOwner = activeTenantRole === 'owner';
   const nav = [
@@ -44,17 +54,21 @@ export default function Sidebar() {
   const displayName = user?.display_name || user?.email || 'Account';
   const roleLabel = isSuperuser ? 'Admin' : isOwner ? 'Owner' : 'Member';
 
+  const linkClass = (active) =>
+    [
+      'flex items-center rounded-lg px-3 py-2 text-sm transition-colors',
+      collapsed ? 'justify-center' : 'gap-3',
+      active
+        ? 'bg-nexus-accent/10 text-nexus-accent font-medium'
+        : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/60',
+    ].join(' ');
+
   return (
-    <aside
-      className={[
-        'glass-rail flex flex-col shrink-0 transition-[width] duration-300',
-        collapsed ? 'w-16' : 'w-60',
-      ].join(' ')}
-    >
+    <>
       {/* Header */}
       <div
         className={[
-          'border-b border-nexus-border/60',
+          'border-b border-nexus-border/60 dark:border-white/10',
           collapsed ? 'flex items-center justify-center p-4' : 'p-5',
         ].join(' ')}
       >
@@ -69,52 +83,46 @@ export default function Sidebar() {
       </div>
 
       {/* Nav — tooltips use the root Tooltip.Provider in App.jsx */}
-      <nav className="flex-1 p-2 space-y-1">
-          {nav.map(({ to, label, Icon, end }) => {
-            const linkClass = ({ isActive }) =>
-              [
-                'flex items-center rounded-lg px-3 py-2 text-sm transition-colors',
-                collapsed ? 'justify-center' : 'gap-3',
-                isActive
-                  ? 'bg-nexus-accent/10 text-nexus-accent font-medium'
-                  : 'text-slate-700 hover:bg-slate-50',
-              ].join(' ');
+      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+        {nav.map((item) => {
+          const { to, label, Icon } = item;
+          const active = isNavActive(pathname, item);
 
-            if (collapsed) {
-              return (
-                <Tooltip.Root key={to}>
-                  <Tooltip.Trigger asChild>
-                    <NavLink to={to} end={end} className={linkClass} title={label}>
-                      <Icon size={16} />
-                    </NavLink>
-                  </Tooltip.Trigger>
-                  <Tooltip.Portal>
-                    <Tooltip.Content
-                      side="right"
-                      sideOffset={8}
-                      className="glass-pane px-2 py-1 text-xs text-slate-700 z-50"
-                    >
-                      {label}
-                      <Tooltip.Arrow className="fill-white/70" />
-                    </Tooltip.Content>
-                  </Tooltip.Portal>
-                </Tooltip.Root>
-              );
-            }
-
+          if (collapsed) {
             return (
-              <NavLink key={to} to={to} end={end} className={linkClass}>
-                <Icon size={16} />
-                {label}
-              </NavLink>
+              <Tooltip.Root key={to}>
+                <Tooltip.Trigger asChild>
+                  <NavLink to={to} className={linkClass(active)} title={label} onClick={onNavigate}>
+                    <Icon size={16} />
+                  </NavLink>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    side="right"
+                    sideOffset={8}
+                    className="glass-pane px-2 py-1 text-xs text-slate-700 dark:text-slate-200 z-50"
+                  >
+                    {label}
+                    <Tooltip.Arrow className="fill-white/70" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
             );
-          })}
-        </nav>
+          }
+
+          return (
+            <NavLink key={to} to={to} className={linkClass(active)} onClick={onNavigate}>
+              <Icon size={16} />
+              {label}
+            </NavLink>
+          );
+        })}
+      </nav>
 
       {/* Footer — unified profile dropdown (Radix) */}
       <div
         className={[
-          'border-t border-nexus-border/60 p-3',
+          'border-t border-nexus-border/60 dark:border-white/10 p-3',
           collapsed ? 'flex justify-center' : '',
         ].join(' ')}
       >
@@ -128,7 +136,7 @@ export default function Sidebar() {
                 <Avatar user={user} />
               </button>
             ) : (
-              <button className="-m-1 flex w-full items-center gap-2 rounded-md p-1 text-left hover:bg-slate-50 focus:outline-none">
+              <button className="-m-1 flex w-full items-center gap-2 rounded-md p-1 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 focus:outline-none">
                 <Avatar user={user} />
                 <div className="min-w-0 leading-tight">
                   <div className="truncate text-sm font-medium">{displayName}</div>
@@ -143,20 +151,21 @@ export default function Sidebar() {
               side="top"
               align={collapsed ? 'center' : 'start'}
               sideOffset={8}
-              className="glass-pane z-50 min-w-[200px] p-1 text-sm text-slate-700"
+              className="glass-pane z-50 min-w-[200px] p-1 text-sm text-slate-700 dark:text-slate-200"
             >
               <DropdownMenu.Item asChild>
                 <Link
                   to="/profile"
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 outline-none data-[highlighted]:bg-slate-100/70"
+                  onClick={onNavigate}
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 outline-none data-[highlighted]:bg-slate-100/70 dark:data-[highlighted]:bg-slate-800/70"
                 >
                   <User size={14} /> Profile
                 </Link>
               </DropdownMenu.Item>
-              <DropdownMenu.Separator className="my-1 h-px bg-nexus-border/60" />
+              <DropdownMenu.Separator className="my-1 h-px bg-nexus-border/60 dark:bg-white/10" />
               <DropdownMenu.Item
                 onSelect={() => logout()}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50"
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50 dark:data-[highlighted]:bg-red-950/40"
               >
                 <LogOut size={14} /> Log out
               </DropdownMenu.Item>
@@ -164,6 +173,52 @@ export default function Sidebar() {
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
       </div>
+    </>
+  );
+}
+
+// Desktop persistent rail — hidden on mobile (use the drawer there).
+export default function Sidebar() {
+  const { collapsed } = useSidebar();
+
+  return (
+    <aside
+      className={[
+        'glass-rail hidden md:flex flex-col shrink-0 transition-[width] duration-300',
+        collapsed ? 'w-16' : 'w-60',
+      ].join(' ')}
+    >
+      <SidebarContent collapsed={collapsed} />
     </aside>
+  );
+}
+
+// Mobile off-canvas drawer — overlay + sliding panel, always expanded.
+export function MobileSidebar() {
+  const { mobileOpen, setMobileOpen } = useSidebar();
+  if (!mobileOpen) return null;
+
+  const close = () => setMobileOpen(false);
+
+  return (
+    <div className="md:hidden">
+      <div
+        aria-hidden
+        onClick={close}
+        className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+      />
+      <aside className="glass-rail fixed left-0 top-0 z-50 flex h-full w-64 flex-col">
+        <div className="flex items-center justify-end p-2">
+          <button
+            onClick={close}
+            aria-label="Close menu"
+            className="flex items-center justify-center rounded-md p-1.5 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <SidebarContent collapsed={false} onNavigate={close} />
+      </aside>
+    </div>
   );
 }
