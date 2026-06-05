@@ -27,7 +27,7 @@ export default function IntegrationCard({ connector, onConnect }) {
   return (
     <div
       className={[
-        'relative flex min-h-[208px] flex-col rounded-xl border border-nexus-border bg-white p-4 shadow-sm transition-colors',
+        'relative flex min-h-[208px] flex-col rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm transition-colors',
         connected ? '' : 'opacity-80',
       ].join(' ')}
     >
@@ -37,7 +37,7 @@ export default function IntegrationCard({ connector, onConnect }) {
             'flex h-10 w-10 items-center justify-center rounded-lg',
             connected
               ? 'bg-nexus-accent/10 text-nexus-accent'
-              : 'bg-slate-100 text-slate-400',
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-400',
           ].join(' ')}
         >
           <Icon size={20} />
@@ -47,7 +47,7 @@ export default function IntegrationCard({ connector, onConnect }) {
             'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide',
             connected
               ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-slate-200 text-slate-600',
+              : 'bg-slate-200 text-slate-600 dark:text-slate-400',
           ].join(' ')}
         >
           {connected ? 'available' : 'inactive'}
@@ -55,7 +55,7 @@ export default function IntegrationCard({ connector, onConnect }) {
       </div>
 
       <div className="mt-3">
-        <div className="text-sm font-semibold text-slate-800">
+        <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">
           {connector?.name || 'Integration'}
         </div>
         <div className="text-[11px] font-medium uppercase tracking-wide text-nexus-muted">
@@ -63,7 +63,7 @@ export default function IntegrationCard({ connector, onConnect }) {
         </div>
       </div>
 
-      <p className="mt-2 flex-1 text-xs leading-relaxed text-slate-500">
+      <p className="mt-2 flex-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
         {connector?.description}
       </p>
 

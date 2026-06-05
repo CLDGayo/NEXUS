@@ -25,7 +25,7 @@ export default function NodeTogglesPanel({ value, onChange }) {
             className="flex cursor-pointer items-center justify-between gap-4 px-2 py-3"
           >
             <span className="min-w-0">
-              <span className="block text-sm font-medium text-slate-800">{n.label}</span>
+              <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">{n.label}</span>
               <span className="block text-xs text-nexus-muted">{n.hint}</span>
             </span>
             <Switch.Root
@@ -33,7 +33,7 @@ export default function NodeTogglesPanel({ value, onChange }) {
               onCheckedChange={(checked) => onChange(n.key, checked)}
               className="relative h-5 w-9 shrink-0 rounded-full bg-slate-300 transition-colors data-[state=checked]:bg-nexus-accent"
             >
-              <Switch.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-[18px]" />
+              <Switch.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-white dark:bg-slate-900 shadow transition-transform data-[state=checked]:translate-x-[18px]" />
             </Switch.Root>
           </label>
         );

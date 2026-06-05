@@ -62,13 +62,13 @@ export default function PromptEditor({ mode, slug, onSaved, onCancel }) {
       className="space-y-3 rounded-xl border border-dashed border-nexus-accent/40 bg-blue-50/30 p-4 shadow-sm"
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
           {mode === 'edit' ? `Edit prompt — ${slug}` : 'New prompt'}
         </h3>
         <button
           type="button"
           onClick={onCancel}
-          className="inline-flex items-center gap-1 text-xs font-medium text-nexus-muted hover:text-slate-700"
+          className="inline-flex items-center gap-1 text-xs font-medium text-nexus-muted hover:text-slate-700 hover:dark:text-slate-300"
         >
           <X size={12} /> Cancel
         </button>
@@ -89,7 +89,7 @@ export default function PromptEditor({ mode, slug, onSaved, onCancel }) {
               placeholder="Display name"
               maxLength={120}
               required
-              className="w-full rounded-lg border border-nexus-border bg-white px-3 py-2 text-sm outline-none focus:border-nexus-accent"
+              className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
             />
             {mode === 'new' && name && (
               <div className="mt-1 font-mono text-[11px] text-nexus-muted">
@@ -108,7 +108,7 @@ export default function PromptEditor({ mode, slug, onSaved, onCancel }) {
               rows={14}
               required
               placeholder="You are a helpful assistant..."
-              className="w-full rounded-lg border border-nexus-border bg-white px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
+              className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
             />
           </div>
 

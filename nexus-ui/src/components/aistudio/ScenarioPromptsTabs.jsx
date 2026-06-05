@@ -19,7 +19,7 @@ export default function ScenarioPromptsTabs({ value, onChange }) {
           <Tabs.Trigger
             key={t.key}
             value={t.key}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 data-[state=active]:bg-nexus-accent/10 data-[state=active]:text-nexus-accent"
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 transition-colors hover:bg-slate-50 hover:dark:bg-slate-900 data-[state=active]:bg-nexus-accent/10 data-[state=active]:text-nexus-accent"
           >
             {t.label}
           </Tabs.Trigger>
@@ -35,7 +35,7 @@ export default function ScenarioPromptsTabs({ value, onChange }) {
             rows={8}
             maxLength={8000}
             placeholder="Leave blank to use the default behavior…"
-            className="w-full resize-y rounded-lg border border-nexus-border bg-white/80 p-3 text-sm text-slate-800 shadow-inner focus:border-nexus-accent focus:outline-none focus:ring-1 focus:ring-nexus-accent/40"
+            className="w-full resize-y rounded-lg border border-nexus-border bg-white/80 p-3 text-sm text-slate-800 dark:text-slate-100 shadow-inner focus:border-nexus-accent focus:outline-none focus:ring-1 focus:ring-nexus-accent/40"
           />
           <div className="mt-1 text-right text-[11px] text-nexus-muted">
             {(prompts[t.key] ?? '').length} / 8000

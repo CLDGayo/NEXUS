@@ -49,7 +49,7 @@ export default function NodeDetailPanel({ node, graphData, onClose }) {
       {/* Header */}
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="truncate text-sm font-semibold text-slate-900">
+          <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
             {node.label ?? node.id}
           </h3>
           {node.group && (
@@ -58,7 +58,7 @@ export default function NodeDetailPanel({ node, graphData, onClose }) {
         </div>
         <button
           onClick={onClose}
-          className="shrink-0 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          className="shrink-0 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:dark:bg-slate-800 hover:text-slate-700 hover:dark:text-slate-300"
           aria-label="Close node detail"
         >
           <X className="h-4 w-4" />
@@ -89,11 +89,11 @@ export default function NodeDetailPanel({ node, graphData, onClose }) {
             </p>
             <ul className="space-y-1">
               {outEdges.map((l, i) => (
-                <li key={i} className="flex items-center gap-1.5 text-xs text-slate-600">
+                <li key={i} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
                   <span className="text-slate-300">→</span>
                   <span className="truncate">{nodeLabel(resolveId(l.target))}</span>
                   {l.kind && l.kind !== 'normal' && (
-                    <span className="shrink-0 rounded bg-slate-100 px-1 py-0.5 text-[10px] text-slate-500">
+                    <span className="shrink-0 rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5 text-[10px] text-slate-500 dark:text-slate-400">
                       {l.kind}
                     </span>
                   )}
@@ -110,11 +110,11 @@ export default function NodeDetailPanel({ node, graphData, onClose }) {
             </p>
             <ul className="space-y-1">
               {inEdges.map((l, i) => (
-                <li key={i} className="flex items-center gap-1.5 text-xs text-slate-600">
+                <li key={i} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
                   <span className="text-slate-300">←</span>
                   <span className="truncate">{nodeLabel(resolveId(l.source))}</span>
                   {l.kind && l.kind !== 'normal' && (
-                    <span className="shrink-0 rounded bg-slate-100 px-1 py-0.5 text-[10px] text-slate-500">
+                    <span className="shrink-0 rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5 text-[10px] text-slate-500 dark:text-slate-400">
                       {l.kind}
                     </span>
                   )}

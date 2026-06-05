@@ -28,7 +28,7 @@ export default function ChatMessages({
           <div className="mx-auto mb-3 h-10 w-10 rounded-full bg-nexus-accent/10 text-nexus-accent flex items-center justify-center">
             <MessageCircle size={20} />
           </div>
-          <h2 className="text-base font-semibold text-slate-800">Ask your vault anything</h2>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Ask your vault anything</h2>
           <p className="text-sm text-nexus-muted mt-1">
             Notes, concepts, and projects are searchable. Streaming through the
             LangGraph orchestrator.

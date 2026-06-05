@@ -4,7 +4,7 @@ import { Check } from 'lucide-react';
 export default function CapabilityCard({ item }) {
   const { Icon, title, summary } = item;
   return (
-    <div className="flex h-full flex-col rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+    <div className="flex h-full flex-col rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
       <div className="flex items-start justify-between">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-nexus-accent/10 text-nexus-accent">
           {Icon ? <Icon size={20} /> : null}
@@ -13,8 +13,8 @@ export default function CapabilityCard({ item }) {
           <Check size={11} /> Active
         </span>
       </div>
-      <h4 className="mt-3 text-sm font-semibold text-slate-800">{title}</h4>
-      <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{summary}</p>
+      <h4 className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h4>
+      <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{summary}</p>
     </div>
   );
 }

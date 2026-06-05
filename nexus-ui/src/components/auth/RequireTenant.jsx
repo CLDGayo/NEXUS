@@ -18,7 +18,7 @@ export default function RequireTenant({ children }) {
 
   if (tenantsLoading && tenants.length === 0) {
     return (
-      <div className="h-screen flex items-center justify-center bg-slate-50 text-sm text-nexus-muted">
+      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-sm text-nexus-muted">
         Loading your workspaces…
       </div>
     );
@@ -26,7 +26,7 @@ export default function RequireTenant({ children }) {
 
   if (error && tenants.length === 0) {
     return (
-      <div className="h-screen flex items-center justify-center bg-slate-50">
+      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="max-w-md rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
           <div className="font-semibold mb-1">Couldn’t load workspaces</div>
           <div>{error.message || String(error)}</div>
@@ -37,8 +37,8 @@ export default function RequireTenant({ children }) {
 
   if (tenants.length === 0) {
     return (
-      <div className="h-screen flex items-center justify-center bg-slate-50">
-        <div className="max-w-md rounded-xl border border-nexus-border bg-white p-6 shadow-sm text-center">
+      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="max-w-md rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 shadow-sm text-center">
           <div className="text-sm font-semibold mb-1">No workspaces yet</div>
           <p className="text-xs text-nexus-muted mb-4">
             Create your first workspace to start using NEXUS.

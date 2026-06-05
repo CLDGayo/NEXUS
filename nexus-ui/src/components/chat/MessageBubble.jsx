@@ -7,7 +7,7 @@ import SourceChip from './SourceChip.jsx';
 const STATUS_LABELS = {
   streaming:    { label: 'Streaming…',    cls: 'text-nexus-accent' },
   evaluating:   { label: 'Evaluating…',   cls: 'text-amber-600' },
-  completed:    { label: 'Completed',     cls: 'text-slate-500' },
+  completed:    { label: 'Completed',     cls: 'text-slate-500 dark:text-slate-400' },
   handed_over:  { label: 'Handed over',   cls: 'text-violet-600' },
   error:        { label: 'Error',         cls: 'text-red-600' },
 };
@@ -59,7 +59,7 @@ export default function MessageBubble({
             'inline-block max-w-full rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm',
             isUser
               ? 'bg-nexus-accent text-white rounded-br-sm'
-              : 'bg-white border border-nexus-border rounded-bl-sm text-slate-800',
+              : 'bg-white dark:bg-slate-900 border border-nexus-border rounded-bl-sm text-slate-800 dark:text-slate-100',
           ].join(' ')}
         >
           {isUser && attachments && attachments.length > 0 && (
@@ -127,7 +127,7 @@ const MD_COMPONENTS = {
   li: (props) => <li className="my-0.5" {...props} />,
   code: ({ inline, className, children, ...rest }) =>
     inline ? (
-      <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.85em] text-slate-800" {...rest}>
+      <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5 font-mono text-[0.85em] text-slate-800 dark:text-slate-100" {...rest}>
         {children}
       </code>
     ) : (
@@ -138,8 +138,8 @@ const MD_COMPONENTS = {
   a: (props) => <a className="text-nexus-accent underline-offset-2 hover:underline" target="_blank" rel="noreferrer" {...props} />,
   strong: (props) => <strong className="font-semibold" {...props} />,
   em: (props) => <em className="italic" {...props} />,
-  blockquote: (props) => <blockquote className="border-l-2 border-slate-300 pl-3 italic text-slate-600 my-1" {...props} />,
+  blockquote: (props) => <blockquote className="border-l-2 border-slate-300 dark:border-slate-600 pl-3 italic text-slate-600 dark:text-slate-400 my-1" {...props} />,
   table: (props) => <table className="my-2 w-full border-collapse text-xs" {...props} />,
-  th: (props) => <th className="border-b border-slate-300 px-2 py-1 text-left font-semibold" {...props} />,
-  td: (props) => <td className="border-b border-slate-100 px-2 py-1 align-top" {...props} />,
+  th: (props) => <th className="border-b border-slate-300 dark:border-slate-600 px-2 py-1 text-left font-semibold" {...props} />,
+  td: (props) => <td className="border-b border-slate-100 dark:border-slate-800 px-2 py-1 align-top" {...props} />,
 };

@@ -27,16 +27,16 @@ export default function SettingsPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl space-y-4 p-6">
         <div>
-          <h2 className="text-sm font-semibold text-slate-700">Settings</h2>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Settings</h2>
           <p className="text-xs text-nexus-muted">
             Tunables, environment, auth.
           </p>
         </div>
 
-        <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
           <div className="mb-2 flex items-center gap-2">
             <UserCircle2 size={14} className="text-nexus-accent" />
-            <h3 className="text-sm font-semibold text-slate-800">Account</h3>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Account</h3>
           </div>
           <p className="text-xs text-nexus-muted">
             Change your password or update your display name on the{' '}
@@ -48,7 +48,7 @@ export default function SettingsPage() {
         </section>
 
         {loading && (
-          <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
+          <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
             Loading settings…
           </div>
         )}

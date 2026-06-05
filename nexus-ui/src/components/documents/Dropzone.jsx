@@ -6,11 +6,11 @@ const ALLOWED = ['.md', '.txt', '.pdf'];
 const MAX_BYTES = 50 * 1024 * 1024;
 
 const STATE_META = {
-  queued:  { label: 'Queued',                 icon: FileText,     cls: 'text-slate-500' },
+  queued:  { label: 'Queued',                 icon: FileText,     cls: 'text-slate-500 dark:text-slate-400' },
   running: { label: 'Uploading…',             icon: Upload,        cls: 'text-nexus-accent' },
   created: { label: 'Indexed',                icon: CheckCircle2,  cls: 'text-emerald-600' },
   updated: { label: 'Replaced',               icon: RotateCw,      cls: 'text-blue-600' },
-  skipped: { label: 'Identical — skipped',    icon: CheckCircle2,  cls: 'text-slate-500' },
+  skipped: { label: 'Identical — skipped',    icon: CheckCircle2,  cls: 'text-slate-500 dark:text-slate-400' },
   error:   { label: 'Error',                  icon: AlertCircle,   cls: 'text-red-600' },
 };
 
@@ -87,12 +87,12 @@ export default function Dropzone({ onUploaded }) {
   const hasActionable = items.some((it) => it.state === 'queued' || it.state === 'error');
 
   return (
-    <section className="rounded-xl border border-nexus-border bg-white shadow-sm">
+    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 hover:dark:bg-slate-900"
       >
         <span className="flex items-center gap-2">
           <Upload size={16} className="text-nexus-accent" />
@@ -117,7 +117,7 @@ export default function Dropzone({ onUploaded }) {
               'flex h-28 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed text-center text-sm transition-colors',
               drag
                 ? 'border-nexus-accent bg-blue-50 text-nexus-accent'
-                : 'border-slate-300 bg-slate-50 text-nexus-muted hover:border-nexus-accent hover:text-nexus-accent',
+                : 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-nexus-muted hover:border-nexus-accent hover:text-nexus-accent',
             ].join(' ')}
           >
             <Upload size={20} />
@@ -150,11 +150,11 @@ export default function Dropzone({ onUploaded }) {
                 return (
                   <li
                     key={i}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs"
+                    className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 text-xs"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <Icon size={14} className={`shrink-0 ${meta.cls}`} />
-                      <span className="truncate font-medium text-slate-700">{it.file.name}</span>
+                      <span className="truncate font-medium text-slate-700 dark:text-slate-300">{it.file.name}</span>
                       <span className="text-slate-400 shrink-0">{formatBytes(it.file.size)}</span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">

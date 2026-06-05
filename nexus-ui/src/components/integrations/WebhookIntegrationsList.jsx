@@ -89,10 +89,10 @@ export default function WebhookIntegrationsList() {
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+    <section className="space-y-3 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">Webhook integrations</h3>
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Webhook integrations</h3>
           <p className="text-xs text-nexus-muted">Fire system events out to n8n, Make, Slack, or your own service.</p>
         </div>
         <button
@@ -105,7 +105,7 @@ export default function WebhookIntegrationsList() {
       </div>
 
       {showForm && (
-        <form onSubmit={submit} className="space-y-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
+        <form onSubmit={submit} className="space-y-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3">
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
               <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Type</label>
@@ -113,7 +113,7 @@ export default function WebhookIntegrationsList() {
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
                 required
-                className="mt-1 w-full rounded-lg border border-nexus-border bg-white px-3 py-1.5 text-sm focus:border-nexus-accent"
+                className="mt-1 w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-sm focus:border-nexus-accent"
               >
                 <option value="">Choose…</option>
                 {meta.types.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -126,7 +126,7 @@ export default function WebhookIntegrationsList() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
-                className="mt-1 w-full rounded-lg border border-nexus-border bg-white px-3 py-1.5 text-sm focus:border-nexus-accent"
+                className="mt-1 w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-sm focus:border-nexus-accent"
               />
             </div>
           </div>
@@ -137,14 +137,14 @@ export default function WebhookIntegrationsList() {
               value={form.config}
               onChange={(e) => setForm({ ...form, config: e.target.value })}
               placeholder='{"url": "https://hooks.example.com/abc", "secret": "shh"}'
-              className="mt-1 w-full rounded-lg border border-nexus-border bg-white px-3 py-2 font-mono text-xs focus:border-nexus-accent"
+              className="mt-1 w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs focus:border-nexus-accent"
             />
           </div>
           <div>
             <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Subscribe events</label>
             <div className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-3">
               {meta.events.map((ev) => (
-                <label key={ev} className="inline-flex items-center gap-1 text-xs text-slate-600">
+                <label key={ev} className="inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
                   <input
                     type="checkbox"
                     checked={form.events.includes(ev)}
@@ -171,21 +171,21 @@ export default function WebhookIntegrationsList() {
       {loading ? (
         <p className="text-sm text-nexus-muted">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center text-xs text-nexus-muted">
+        <p className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 px-3 py-4 text-center text-xs text-nexus-muted">
           No integrations yet.
         </p>
       ) : (
         <ul className="space-y-2">
           {items.map((it) => (
-            <li key={it.id} className="rounded-lg border border-nexus-border bg-slate-50 p-3 text-xs">
+            <li key={it.id} className="rounded-lg border border-nexus-border bg-slate-50 dark:bg-slate-900 p-3 text-xs">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[10px] text-slate-700">{it.type}</span>
-                <span className="font-semibold text-slate-800">{it.name}</span>
+                <span className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-[10px] text-slate-700 dark:text-slate-300">{it.type}</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100">{it.name}</span>
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                     it.enabled
                       ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-slate-200 text-slate-600'
+                      : 'bg-slate-200 text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   {it.enabled ? 'enabled' : 'disabled'}
@@ -195,39 +195,39 @@ export default function WebhookIntegrationsList() {
                     type="button"
                     onClick={() => testFire(it.id)}
                     disabled={busy}
-                    className="inline-flex items-center gap-1 rounded border border-nexus-border bg-white px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800 disabled:opacity-50"
                   >
                     <Send size={11} /> Test
                   </button>
                   <button
                     type="button"
                     onClick={() => toggle(it)}
-                    className="inline-flex items-center gap-1 rounded border border-nexus-border bg-white px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
+                    className="inline-flex items-center gap-1 rounded border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800"
                   >
                     <Power size={11} /> {it.enabled ? 'Disable' : 'Enable'}
                   </button>
                   <button
                     type="button"
                     onClick={() => remove(it.id)}
-                    className="inline-flex items-center gap-1 rounded border border-red-200 bg-white px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
+                    className="inline-flex items-center gap-1 rounded border border-red-200 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
                   >
                     <Trash2 size={11} />
                   </button>
                 </div>
               </div>
-              <div className="mt-2 grid gap-1 text-[11px] text-slate-600">
+              <div className="mt-2 grid gap-1 text-[11px] text-slate-600 dark:text-slate-400">
                 <div>
-                  <span className="font-semibold text-slate-700">events:</span>{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">events:</span>{' '}
                   {it.events?.length
-                    ? it.events.map((e) => <code key={e} className="mr-1 font-mono text-[10px] text-slate-600">{e}</code>)
+                    ? it.events.map((e) => <code key={e} className="mr-1 font-mono text-[10px] text-slate-600 dark:text-slate-400">{e}</code>)
                     : '—'}
                 </div>
                 <div className="truncate">
-                  <span className="font-semibold text-slate-700">config:</span>{' '}
-                  <code className="font-mono text-[10px] text-slate-500">{JSON.stringify(it.config)}</code>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">config:</span>{' '}
+                  <code className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{JSON.stringify(it.config)}</code>
                 </div>
                 {(it.last_fired_at || it.last_status) && (
-                  <div className="text-slate-500">
+                  <div className="text-slate-500 dark:text-slate-400">
                     last fired {it.last_fired_at || '—'}{' '}
                     {it.last_status && <span className="font-mono text-[10px]">({it.last_status})</span>}
                   </div>

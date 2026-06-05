@@ -30,7 +30,7 @@ export default function ConversationsPage() {
             onDeleted={() => { setSelected(null); load(); }}
           />
         ) : loading ? (
-          <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
+          <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
             Loading…
           </div>
         ) : error ? (
@@ -38,7 +38,7 @@ export default function ConversationsPage() {
         ) : (
           <>
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-700">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 Recent conversations
               </h2>
               <span className="text-xs text-nexus-muted">

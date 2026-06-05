@@ -13,7 +13,7 @@ export default function WhatsNewPage() {
     <div ref={pageRef} className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl space-y-8 p-6">
         <header data-animate>
-          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
             <Sparkles size={18} className="text-nexus-accent" />
             What&apos;s New
           </h2>
@@ -25,7 +25,7 @@ export default function WhatsNewPage() {
 
         <section className="space-y-3">
           <div>
-            <h3 className="text-sm font-semibold text-slate-800">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
               Active Platform Capabilities
             </h3>
             <p className="text-xs text-nexus-muted">
@@ -45,7 +45,7 @@ export default function WhatsNewPage() {
           <div className="flex items-center gap-2">
             <Rocket size={15} className="text-slate-400" />
             <div>
-              <h3 className="text-sm font-semibold text-slate-800">
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                 Premium SaaS Roadmap
               </h3>
               <p className="text-xs text-nexus-muted">

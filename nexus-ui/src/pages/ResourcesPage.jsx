@@ -107,7 +107,7 @@ export default function ResourcesPage() {
       <div className="mx-auto max-w-4xl space-y-3 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700">Prompt Library</h2>
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Prompt Library</h2>
             <p className="text-xs text-nexus-muted">Author the system prompts that drive chat.</p>
           </div>
           <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export default function ResourcesPage() {
               type="button"
               onClick={handleSeed}
               disabled={busy || loading}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:text-nexus-accent disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 shadow-sm hover:text-nexus-accent disabled:opacity-50"
             >
               <Sparkles size={12} /> Seed defaults
             </button>
@@ -152,7 +152,7 @@ export default function ResourcesPage() {
         )}
 
         {loading && (
-          <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
+          <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
             Loading prompts…
           </div>
         )}

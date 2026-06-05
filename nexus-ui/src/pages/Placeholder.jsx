@@ -11,7 +11,7 @@ export default function Placeholder({ name, description }) {
         <div className="mx-auto mb-3 h-10 w-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
           <Construction size={18} />
         </div>
-        <h2 className="text-base font-semibold text-slate-800">{name}</h2>
+        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{name}</h2>
         <p className="text-sm text-nexus-muted mt-1">
           {description ||
             'This page hasn’t been ported into the React app yet. The legacy SPA at /static/ still serves the working version.'}

@@ -31,10 +31,10 @@ function DisplayNameCard({ user, onSaved }) {
   }
 
   return (
-    <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
         <UserCircle2 size={14} className="text-nexus-accent" />
-        <h3 className="text-sm font-semibold text-slate-800">Display Name</h3>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Display Name</h3>
       </div>
       <p className="mb-3 text-xs text-nexus-muted">
         Shown in the sidebar and on shared activity.
@@ -46,7 +46,7 @@ function DisplayNameCard({ user, onSaved }) {
           maxLength={120}
           onChange={(e) => setName(e.target.value)}
           placeholder={user?.email || 'Your name'}
-          className="w-full rounded-lg border border-nexus-border bg-white px-3 py-2 text-sm outline-none focus:border-nexus-accent"
+          className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
         />
 
         {status && (
@@ -82,7 +82,7 @@ export default function ProfilePage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl space-y-4 p-6">
         <div>
-          <h2 className="text-sm font-semibold text-slate-700">Profile</h2>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Profile</h2>
           <p className="text-xs text-nexus-muted">
             Account settings for{' '}
             <span className="font-mono">{user?.email || '—'}</span>.

@@ -39,14 +39,14 @@ export default function ChangelogPage() {
       <div className="mx-auto max-w-3xl space-y-3 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700">What's New</h2>
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">What's New</h2>
             <p className="text-xs text-nexus-muted">Release notes for the Nexus stack.</p>
           </div>
           <button
             type="button"
             onClick={markAllRead}
             disabled={marking || loading || entries.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:text-nexus-accent disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 shadow-sm hover:text-nexus-accent disabled:opacity-50"
           >
             <CheckCheck size={12} />
             {marking ? 'Marking…' : 'Mark all read'}
@@ -66,7 +66,7 @@ export default function ChangelogPage() {
         )}
 
         {loading && (
-          <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
+          <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
             Loading changelog…
           </div>
         )}
@@ -76,7 +76,7 @@ export default function ChangelogPage() {
 
         {!loading && !error && (
           entries.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-xl border border-nexus-border bg-white p-10 text-center text-sm text-nexus-muted shadow-sm">
+            <div className="flex flex-col items-center gap-2 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-10 text-center text-sm text-nexus-muted shadow-sm">
               <Newspaper size={20} />
               No changelog entries yet.
             </div>

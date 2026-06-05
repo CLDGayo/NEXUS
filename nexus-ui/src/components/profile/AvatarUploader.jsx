@@ -98,10 +98,10 @@ export default function AvatarUploader({ user, onChanged }) {
   }
 
   return (
-    <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
         <ImagePlus size={14} className="text-nexus-accent" />
-        <h3 className="text-sm font-semibold text-slate-800">Avatar</h3>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Avatar</h3>
       </div>
       <div className="flex items-center gap-4">
         {displayUrl ? (
@@ -146,7 +146,7 @@ export default function AvatarUploader({ user, onChanged }) {
             type="button"
             onClick={remove}
             disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Trash2 size={14} /> Remove
           </button>

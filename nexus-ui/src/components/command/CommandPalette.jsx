@@ -77,13 +77,13 @@ export default function CommandPalette({ open, onOpenChange }) {
             <input
               ref={inputRef}
               type="text"
-              className="flex-1 bg-transparent py-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
+              className="flex-1 bg-transparent py-4 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
               placeholder="Type a command or search…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
             />
-            <kbd className="hidden shrink-0 rounded border border-slate-200 bg-white/60 px-1.5 py-0.5 text-[10px] text-slate-500 sm:inline-block">
+            <kbd className="hidden shrink-0 rounded border border-slate-200 dark:border-slate-700/50 bg-white/60 px-1.5 py-0.5 text-[10px] text-slate-500 dark:text-slate-400 sm:inline-block">
               ESC
             </kbd>
           </div>
@@ -105,7 +105,7 @@ export default function CommandPalette({ open, onOpenChange }) {
                       'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-left transition-colors',
                       isActive
                         ? 'bg-nexus-accent/10 text-nexus-accent'
-                        : 'text-slate-700 hover:bg-slate-100/70',
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100/70',
                     ].join(' ')}
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={() => runCommand(cmd)}

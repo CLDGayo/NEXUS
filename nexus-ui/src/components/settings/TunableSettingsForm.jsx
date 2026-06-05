@@ -5,7 +5,7 @@ import { api } from '../../lib/api.js';
 function Field({ spec, value, onChange }) {
   const id = `setting-${spec.key}`;
   const common =
-    'w-full rounded-lg border border-nexus-border bg-white px-3 py-2 text-sm outline-none focus:border-nexus-accent';
+    'w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-nexus-accent';
 
   if (spec.key === 'THEME') {
     return (
@@ -107,16 +107,16 @@ export default function TunableSettingsForm({ schema, values, onSaved }) {
   }
 
   return (
-    <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-slate-800">Tunable Settings</h3>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Tunable Settings</h3>
         <p className="text-xs text-nexus-muted">Persisted to SQLite. Changes apply on next request.</p>
       </div>
       <form onSubmit={submit} className="space-y-3">
         {(schema || []).map((spec) => (
           <div key={spec.key} className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-start">
             <div className="sm:pt-2">
-              <label htmlFor={`setting-${spec.key}`} className="font-mono text-xs font-semibold text-slate-700">
+              <label htmlFor={`setting-${spec.key}`} className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
                 {spec.key}
               </label>
               {spec.description && (

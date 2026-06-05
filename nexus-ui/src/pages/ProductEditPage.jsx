@@ -59,11 +59,11 @@ export default function ProductEditPage() {
         <button
           type="button"
           onClick={() => navigate('/products')}
-          className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-nexus-accent"
+          className="inline-flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-nexus-accent"
         >
           <ArrowLeft size={14} /> Back to products
         </button>
-        <div className="text-sm font-medium text-slate-700">
+        <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
           {isNew ? 'New product' : product?.name || ''}
         </div>
       </div>
@@ -75,9 +75,9 @@ export default function ProductEditPage() {
       )}
 
       {loading ? (
-        <div className="h-96 rounded-lg border border-nexus-border bg-slate-50 animate-pulse" />
+        <div className="h-96 rounded-lg border border-nexus-border bg-slate-50 dark:bg-slate-900 animate-pulse" />
       ) : (
-        <div className="rounded-lg border border-nexus-border bg-white p-6">
+        <div className="rounded-lg border border-nexus-border bg-white dark:bg-slate-900 p-6">
           <ProductForm
             product={isNew ? null : product}
             onSaved={handleSaved}

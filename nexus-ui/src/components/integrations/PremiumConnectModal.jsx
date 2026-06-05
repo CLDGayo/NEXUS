@@ -28,11 +28,11 @@ export default function PremiumConnectModal({ open, connectorName, onClose }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-nexus-border bg-white p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl border border-nexus-border bg-white dark:bg-slate-900 p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-start justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-nexus-accent/10 text-nexus-accent">
               <Lock size={16} />
             </span>
@@ -41,14 +41,14 @@ export default function PremiumConnectModal({ open, connectorName, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+            className="rounded-md p-1 text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900 hover:text-slate-600 hover:dark:text-slate-400"
             title="Close"
           >
             <X size={16} />
           </button>
         </div>
 
-        <p className="text-sm leading-relaxed text-slate-600">
+        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
           Premium Integration Option — Connect with an administrator or upgrade
           to an Enterprise Tier to provision custom third-party API keys.
         </p>

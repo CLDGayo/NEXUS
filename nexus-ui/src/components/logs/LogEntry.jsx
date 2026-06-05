@@ -2,7 +2,7 @@ const LEVEL_STYLES = {
   ERROR: 'bg-red-100 text-red-700 border-red-200',
   WARNING: 'bg-amber-100 text-amber-700 border-amber-200',
   INFO: 'bg-blue-100 text-blue-700 border-blue-200',
-  DEBUG: 'bg-slate-100 text-slate-600 border-slate-200',
+  DEBUG: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700/50',
 };
 
 function formatTime(value) {
@@ -23,7 +23,7 @@ export default function LogEntry({ entry }) {
       <span className={`inline-flex shrink-0 items-center rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}>
         {level}
       </span>
-      <div className="min-w-0 flex-1 whitespace-pre-wrap break-words font-mono text-xs text-slate-800">
+      <div className="min-w-0 flex-1 whitespace-pre-wrap break-words font-mono text-xs text-slate-800 dark:text-slate-100">
         {entry.message}
       </div>
     </div>

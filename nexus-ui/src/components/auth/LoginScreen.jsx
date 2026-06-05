@@ -32,7 +32,7 @@ export default function LoginScreen() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="w-full max-w-md bg-white border border-nexus-border rounded-2xl shadow-sm p-8">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-nexus-border rounded-2xl shadow-sm p-8">
         <div className="flex items-center gap-2 text-nexus-accent mb-1">
           <LockKeyhole size={18} />
           <span className="text-xs uppercase tracking-widest font-semibold">
@@ -53,7 +53,7 @@ export default function LoginScreen() {
             autoFocus
             required
             placeholder="Email"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
             disabled={submitting}
           />
           <input
@@ -63,7 +63,7 @@ export default function LoginScreen() {
             autoComplete="current-password"
             required
             placeholder="Password"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
             disabled={submitting}
           />
           <button

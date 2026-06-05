@@ -25,7 +25,7 @@ function LivePill() {
 
 function InactivePill() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 ring-1 ring-slate-200">
       Inactive
     </span>
   );
@@ -38,7 +38,7 @@ function Row({ icon: Icon, label, value, valueNode }) {
         <Icon size={13} className="text-slate-400" />
         {label}
       </div>
-      <div className="flex items-center gap-2 font-mono text-xs text-slate-800">
+      <div className="flex items-center gap-2 font-mono text-xs text-slate-800 dark:text-slate-100">
         {valueNode ?? value}
       </div>
     </div>
@@ -49,7 +49,7 @@ export default function ActivityPanel({ activity }) {
   const a = activity || {};
   const integrations = `${a.active_integrations ?? 0} / ${a.total_integrations ?? 0}`;
   return (
-    <section className="rounded-xl border border-nexus-border bg-white p-4 shadow-sm">
+    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm">
       <div className="mb-1 flex items-center gap-2">
         <Activity size={14} className="text-nexus-accent" />
         <div className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">

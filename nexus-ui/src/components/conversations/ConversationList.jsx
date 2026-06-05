@@ -12,7 +12,7 @@ function fmtDate(iso) {
 export default function ConversationList({ items, onSelect }) {
   if (!items?.length) {
     return (
-      <div className="rounded-xl border border-nexus-border bg-white p-8 text-center text-sm text-nexus-muted shadow-sm">
+      <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-8 text-center text-sm text-nexus-muted shadow-sm">
         <MessageSquare className="mx-auto mb-2 text-slate-300" size={32} />
         No conversations yet. Start a chat to save history.
       </div>
@@ -26,10 +26,10 @@ export default function ConversationList({ items, onSelect }) {
           <button
             type="button"
             onClick={() => onSelect(c)}
-            className="flex w-full items-center justify-between gap-4 rounded-xl border border-nexus-border bg-white px-4 py-3 text-left shadow-sm transition-colors hover:border-nexus-accent hover:bg-blue-50/40"
+            className="flex w-full items-center justify-between gap-4 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 px-4 py-3 text-left shadow-sm transition-colors hover:border-nexus-accent hover:bg-blue-50/40"
           >
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-slate-800">{c.title}</div>
+              <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{c.title}</div>
               <div className="mt-0.5 flex items-center gap-2 text-[11px] text-nexus-muted">
                 <span>{fmtDate(c.updated_at || c.created_at)}</span>
                 <span>·</span>

@@ -16,19 +16,19 @@ function SkeletonGrid() {
         {Array.from({ length: 7 }).map((_, i) => (
           <div
             key={i}
-            className="h-[68px] animate-pulse rounded-xl border border-nexus-border bg-slate-100"
+            className="h-[68px] animate-pulse rounded-xl border border-nexus-border bg-slate-100 dark:bg-slate-800"
           />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="h-40 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
-        <div className="h-40 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
+        <div className="h-40 animate-pulse rounded-xl border border-nexus-border bg-slate-100 dark:bg-slate-800" />
+        <div className="h-40 animate-pulse rounded-xl border border-nexus-border bg-slate-100 dark:bg-slate-800" />
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="h-48 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
-        <div className="h-48 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
+        <div className="h-48 animate-pulse rounded-xl border border-nexus-border bg-slate-100 dark:bg-slate-800" />
+        <div className="h-48 animate-pulse rounded-xl border border-nexus-border bg-slate-100 dark:bg-slate-800" />
       </div>
-      <div className="h-56 animate-pulse rounded-xl border border-nexus-border bg-slate-100" />
+      <div className="h-56 animate-pulse rounded-xl border border-nexus-border bg-slate-100 dark:bg-slate-800" />
     </div>
   );
 }
@@ -57,7 +57,7 @@ export default function DashboardPage() {
         <div data-animate className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-700">Live Telemetry</h2>
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Live Telemetry</h2>
               {!loading && !error && stats && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
                   <span className="relative flex h-1.5 w-1.5">
@@ -76,7 +76,7 @@ export default function DashboardPage() {
             type="button"
             onClick={() => load(true)}
             disabled={refreshing || loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:text-nexus-accent disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 shadow-sm hover:text-nexus-accent disabled:opacity-50"
           >
             <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
             Refresh

@@ -18,9 +18,9 @@ export default function WorkspacePickerModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-nexus-border bg-white p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-2xl border border-nexus-border bg-white dark:bg-slate-900 p-6 shadow-xl">
         <div className="mb-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
             <Building2 size={16} className="text-nexus-accent" />
             Choose a workspace
           </div>
@@ -41,7 +41,7 @@ export default function WorkspacePickerModal() {
                     'w-full text-left rounded-lg border px-3 py-2 transition-colors',
                     isSelected
                       ? 'border-nexus-accent bg-nexus-accent/5'
-                      : 'border-nexus-border hover:bg-slate-50',
+                      : 'border-nexus-border hover:bg-slate-50 hover:dark:bg-slate-900',
                   ].join(' ')}
                 >
                   <div className="flex items-center justify-between">
@@ -53,7 +53,7 @@ export default function WorkspacePickerModal() {
                         {tenant.slug}
                       </div>
                     </div>
-                    <span className="ml-3 shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-600">
+                    <span className="ml-3 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-600 dark:text-slate-400">
                       {tenant.role}
                     </span>
                   </div>

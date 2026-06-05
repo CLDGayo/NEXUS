@@ -8,7 +8,7 @@ function Row({ label, ok, hint }) {
   return (
     <div className="flex items-start justify-between gap-3 py-2">
       <div className="min-w-0">
-        <div className="text-sm font-medium text-slate-800">{label}</div>
+        <div className="text-sm font-medium text-slate-800 dark:text-slate-100">{label}</div>
         {hint && <div className="mt-0.5 text-[11px] text-nexus-muted">{hint}</div>}
       </div>
       <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}>
@@ -25,7 +25,7 @@ export default function HealthPanel({ health }) {
   const messenger = h.messenger || {};
   const watcher = h.watcher || {};
   return (
-    <section className="rounded-xl border border-nexus-border bg-white p-4 shadow-sm">
+    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm">
       <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">System Health</div>
       <div className="divide-y divide-nexus-border">
         <Row label="Qdrant" ok={!!qdrant.ok} hint={qdrant.ok ? null : qdrant.hint} />

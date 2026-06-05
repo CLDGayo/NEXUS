@@ -30,7 +30,7 @@ const MD_COMPONENTS = {
   li: (props) => <li className="my-0.5" {...props} />,
   code: ({ inline, className, children, ...rest }) =>
     inline ? (
-      <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.85em] text-slate-800" {...rest}>{children}</code>
+      <code className="rounded bg-slate-100 dark:bg-slate-800 px-1 py-0.5 font-mono text-[0.85em] text-slate-800 dark:text-slate-100" {...rest}>{children}</code>
     ) : (
       <pre className="my-2 overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">
         <code className={className} {...rest}>{children}</code>
@@ -66,26 +66,26 @@ export default function ConversationDetail({ id, title, onBack, onDeleted }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between rounded-xl border border-nexus-border bg-white px-4 py-2.5 shadow-sm">
+      <div className="flex items-center justify-between rounded-xl border border-nexus-border bg-white dark:bg-slate-900 px-4 py-2.5 shadow-sm">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-nexus-accent"
+          className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-nexus-accent"
         >
           <ArrowLeft size={14} /> Back
         </button>
-        <div className="truncate text-sm font-semibold text-slate-800">{title}</div>
+        <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</div>
         <button
           type="button"
           onClick={handleDelete}
-          className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+          className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
         >
           <Trash2 size={12} /> Delete
         </button>
       </div>
 
       {loading && (
-        <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
+        <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
           Loading…
         </div>
       )}
@@ -96,7 +96,7 @@ export default function ConversationDetail({ id, title, onBack, onDeleted }) {
       {data && (
         <div className="space-y-3">
           {(data.messages || []).length === 0 && (
-            <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
+            <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
               No messages.
             </div>
           )}
@@ -114,7 +114,7 @@ export default function ConversationDetail({ id, title, onBack, onDeleted }) {
                       'inline-block max-w-full rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm',
                       isUser
                         ? 'bg-nexus-accent text-white rounded-br-sm'
-                        : 'bg-white border border-nexus-border rounded-bl-sm text-slate-800',
+                        : 'bg-white dark:bg-slate-900 border border-nexus-border rounded-bl-sm text-slate-800 dark:text-slate-100',
                     ].join(' ')}
                   >
                     <ReactMarkdown remarkPlugins={MARKDOWN_PLUGINS} components={MD_COMPONENTS}>

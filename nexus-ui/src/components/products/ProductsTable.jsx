@@ -11,7 +11,7 @@ function hero(images) {
 export default function ProductsTable({ products = [], onDelete }) {
   if (!products.length) {
     return (
-      <div className="rounded-lg border border-dashed border-nexus-border p-12 text-center text-sm text-slate-500">
+      <div className="rounded-lg border border-dashed border-nexus-border p-12 text-center text-sm text-slate-500 dark:text-slate-400">
         No products yet. Click <strong>+ New product</strong> to add your first listing.
       </div>
     );
@@ -24,11 +24,11 @@ export default function ProductsTable({ products = [], onDelete }) {
         return (
           <div
             key={p.id}
-            className="rounded-lg border border-nexus-border bg-white overflow-hidden flex flex-col"
+            className="rounded-lg border border-nexus-border bg-white dark:bg-slate-900 overflow-hidden flex flex-col"
           >
             <Link
               to={`/products/${p.id}`}
-              className="block h-40 bg-slate-100 relative"
+              className="block h-40 bg-slate-100 dark:bg-slate-800 relative"
               title="Edit product"
             >
               {img ? (
@@ -54,7 +54,7 @@ export default function ProductsTable({ products = [], onDelete }) {
               <div className="text-sm font-semibold">
                 {formatPrice(p.price_cents, p.currency)}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-slate-500 dark:text-slate-400">
                 {p.quantity} in stock · {p.images?.length || 0} image
                 {(p.images?.length || 0) === 1 ? '' : 's'}
               </div>

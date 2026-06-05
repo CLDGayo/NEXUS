@@ -187,7 +187,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
           onChange={(e) => setUrl(e.target.value)}
           className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           Used as the “View” button target in Messenger carousels.
         </p>
       </div>
@@ -207,7 +207,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
         onImagesChange={setImages}
       />
       {!isEditing && images.length === 0 && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Drop images now — they upload after you click “Create product.”
         </p>
       )}

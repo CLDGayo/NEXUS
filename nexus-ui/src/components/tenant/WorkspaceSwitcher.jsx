@@ -30,12 +30,12 @@ export default function WorkspaceSwitcher() {
         <button
           ref={triggerRef}
           type="button"
-          className="inline-flex items-center gap-2 rounded-md border border-nexus-border bg-white px-2.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none"
+          className="inline-flex items-center gap-2 rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2.5 py-1.5 text-sm text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 hover:dark:bg-slate-900 focus:outline-none"
           title="Switch workspace"
         >
           <Building2 size={14} className="text-nexus-accent" />
           <span className="max-w-[140px] truncate font-medium">{label}</span>
-          <ChevronDown size={14} className="text-slate-500" />
+          <ChevronDown size={14} className="text-slate-500 dark:text-slate-400" />
         </button>
       </DropdownMenu.Trigger>
 
@@ -43,7 +43,7 @@ export default function WorkspaceSwitcher() {
         <DropdownMenu.Content
           align="end"
           sideOffset={4}
-          className="glass-pane z-50 w-64 overflow-hidden text-sm text-slate-700"
+          className="glass-pane z-50 w-64 overflow-hidden text-sm text-slate-700 dark:text-slate-300"
         >
           <div className="border-b border-nexus-border px-3 py-2 text-[10px] uppercase tracking-wide text-nexus-muted">
             Workspaces

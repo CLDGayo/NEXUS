@@ -33,7 +33,7 @@ export default function UtilityBar({ message, question, sessionId, onRegenerate,
   }
 
   const btn =
-    'inline-flex items-center justify-center h-7 w-7 rounded-md border border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center h-7 w-7 rounded-md border border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800 hover:text-slate-700 hover:dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed';
 
   return (
     <div className="mt-2 flex items-center gap-1">

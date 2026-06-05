@@ -19,8 +19,8 @@ export default function ChatInterface() {
   );
 
   return (
-    <div className="flex h-full flex-col bg-slate-50">
-      <div className="flex items-center justify-between border-b border-nexus-border bg-white px-6 py-2">
+    <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-900">
+      <div className="flex items-center justify-between border-b border-nexus-border bg-white dark:bg-slate-900 px-6 py-2">
         <p className="text-sm text-nexus-muted">
           Ask questions about your knowledge base
         </p>
@@ -28,7 +28,7 @@ export default function ChatInterface() {
           type="button"
           onClick={clear}
           disabled={streaming || messages.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:border-slate-300 hover:text-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-700/50 px-2.5 py-1 text-xs text-slate-600 dark:text-slate-400 hover:border-slate-300 hover:dark:border-slate-600 hover:text-slate-800 hover:dark:text-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
           title="Clear conversation"
         >
           <Trash2 size={12} />

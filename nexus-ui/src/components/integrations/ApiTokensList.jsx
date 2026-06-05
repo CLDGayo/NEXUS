@@ -69,10 +69,10 @@ export default function ApiTokensList() {
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+    <section className="space-y-3 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">API tokens</h3>
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">API tokens</h3>
           <p className="text-xs text-nexus-muted">Scoped credentials for server-to-server access to chat + documents.</p>
         </div>
         <button
@@ -85,7 +85,7 @@ export default function ApiTokensList() {
       </div>
 
       {showForm && (
-        <form onSubmit={create} className="space-y-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
+        <form onSubmit={create} className="space-y-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3">
           <div>
             <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Name</label>
             <input
@@ -96,14 +96,14 @@ export default function ApiTokensList() {
               required
               minLength={1}
               maxLength={80}
-              className="mt-1 w-full rounded-lg border border-nexus-border bg-white px-3 py-1.5 text-sm focus:border-nexus-accent"
+              className="mt-1 w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-sm focus:border-nexus-accent"
             />
           </div>
           <div>
             <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Scopes</label>
             <div className="mt-1 flex flex-wrap gap-2">
               {SCOPES.map((s) => (
-                <label key={s} className="inline-flex items-center gap-1 rounded-md border border-nexus-border bg-white px-2 py-1 text-xs text-slate-700">
+                <label key={s} className="inline-flex items-center gap-1 rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 text-xs text-slate-700 dark:text-slate-300">
                   <input
                     type="checkbox"
                     checked={selectedScopes.includes(s)}
@@ -130,8 +130,8 @@ export default function ApiTokensList() {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
           <div className="mb-1 font-semibold">Save this token now — it will not be shown again.</div>
           <div className="text-amber-800 mb-2">For <code className="font-mono">{reveal.name}</code>:</div>
-          <div className="flex items-stretch overflow-hidden rounded-lg border border-amber-300 bg-white">
-            <code className="flex-1 truncate px-3 py-2 font-mono text-xs text-slate-800">{reveal.token}</code>
+          <div className="flex items-stretch overflow-hidden rounded-lg border border-amber-300 bg-white dark:bg-slate-900">
+            <code className="flex-1 truncate px-3 py-2 font-mono text-xs text-slate-800 dark:text-slate-100">{reveal.token}</code>
             <button
               type="button"
               onClick={copyReveal}
@@ -153,25 +153,25 @@ export default function ApiTokensList() {
       {loading ? (
         <p className="text-sm text-nexus-muted">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center text-xs text-nexus-muted">
+        <p className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 px-3 py-4 text-center text-xs text-nexus-muted">
           No API tokens yet.
         </p>
       ) : (
         <ul className="space-y-2">
           {items.map((t) => (
-            <li key={t.id} className="flex items-center justify-between rounded-lg border border-nexus-border bg-slate-50 p-3 text-xs">
+            <li key={t.id} className="flex items-center justify-between rounded-lg border border-nexus-border bg-slate-50 dark:bg-slate-900 p-3 text-xs">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <Key size={12} className="text-slate-400" />
-                  <span className="font-semibold text-slate-800">{t.name}</span>
-                  <code className="font-mono text-[10px] text-slate-500">{t.prefix}…</code>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{t.name}</span>
+                  <code className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{t.prefix}…</code>
                   {!t.active && (
                     <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">revoked</span>
                   )}
                 </div>
-                <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-slate-500">
+                <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-slate-500 dark:text-slate-400">
                   {(t.scopes || []).map((s) => (
-                    <code key={s} className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-slate-700">{s}</code>
+                    <code key={s} className="rounded bg-slate-200 px-1.5 py-0.5 font-mono text-slate-700 dark:text-slate-300">{s}</code>
                   ))}
                 </div>
                 <div className="mt-1 text-[10px] text-slate-400">
@@ -182,7 +182,7 @@ export default function ApiTokensList() {
                 <button
                   type="button"
                   onClick={() => revoke(t.id)}
-                  className="ml-2 inline-flex items-center gap-1 rounded border border-red-200 bg-white px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
+                  className="ml-2 inline-flex items-center gap-1 rounded border border-red-200 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
                 >
                   <Trash2 size={11} /> Revoke
                 </button>

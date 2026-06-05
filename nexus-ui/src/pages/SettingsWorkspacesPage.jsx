@@ -57,17 +57,17 @@ export default function SettingsWorkspacesPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl space-y-4 p-6">
         <div>
-          <h2 className="text-sm font-semibold text-slate-700">Workspaces</h2>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Workspaces</h2>
           <p className="text-xs text-nexus-muted">
             Manage tenant workspaces. Each workspace isolates its own
             documents, chats, and integrations.
           </p>
         </div>
 
-        <section className="rounded-xl border border-nexus-border bg-white shadow-sm">
+        <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 shadow-sm">
           <div className="px-5 py-3 border-b border-nexus-border flex items-center gap-2">
             <Building2 size={14} className="text-nexus-accent" />
-            <h3 className="text-sm font-semibold text-slate-800">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
               Your workspaces
             </h3>
           </div>
@@ -97,13 +97,13 @@ export default function SettingsWorkspacesPage() {
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-2.5 text-slate-600">{tenant.slug}</td>
+                    <td className="px-5 py-2.5 text-slate-600 dark:text-slate-400">{tenant.slug}</td>
                     <td className="px-5 py-2.5">
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-600">
+                      <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-600 dark:text-slate-400">
                         {tenant.role}
                       </span>
                     </td>
-                    <td className="px-5 py-2.5 text-slate-600">
+                    <td className="px-5 py-2.5 text-slate-600 dark:text-slate-400">
                       {formatCreated(tenant.created_at)}
                     </td>
                     <td className="px-5 py-2.5 text-right">
@@ -111,7 +111,7 @@ export default function SettingsWorkspacesPage() {
                         type="button"
                         onClick={() => setActiveTenant(tenant.id)}
                         disabled={isActive}
-                        className="rounded-md border border-nexus-border px-3 py-1 text-xs text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-md border border-nexus-border px-3 py-1 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {isActive ? 'Active' : 'Switch'}
                       </button>
@@ -133,10 +133,10 @@ export default function SettingsWorkspacesPage() {
           </table>
         </section>
 
-        <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
           <div className="mb-3 flex items-center gap-2">
             <Plus size={14} className="text-nexus-accent" />
-            <h3 className="text-sm font-semibold text-slate-800">
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
               Create workspace
             </h3>
           </div>
@@ -145,7 +145,7 @@ export default function SettingsWorkspacesPage() {
             className="flex flex-col sm:flex-row sm:items-end gap-3"
           >
             <label className="flex-1">
-              <span className="block text-xs font-medium text-slate-600 mb-1">
+              <span className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
                 Company name
               </span>
               <input
@@ -155,7 +155,7 @@ export default function SettingsWorkspacesPage() {
                 placeholder="Akiro Collectibles"
                 maxLength={120}
                 required
-                className="w-full rounded-md border border-nexus-border bg-white px-3 py-2 text-sm text-slate-900 focus:border-nexus-accent focus:outline-none focus:ring-1 focus:ring-nexus-accent"
+                className="w-full rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-nexus-accent focus:outline-none focus:ring-1 focus:ring-nexus-accent"
               />
             </label>
             <button

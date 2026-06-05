@@ -21,7 +21,7 @@ function rolePill(user) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-400">
       User
     </span>
   );
@@ -33,7 +33,7 @@ function statusPill(user) {
       Active
     </span>
   ) : (
-    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
       Disabled
     </span>
   );
@@ -89,16 +89,16 @@ function InviteUserModal({ open, onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
-      <div className="w-full max-w-md rounded-xl border border-nexus-border bg-white p-5 shadow-lg">
+      <div className="w-full max-w-md rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-lg">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <UserPlus size={14} className="text-nexus-accent" />
-            <h3 className="text-sm font-semibold text-slate-800">Invite user</h3>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Invite user</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700"
+            className="text-slate-400 hover:text-slate-700 hover:dark:text-slate-300"
             aria-label="Close"
           >
             <X size={16} />
@@ -115,7 +115,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
               autoComplete="off"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-nexus-border bg-white px-3 py-2 text-sm outline-none focus:border-nexus-accent"
+              className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
             />
           </div>
           <div>
@@ -127,7 +127,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
               maxLength={120}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg border border-nexus-border bg-white px-3 py-2 text-sm outline-none focus:border-nexus-accent"
+              className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
             />
           </div>
           <div>
@@ -140,13 +140,13 @@ function InviteUserModal({ open, onClose, onCreated }) {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-nexus-border bg-white px-3 py-2 text-sm font-mono outline-none focus:border-nexus-accent"
+              className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono outline-none focus:border-nexus-accent"
             />
             <p className="mt-1 text-[11px] text-nexus-muted">
               Share with the user out of band. They can rotate it from /profile.
             </p>
           </div>
-          <label className="flex items-center gap-2 text-xs text-slate-700">
+          <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
             <input
               type="checkbox"
               checked={isSuperuser}
@@ -165,7 +165,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center rounded-lg border border-nexus-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              className="inline-flex items-center rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900"
             >
               Cancel
             </button>
@@ -274,7 +274,7 @@ export default function AdminUsersPage() {
       <div className="mx-auto max-w-5xl space-y-4 p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700">Admin · Users</h2>
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Admin · Users</h2>
             <p className="text-xs text-nexus-muted">
               Create, promote, or deactivate accounts. Superuser-only.
             </p>
@@ -296,12 +296,12 @@ export default function AdminUsersPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search by email…"
-              className="w-full rounded-lg border border-nexus-border bg-white py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:border-nexus-accent"
+              className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:border-nexus-accent"
             />
           </div>
           <button
             type="submit"
-            className="inline-flex items-center rounded-lg border border-nexus-border bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            className="inline-flex items-center rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900"
           >
             Search
           </button>
@@ -319,9 +319,9 @@ export default function AdminUsersPage() {
           </div>
         )}
 
-        <div className="overflow-x-auto rounded-xl border border-nexus-border bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-nexus-border bg-white dark:bg-slate-900 shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-nexus-muted">
+            <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase tracking-wide text-nexus-muted">
               <tr>
                 <th className="px-3 py-2 text-left">Email</th>
                 <th className="px-3 py-2 text-left">Display name</th>
@@ -348,16 +348,16 @@ export default function AdminUsersPage() {
               {!loading && items.map((u) => {
                 const isMe = me && u.id === me.id;
                 return (
-                  <tr key={u.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <tr key={u.id} className="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 hover:dark:bg-slate-900">
                     <td className="px-3 py-2 align-top">
-                      <div className="font-mono text-xs text-slate-700">{u.email}</div>
+                      <div className="font-mono text-xs text-slate-700 dark:text-slate-300">{u.email}</div>
                       {isMe && (
                         <div className="text-[10px] uppercase tracking-wide text-nexus-accent">
                           you
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-2 align-top text-xs text-slate-600">
+                    <td className="px-3 py-2 align-top text-xs text-slate-600 dark:text-slate-400">
                       {u.display_name || <span className="text-slate-400">—</span>}
                     </td>
                     <td className="px-3 py-2 align-top">{rolePill(u)}</td>
@@ -370,7 +370,7 @@ export default function AdminUsersPage() {
                             onClick={() => promote(u)}
                             disabled={!u.is_active}
                             title="Promote to admin"
-                            className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-white px-2 py-1 text-[11px] font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-40"
+                            className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-40"
                           >
                             <ShieldCheck size={11} /> Promote
                           </button>
@@ -380,7 +380,7 @@ export default function AdminUsersPage() {
                             onClick={() => demote(u)}
                             disabled={isMe}
                             title={isMe ? 'You cannot demote yourself' : 'Demote to user'}
-                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
                           >
                             <ShieldOff size={11} /> Demote
                           </button>
@@ -394,7 +394,7 @@ export default function AdminUsersPage() {
                               ? 'You cannot deactivate yourself'
                               : u.is_active ? 'Deactivate' : 'Already deactivated'
                           }
-                          className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
                         >
                           Deactivate
                         </button>
@@ -403,7 +403,7 @@ export default function AdminUsersPage() {
                           onClick={() => hardDelete(u)}
                           disabled={isMe}
                           title={isMe ? 'You cannot delete yourself' : 'Hard delete'}
-                          className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
+                          className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
                         >
                           <Trash2 size={11} /> Delete
                         </button>
@@ -425,7 +425,7 @@ export default function AdminUsersPage() {
               type="button"
               onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
               disabled={offset === 0}
-              className="rounded-md border border-nexus-border bg-white px-2 py-1 hover:bg-slate-50 disabled:opacity-40"
+              className="rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
             >
               Previous
             </button>
@@ -433,7 +433,7 @@ export default function AdminUsersPage() {
               type="button"
               onClick={() => setOffset((o) => o + PAGE_SIZE)}
               disabled={offset + PAGE_SIZE >= total}
-              className="rounded-md border border-nexus-border bg-white px-2 py-1 hover:bg-slate-50 disabled:opacity-40"
+              className="rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
             >
               Next
             </button>

@@ -80,7 +80,7 @@ export default function SettingsAiStudioPage() {
       <div ref={pageRef} className="mx-auto max-w-4xl space-y-4 p-6">
         <div data-animate className="flex items-center justify-between">
           <div>
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
               <Sparkles size={15} className="text-nexus-accent" />
               AI Studio
             </h2>
@@ -117,7 +117,7 @@ export default function SettingsAiStudioPage() {
         {!loading && settings && (
           <>
             <section data-animate className="space-y-2">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 <MessageSquareText size={14} className="text-nexus-accent" />
                 Scenario Prompts
               </h3>
@@ -128,7 +128,7 @@ export default function SettingsAiStudioPage() {
             </section>
 
             <section data-animate className="space-y-2">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 <ToggleRight size={14} className="text-nexus-accent" />
                 Active Nodes
               </h3>
@@ -139,7 +139,7 @@ export default function SettingsAiStudioPage() {
             </section>
 
             <section data-animate className="space-y-2">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 <SlidersHorizontal size={14} className="text-nexus-accent" />
                 Model Parameters
               </h3>

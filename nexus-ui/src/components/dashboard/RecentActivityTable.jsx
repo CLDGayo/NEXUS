@@ -29,7 +29,7 @@ function StatusBadge({ status }) {
 export default function RecentActivityTable({ items }) {
   const rows = Array.isArray(items) ? items : [];
   return (
-    <section className="rounded-xl border border-nexus-border bg-white shadow-sm">
+    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 shadow-sm">
       <div className="border-b border-nexus-border px-4 py-2.5">
         <div className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Recent Activity</div>
       </div>
@@ -52,7 +52,7 @@ export default function RecentActivityTable({ items }) {
             {rows.map((r, i) => (
               <tr key={i} className="border-t border-nexus-border">
                 <td className="whitespace-nowrap px-4 py-2 text-nexus-muted">{relativeTime(r.timestamp)}</td>
-                <td className="px-4 py-2 font-medium text-slate-800">{r.file}</td>
+                <td className="px-4 py-2 font-medium text-slate-800 dark:text-slate-100">{r.file}</td>
                 <td className="px-4 py-2 font-mono text-[11px] text-nexus-muted">{r.folder}</td>
                 <td className="px-4 py-2"><StatusBadge status={r.status} /></td>
               </tr>

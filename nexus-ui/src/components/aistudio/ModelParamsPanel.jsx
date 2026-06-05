@@ -19,7 +19,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
       {/* Temperature */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-800">Temperature</label>
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-100">Temperature</label>
           <span className="font-mono text-xs text-nexus-accent">{temperature.toFixed(2)}</span>
         </div>
         <Slider.Root
@@ -33,7 +33,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
           <Slider.Track className="relative h-1.5 grow rounded-full bg-slate-200">
             <Slider.Range className="absolute h-full rounded-full bg-nexus-accent" />
           </Slider.Track>
-          <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
+          <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white dark:bg-slate-900 shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
         </Slider.Root>
         <p className="mt-1 text-[11px] text-nexus-muted">0 = deterministic · 2 = most creative</p>
       </div>
@@ -41,7 +41,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
       {/* Max tokens */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-800">Max Tokens</label>
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-100">Max Tokens</label>
           <input
             type="number"
             min={64}
@@ -52,7 +52,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
               const n = Math.min(8192, Math.max(64, Number(e.target.value) || 64));
               onChange('max_tokens', n);
             }}
-            className="w-20 rounded-lg border border-nexus-border bg-white/80 px-2 py-1 text-right font-mono text-xs text-slate-800 focus:border-nexus-accent focus:outline-none"
+            className="w-20 rounded-lg border border-nexus-border bg-white/80 px-2 py-1 text-right font-mono text-xs text-slate-800 dark:text-slate-100 focus:border-nexus-accent focus:outline-none"
           />
         </div>
         <Slider.Root
@@ -66,25 +66,25 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
           <Slider.Track className="relative h-1.5 grow rounded-full bg-slate-200">
             <Slider.Range className="absolute h-full rounded-full bg-nexus-accent" />
           </Slider.Track>
-          <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
+          <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white dark:bg-slate-900 shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
         </Slider.Root>
       </div>
 
       {/* Model choice */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-slate-800">Model</label>
+        <label className="mb-2 block text-sm font-medium text-slate-800 dark:text-slate-100">Model</label>
         <Select.Root
           value={choice}
           onValueChange={(v) => onChange('model_choice', v === DEFAULT_CHOICE ? null : v)}
         >
-          <Select.Trigger className="inline-flex w-full items-center justify-between rounded-lg border border-nexus-border bg-white/80 px-3 py-2 text-sm text-slate-800 focus:border-nexus-accent focus:outline-none">
+          <Select.Trigger className="inline-flex w-full items-center justify-between rounded-lg border border-nexus-border bg-white/80 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:border-nexus-accent focus:outline-none">
             <Select.Value />
             <Select.Icon>
               <ChevronDown size={14} className="text-slate-400" />
             </Select.Icon>
           </Select.Trigger>
           <Select.Portal>
-            <Select.Content className="glass-pane z-50 overflow-hidden p-1 text-sm text-slate-700">
+            <Select.Content className="glass-pane z-50 overflow-hidden p-1 text-sm text-slate-700 dark:text-slate-300">
               <Select.Viewport>
                 <Select.Item
                   value={DEFAULT_CHOICE}

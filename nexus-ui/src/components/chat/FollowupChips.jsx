@@ -10,7 +10,7 @@ export default function FollowupChips({ items, onPick, disabled }) {
           type="button"
           onClick={() => !disabled && onPick?.(q)}
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-nexus-accent hover:text-nexus-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-slate-300 dark:border-slate-600 px-3 py-1 text-xs text-slate-600 dark:text-slate-400 hover:border-nexus-accent hover:text-nexus-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <CornerDownRight size={12} />
           {q}

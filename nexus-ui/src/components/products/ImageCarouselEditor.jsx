@@ -38,7 +38,7 @@ function SortableThumb({ image, onDelete, disabled }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="relative h-28 w-28 shrink-0 rounded-lg border border-nexus-border bg-slate-100 overflow-hidden group"
+      className="relative h-28 w-28 shrink-0 rounded-lg border border-nexus-border bg-slate-100 dark:bg-slate-800 overflow-hidden group"
     >
       {image.image_url ? (
         <img src={image.image_url} alt="" className="h-full w-full object-cover" />
@@ -52,7 +52,7 @@ function SortableThumb({ image, onDelete, disabled }) {
         {...attributes}
         {...listeners}
         disabled={disabled}
-        className="absolute top-1 left-1 rounded bg-white/80 p-1 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+        className="absolute top-1 left-1 rounded bg-white/80 p-1 text-slate-700 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
         title="Drag to reorder"
       >
         <GripVertical size={14} />
@@ -212,7 +212,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
               onDragLeave={() => setDragOver(false)}
               onDrop={onDrop}
               className={[
-                'h-28 w-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer text-xs text-slate-500',
+                'h-28 w-28 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer text-xs text-slate-500 dark:text-slate-400',
                 dragOver ? 'border-nexus-accent bg-nexus-accent/5' : 'border-nexus-border hover:border-nexus-accent',
                 images.length >= maxImages ? 'opacity-50 pointer-events-none' : '',
               ].join(' ')}
@@ -233,7 +233,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
         </SortableContext>
       </DndContext>
 
-      {busy && <p className="text-xs text-slate-500">Working…</p>}
+      {busy && <p className="text-xs text-slate-500 dark:text-slate-400">Working…</p>}
       {error && (
         <div className="text-xs rounded border border-red-200 bg-red-50 text-red-700 px-2 py-1">
           {String(error)}

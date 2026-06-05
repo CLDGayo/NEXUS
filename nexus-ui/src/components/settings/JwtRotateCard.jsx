@@ -26,7 +26,7 @@ export default function JwtRotateCard() {
     <section className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
         <AlertTriangle size={14} className="text-amber-600" />
-        <h3 className="text-sm font-semibold text-slate-800">Rotate JWT Secret</h3>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Rotate JWT Secret</h3>
       </div>
       <p className="mb-3 text-xs text-nexus-muted">
         Invalidates every active session (including this browser). Use after a suspected token leak or as
@@ -49,7 +49,7 @@ export default function JwtRotateCard() {
         type="button"
         onClick={rotate}
         disabled={busy}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm hover:bg-amber-100 disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm hover:bg-amber-100 disabled:opacity-50"
       >
         <RotateCcw size={12} />
         {busy ? 'Rotating…' : 'Rotate now'}

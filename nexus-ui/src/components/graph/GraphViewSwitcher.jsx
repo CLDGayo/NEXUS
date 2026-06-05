@@ -24,7 +24,7 @@ function GraphViewPill({ view, isActive, onChange }) {
         'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200',
         isActive
           ? 'bg-nexus-accent text-white shadow-sm'
-          : 'text-slate-600 hover:bg-white/60 hover:text-slate-900',
+          : 'text-slate-600 dark:text-slate-400 hover:bg-white/60 hover:text-slate-900 hover:dark:text-slate-100',
       ].join(' ')}
     >
       {view.label}

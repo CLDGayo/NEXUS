@@ -34,19 +34,19 @@ function ReadOnlyField({ label, value, copyable, sublabel }) {
         <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">{label}</label>
         {sublabel}
       </div>
-      <div className="flex items-stretch overflow-hidden rounded-lg border border-nexus-border bg-slate-50">
+      <div className="flex items-stretch overflow-hidden rounded-lg border border-nexus-border bg-slate-50 dark:bg-slate-900">
         <input
           type="text"
           value={value || ''}
           readOnly
           placeholder="not set"
-          className="flex-1 bg-transparent px-3 py-2 font-mono text-xs text-slate-700 outline-none"
+          className="flex-1 bg-transparent px-3 py-2 font-mono text-xs text-slate-700 dark:text-slate-300 outline-none"
         />
         {copyable && (
           <button
             type="button"
             onClick={copy}
-            className="border-l border-nexus-border bg-white px-3 text-xs font-medium text-nexus-muted hover:text-nexus-accent"
+            className="border-l border-nexus-border bg-white dark:bg-slate-900 px-3 text-xs font-medium text-nexus-muted hover:text-nexus-accent"
             title="Copy to clipboard"
           >
             {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
@@ -133,7 +133,7 @@ export default function MessengerPanel() {
 
   if (loading) {
     return (
-      <section className="rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
         <div className="text-sm text-nexus-muted">Loading Messenger configuration…</div>
       </section>
     );
@@ -148,10 +148,10 @@ export default function MessengerPanel() {
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-nexus-border bg-white p-5 shadow-sm">
+    <section className="space-y-4 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">Facebook Messenger</h3>
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Facebook Messenger</h3>
           <p className="text-xs text-nexus-muted">
             Webhook + tokens for the Meta App Review and live Page binding.
           </p>
@@ -198,7 +198,7 @@ export default function MessengerPanel() {
             <button
               type="button"
               onClick={() => { setEditingPat(false); setPatInput(''); setPatStatus(null); }}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-nexus-muted hover:text-slate-700"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-nexus-muted hover:text-slate-700 hover:dark:text-slate-300"
             >
               <X size={11} /> Cancel
             </button>
@@ -206,7 +206,7 @@ export default function MessengerPanel() {
         </div>
 
         {!editingPat ? (
-          <div className="rounded-lg border border-nexus-border bg-slate-50 px-3 py-2 font-mono text-xs text-slate-600">
+          <div className="rounded-lg border border-nexus-border bg-slate-50 dark:bg-slate-900 px-3 py-2 font-mono text-xs text-slate-600 dark:text-slate-400">
             {data.page_access_token_masked || <span className="text-slate-400">not set</span>}
           </div>
         ) : (
@@ -218,7 +218,7 @@ export default function MessengerPanel() {
               placeholder="EAA… (paste new PAT)"
               minLength={16}
               required
-              className="flex-1 rounded-lg border border-nexus-border bg-white px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
+              className="flex-1 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
             />
             <button
               type="submit"
@@ -254,7 +254,7 @@ export default function MessengerPanel() {
             <button
               type="button"
               onClick={() => { setEditingSecret(false); setSecretInput(''); setSecretStatus(null); }}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-nexus-muted hover:text-slate-700"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-nexus-muted hover:text-slate-700 hover:dark:text-slate-300"
             >
               <X size={11} /> Cancel
             </button>
@@ -262,7 +262,7 @@ export default function MessengerPanel() {
         </div>
 
         {!editingSecret ? (
-          <div className="rounded-lg border border-nexus-border bg-slate-50 px-3 py-2 font-mono text-xs text-slate-600">
+          <div className="rounded-lg border border-nexus-border bg-slate-50 dark:bg-slate-900 px-3 py-2 font-mono text-xs text-slate-600 dark:text-slate-400">
             {data.app_secret_masked || <span className="text-slate-400">not set</span>}
           </div>
         ) : (
@@ -274,7 +274,7 @@ export default function MessengerPanel() {
               placeholder="App Secret from Meta App Dashboard → Settings → Basic"
               minLength={16}
               required
-              className="flex-1 rounded-lg border border-nexus-border bg-white px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
+              className="flex-1 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
             />
             <button
               type="submit"

@@ -58,10 +58,10 @@ export default function ProductsDashboardPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name or description…"
-            className="w-full rounded-md border border-nexus-border bg-white pl-9 pr-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
+            className="w-full rounded-md border border-nexus-border bg-white dark:bg-slate-900 pl-9 pr-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
           <input
             type="checkbox"
             checked={activeOnly}
@@ -69,7 +69,7 @@ export default function ProductsDashboardPage() {
           />
           Active only
         </label>
-        <div className="text-sm text-slate-500">
+        <div className="text-sm text-slate-500 dark:text-slate-400">
           {total} product{total === 1 ? '' : 's'}
         </div>
         <Link
@@ -90,7 +90,7 @@ export default function ProductsDashboardPage() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-64 rounded-lg border border-nexus-border bg-slate-50 animate-pulse" />
+            <div key={i} className="h-64 rounded-lg border border-nexus-border bg-slate-50 dark:bg-slate-900 animate-pulse" />
           ))}
         </div>
       ) : (

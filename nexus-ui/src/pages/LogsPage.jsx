@@ -24,7 +24,7 @@ export default function LogsPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl space-y-3 p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-700">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             Application Logs
             <span className="ml-2 text-xs text-nexus-muted">
               {entries.length} {entries.length === 1 ? 'entry' : 'entries'}
@@ -34,7 +34,7 @@ export default function LogsPage() {
             type="button"
             onClick={() => load(true)}
             disabled={refreshing || loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm hover:text-nexus-accent disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 shadow-sm hover:text-nexus-accent disabled:opacity-50"
           >
             <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
             Refresh
@@ -42,7 +42,7 @@ export default function LogsPage() {
         </div>
 
         {loading && (
-          <div className="rounded-xl border border-nexus-border bg-white p-6 text-center text-sm text-nexus-muted shadow-sm">
+          <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
             Loading logs…
           </div>
         )}
@@ -51,7 +51,7 @@ export default function LogsPage() {
         )}
 
         {!loading && !error && (
-          <div className="rounded-xl border border-nexus-border bg-white shadow-sm">
+          <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 shadow-sm">
             {entries.length === 0 ? (
               <div className="flex flex-col items-center gap-2 p-10 text-center text-sm text-nexus-muted">
                 <ScrollText size={20} />

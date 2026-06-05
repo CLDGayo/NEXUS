@@ -77,7 +77,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
   const canSend = !streaming && !uploading && (text.trim() || attachment);
 
   return (
-    <div className="border-t border-nexus-border bg-white px-6 py-3">
+    <div className="border-t border-nexus-border bg-white dark:bg-slate-900 px-6 py-3">
       <div className="max-w-3xl mx-auto">
         {(attachment || uploadError || uploading) && (
           <div className="mb-2 flex items-center gap-2">
@@ -89,7 +89,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
                 <img
                   src={attachment.url}
                   alt="attachment preview"
-                  className="h-20 w-20 rounded-lg border border-slate-200 object-cover"
+                  className="h-20 w-20 rounded-lg border border-slate-200 dark:border-slate-700/50 object-cover"
                 />
                 <button
                   type="button"
@@ -119,7 +119,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
             type="button"
             onClick={openFilePicker}
             disabled={streaming || uploading}
-            className="h-10 w-10 shrink-0 rounded-xl border border-slate-300 bg-white text-slate-600 flex items-center justify-center hover:border-nexus-accent hover:text-nexus-accent disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-10 w-10 shrink-0 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 flex items-center justify-center hover:border-nexus-accent hover:text-nexus-accent disabled:opacity-40 disabled:cursor-not-allowed"
             title="Attach image"
           >
             <Paperclip size={16} />
@@ -132,7 +132,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
             onKeyDown={onKeyDown}
             placeholder="Ask a question about your vault…"
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
+            className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
           />
           {streaming ? (
             <button
