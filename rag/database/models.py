@@ -122,12 +122,24 @@ class Tenant(Base):
 class TenantUser(Base):
     """Membership table — composite PK (tenant_id, user_id).
 
-    ``role`` is ``owner`` (created the tenant, full admin) or ``member``
-    (invited; today identical permissions, retained as a forward hook for
-    Phase 30 row-level ACL).
+    Phase 50 RBAC tiers (``role``):
+        * ``owner``  — created/transferred-in; full control incl. archive,
+          transfer, hard-delete.
+        * ``admin``  — manage members, settings, integrations; cannot delete
+          or transfer the workspace.
+        * ``member`` — standard user (chat, read, upload).
+
+    The CHECK constraint pins ``role`` to that closed set so a stray write
+    can never mint an out-of-band role.
     """
 
     __tablename__ = "tenant_users"
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('owner', 'admin', 'member')",
+            name="ck_app_tenant_users_role",
+        ),
+    )
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("app.tenants.id", ondelete="CASCADE"),

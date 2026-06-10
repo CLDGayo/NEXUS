@@ -97,28 +97,41 @@ async def require_owner(
     return tenant
 
 
+async def require_manager(
+    request: Request,
+    user: User = Depends(current_active_user),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> Tenant:
+    """Phase 50 — manager-class RBAC gate (``owner`` OR ``admin``).
+
+    Mirrors ``require_owner`` but accepts both manager tiers. Used by
+    member-management, settings, ai-settings, and integration endpoints
+    where Admins are allowed but plain Members are not. Owner-only
+    operations (archive, transfer, hard-delete) keep ``require_owner``.
+
+    A plain member receives 403 ``manager_role_required`` so the frontend
+    can show a precise toast.
+    """
+
+    _ = user  # auth side-effect only — get_current_tenant did membership check.
+    role = getattr(request.state, "tenant_role", None)
+    if role not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="manager_role_required")
+    return tenant
+
+
 async def _lookup_token(raw: str, scope: str) -> dict:
     token_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
     sessionmaker = get_sessionmaker()
     async with sessionmaker() as db:
         token = (
-            await db.execute(
-                select(ApiToken).where(ApiToken.token_hash == token_hash)
-            )
+            await db.execute(select(ApiToken).where(ApiToken.token_hash == token_hash))
         ).scalar_one_or_none()
         if token is None or token.revoked_at is not None:
-            raise HTTPException(
-                status_code=401, detail="Invalid or revoked token"
-            )
-        scopes = {
-            s.strip()
-            for s in (token.scopes_csv or "").split(",")
-            if s.strip()
-        }
+            raise HTTPException(status_code=401, detail="Invalid or revoked token")
+        scopes = {s.strip() for s in (token.scopes_csv or "").split(",") if s.strip()}
         if scope not in scopes:
-            raise HTTPException(
-                status_code=403, detail=f"Token missing scope: {scope}"
-            )
+            raise HTTPException(status_code=403, detail=f"Token missing scope: {scope}")
         token.last_used_at = datetime.now(timezone.utc)
         await db.commit()
         return {

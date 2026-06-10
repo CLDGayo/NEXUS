@@ -49,3 +49,29 @@ class TenantRead(BaseModel):
     created_at: datetime
     # Role of the requesting user inside this tenant.
     role: str
+    # Phase 50 — member count for the workspace master list. Optional so
+    # single-tenant reads (POST/GET detail) can omit it cheaply.
+    member_count: int | None = None
+
+
+# --------------------------------------------------------------------------
+# Phase 50 — workspace member management (RBAC)
+# --------------------------------------------------------------------------
+
+_ROLE_VALUES = ("owner", "admin", "member")
+
+
+class MemberRead(BaseModel):
+    """One row in the workspace Members tab."""
+
+    user_id: uuid.UUID
+    email: str
+    display_name: str | None = None
+    role: str
+    joined_at: datetime
+
+
+class MemberRoleUpdate(BaseModel):
+    """Body for ``PATCH /api/tenants/{id}/members/{user_id}``."""
+
+    role: str = Field(pattern="^(owner|admin|member)$")

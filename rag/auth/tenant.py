@@ -22,7 +22,7 @@ import re
 import uuid
 
 from fastapi import Depends, Header, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag.auth.config import current_active_user
@@ -62,9 +62,7 @@ async def get_current_tenant(
     """Resolve + authorise the active tenant for this request."""
 
     if x_tenant_id is None:
-        raise HTTPException(
-            status_code=400, detail="missing X-Tenant-ID header"
-        )
+        raise HTTPException(status_code=400, detail="missing X-Tenant-ID header")
 
     link = await db.get(TenantUser, (x_tenant_id, user.id))
     if link is None:
@@ -87,9 +85,7 @@ async def get_current_tenant(
     return tenant
 
 
-async def list_tenants_for_user(
-    db: AsyncSession, user: User
-) -> list[TenantRead]:
+async def list_tenants_for_user(db: AsyncSession, user: User) -> list[TenantRead]:
     """Return every tenant the user belongs to, annotated with their role.
 
     Used by ``GET /api/tenants`` so the SPA can render the workspace
@@ -97,8 +93,18 @@ async def list_tenants_for_user(
     Hunter tenant appears first for legacy users.
     """
 
+    # Phase 50 — member_count powers the workspace master list. The
+    # correlated scalar subquery counts every membership row per tenant
+    # (not just the caller's), one round-trip total.
+    member_count_sq = (
+        select(func.count())
+        .select_from(TenantUser)
+        .where(TenantUser.tenant_id == Tenant.id)
+        .correlate(Tenant)
+        .scalar_subquery()
+    )
     stmt = (
-        select(Tenant, TenantUser.role)
+        select(Tenant, TenantUser.role, member_count_sq)
         .join(TenantUser, TenantUser.tenant_id == Tenant.id)
         .where(TenantUser.user_id == user.id)
         .order_by(Tenant.created_at.asc())
@@ -111,6 +117,7 @@ async def list_tenants_for_user(
             slug=tenant.slug,
             created_at=tenant.created_at,
             role=role,
+            member_count=member_count,
         )
-        for tenant, role in rows
+        for tenant, role, member_count in rows
     ]

@@ -12,6 +12,8 @@ from rag.auth.config import (
     get_jwt_strategy,
 )
 from rag.auth.schemas import (
+    MemberRead,
+    MemberRoleUpdate,
     TenantCreate,
     TenantRead,
     UserCreate,
@@ -33,6 +35,8 @@ __all__ = [
     "get_current_tenant",
     "list_tenants_for_user",
     "slugify_tenant_name",
+    "MemberRead",
+    "MemberRoleUpdate",
     "TenantCreate",
     "TenantRead",
     "UserCreate",
