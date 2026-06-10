@@ -1,9 +1,11 @@
 """Settings router — KV config GET/PATCH, JWT rotate.
 
-Phase 31 — every endpoint now requires ``owner`` role in the active
-tenant (``X-Tenant-ID`` header validated by ``get_current_tenant``).
-Standard members receive 403 ``owner_role_required``. The settings table
-itself stays globally-scoped for now per the Architect's Phase 31
+Phase 50 — KV settings require ``owner`` or ``admin`` role in the active
+tenant (``X-Tenant-ID`` header validated by ``get_current_tenant``);
+plain members receive 403 ``manager_role_required``. JWT rotation stays
+owner-only — it invalidates every session platform-wide, which is a
+security-surface operation, not workspace administration. The settings
+table itself stays globally-scoped for now per the Architect's Phase 31
 clarification — tenant-scoped settings are a Phase 31.1 follow-up.
 
 Phase 28 Part 2 — the legacy ``POST /api/settings/password`` route is gone.
@@ -21,9 +23,9 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 import settings_service
 from auth_overlay import rotate_jwt_secret
-from routers.deps import require_owner
+from routers.deps import require_manager, require_owner
 
-router = APIRouter(tags=["settings"], dependencies=[Depends(require_owner)])
+router = APIRouter(tags=["settings"], dependencies=[Depends(require_manager)])
 
 
 @router.get("")
@@ -78,7 +80,7 @@ async def change_password_removed() -> Response:
     )
 
 
-@router.post("/rotate-jwt")
+@router.post("/rotate-jwt", dependencies=[Depends(require_owner)])
 async def rotate_jwt() -> dict:
     """Rotate the JWT signing secret. All existing tokens are invalidated."""
     rotate_jwt_secret()
