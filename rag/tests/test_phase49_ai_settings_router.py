@@ -1,8 +1,9 @@
 """Phase 49 — Prompt Studio router (workspace_ai_settings).
 
 Covers:
-* Static lockdown — both handlers gate on ``require_owner`` (mirrors the
-  Phase 31 lockdown guard so a refactor that drops the gate fails loudly).
+* Static lockdown — both handlers gate on ``require_manager`` (Phase 50:
+  owner or admin; mirrors the Phase 31 lockdown guard so a refactor that
+  drops the gate fails loudly).
 * Pydantic bounds — temperature 0-2 and max_tokens 64-8192 reject early.
 * Merge correctness — a partial PUT preserves untouched sub-keys.
 * model_choice allowlist — a foreign model id is rejected with HTTP 400;
@@ -46,11 +47,11 @@ class _FakeTenant:
 # --------------------------------------------------------------------------
 
 
-def test_router_handlers_gate_on_require_owner() -> None:
+def test_router_handlers_gate_on_require_manager() -> None:
     src = inspect.getsource(mod)
-    assert "from routers.deps import require_owner" in src
-    assert "Depends(require_owner)" in inspect.getsource(mod.get_ai_settings)
-    assert "Depends(require_owner)" in inspect.getsource(mod.put_ai_settings)
+    assert "from routers.deps import require_manager" in src
+    assert "Depends(require_manager)" in inspect.getsource(mod.get_ai_settings)
+    assert "Depends(require_manager)" in inspect.getsource(mod.put_ai_settings)
 
 
 # --------------------------------------------------------------------------
