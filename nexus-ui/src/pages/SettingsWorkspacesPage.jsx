@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Building2, CheckCircle2, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Building2, CheckCircle2, ChevronRight, Plus } from 'lucide-react';
 import { useTenant } from '../hooks/useTenant.js';
 import { api, HTTPError } from '../lib/api.js';
 
@@ -20,6 +21,7 @@ export default function SettingsWorkspacesPage() {
     addTenant,
     refreshTenants,
   } = useTenant();
+  const navigate = useNavigate();
 
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -77,6 +79,7 @@ export default function SettingsWorkspacesPage() {
                 <th className="px-5 py-2 font-medium">Name</th>
                 <th className="px-5 py-2 font-medium">Slug</th>
                 <th className="px-5 py-2 font-medium">Role</th>
+                <th className="px-5 py-2 font-medium">Members</th>
                 <th className="px-5 py-2 font-medium">Created</th>
                 <th className="px-5 py-2 font-medium text-right">Action</th>
               </tr>
@@ -85,7 +88,11 @@ export default function SettingsWorkspacesPage() {
               {tenants.map((tenant) => {
                 const isActive = tenant.id === activeTenantId;
                 return (
-                  <tr key={tenant.id} className="border-t border-nexus-border">
+                  <tr
+                    key={tenant.id}
+                    onClick={() => navigate(`/settings/workspaces/${tenant.slug}`)}
+                    className="cursor-pointer border-t border-nexus-border transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  >
                     <td className="px-5 py-2.5">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{tenant.name}</span>
@@ -104,17 +111,26 @@ export default function SettingsWorkspacesPage() {
                       </span>
                     </td>
                     <td className="px-5 py-2.5 text-slate-600 dark:text-slate-400">
+                      {tenant.member_count ?? '—'}
+                    </td>
+                    <td className="px-5 py-2.5 text-slate-600 dark:text-slate-400">
                       {formatCreated(tenant.created_at)}
                     </td>
                     <td className="px-5 py-2.5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setActiveTenant(tenant.id)}
-                        disabled={isActive}
-                        className="rounded-md border border-nexus-border px-3 py-1 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isActive ? 'Active' : 'Switch'}
-                      </button>
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveTenant(tenant.id);
+                          }}
+                          disabled={isActive}
+                          className="rounded-md border border-nexus-border px-3 py-1 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isActive ? 'Active' : 'Switch'}
+                        </button>
+                        <ChevronRight size={14} className="text-nexus-muted" />
+                      </div>
                     </td>
                   </tr>
                 );
@@ -122,7 +138,7 @@ export default function SettingsWorkspacesPage() {
               {tenants.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-5 py-6 text-center text-xs text-nexus-muted"
                   >
                     You don’t belong to any workspaces yet.

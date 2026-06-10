@@ -5,7 +5,7 @@ import { ChevronsUpDown, LogOut, User, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useTenant } from '../../hooks/useTenant.js';
 import { useSidebar } from '../../hooks/useSidebar.js';
-import { CORE_NAV, OWNER_NAV, TRAILING_NAV, ADMIN_NAV_ITEM } from '../../lib/nav.js';
+import { CORE_NAV, OWNER_NAV, MANAGER_NAV, TRAILING_NAV, ADMIN_NAV_ITEM } from '../../lib/nav.js';
 
 function initialFor(user) {
   const source = user?.display_name || user?.email || '?';
@@ -41,26 +41,33 @@ function isNavActive(pathname, item) {
 // `collapsed` controls the narrow icon-only rail; the drawer passes false.
 function SidebarContent({ collapsed, onNavigate }) {
   const { user, isSuperuser, logout } = useAuth();
-  const { activeTenantRole } = useTenant();
+  const { activeTenantRole, canManage } = useTenant();
   const { pathname } = useLocation();
 
   const isOwner = activeTenantRole === 'owner';
   const nav = [
     ...CORE_NAV,
     ...(isOwner ? OWNER_NAV : []),
+    ...(canManage ? MANAGER_NAV : []),
     ...TRAILING_NAV,
     ...(isSuperuser ? [ADMIN_NAV_ITEM] : []),
   ];
   const displayName = user?.display_name || user?.email || 'Account';
-  const roleLabel = isSuperuser ? 'Admin' : isOwner ? 'Owner' : 'Member';
+  const roleLabel = isSuperuser
+    ? 'Admin'
+    : isOwner
+      ? 'Owner'
+      : activeTenantRole === 'admin'
+        ? 'Workspace Admin'
+        : 'Member';
 
   const linkClass = (active) =>
     [
-      'flex items-center rounded-lg px-3 py-2 text-sm transition-colors',
+      'glass-pressable flex items-center rounded-xl px-3 py-2 text-sm transition-colors',
       collapsed ? 'justify-center' : 'gap-3',
       active
-        ? 'bg-nexus-accent/10 text-nexus-accent font-medium'
-        : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/60',
+        ? 'bg-nexus-accent/12 text-nexus-accent font-medium shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)] dark:bg-nexus-accent/20'
+        : 'text-slate-700 hover:bg-white/50 dark:text-slate-300 dark:hover:bg-white/5',
     ].join(' ');
 
   return (

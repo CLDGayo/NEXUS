@@ -14,10 +14,9 @@ export default function WorkspaceSwitcher() {
     tenants,
     activeTenantId,
     activeTenantName,
-    activeTenantRole,
     setActiveTenant,
+    canManage,
   } = useTenant();
-  const isOwner = activeTenantRole === 'owner';
   const triggerRef = useTactilePress();
 
   if (tenants.length === 0) return null;
@@ -30,7 +29,7 @@ export default function WorkspaceSwitcher() {
         <button
           ref={triggerRef}
           type="button"
-          className="inline-flex items-center gap-2 rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2.5 py-1.5 text-sm text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 hover:dark:bg-slate-900 focus:outline-none"
+          className="inline-flex items-center gap-2 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2.5 py-1.5 text-sm text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 hover:dark:bg-slate-900 focus:outline-none"
           title="Switch workspace"
         >
           <Building2 size={14} className="text-nexus-accent" />
@@ -70,7 +69,7 @@ export default function WorkspaceSwitcher() {
               );
             })}
           </div>
-          {isOwner && (
+          {canManage && (
             <>
               <DropdownMenu.Separator className="h-px bg-nexus-border" />
               <DropdownMenu.Item asChild>
