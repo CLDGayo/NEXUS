@@ -27,11 +27,15 @@ export const CORE_NAV = [
   { to: '/graph',         label: 'Graph',         Icon: Network },
 ];
 
-// Phase 31 — owner-only nav items. Rendered conditionally on
-// `activeTenantRole === 'owner'`. The backend enforces 403 on these
+// Phase 31/50 — role-gated nav items. The backend enforces 403 on these
 // surfaces too; the FE hide is UX, not security.
+// OWNER_NAV renders only for `role === 'owner'`.
 export const OWNER_NAV = [
   { to: '/products',            label: 'Products',   Icon: Package },
+];
+
+// MANAGER_NAV renders for owners AND admins (Phase 50 `canManage`).
+export const MANAGER_NAV = [
   // `end: true` — exact-match only, so /settings does not prefix-match its own
   // nested routes (/settings/workspaces, /settings/ai-studio) and double-highlight.
   { to: '/settings',            label: 'Settings',   Icon: Settings, end: true },

@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthProvider.jsx';
 import { TenantProvider } from './context/TenantProvider.jsx';
 import RequireAuth from './components/auth/RequireAuth.jsx';
 import RequireOwner from './components/auth/RequireOwner.jsx';
+import RequireManager from './components/auth/RequireManager.jsx';
 import RequireSuperuser from './components/auth/RequireSuperuser.jsx';
 import RequireTenant from './components/auth/RequireTenant.jsx';
 import LoginScreen from './components/auth/LoginScreen.jsx';
@@ -21,6 +22,7 @@ import ProductsDashboardPage from './pages/ProductsDashboardPage.jsx';
 import ProductEditPage from './pages/ProductEditPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import SettingsWorkspacesPage from './pages/SettingsWorkspacesPage.jsx';
+import WorkspaceDetailPage from './pages/WorkspaceDetailPage.jsx';
 import SettingsAiStudioPage from './pages/SettingsAiStudioPage.jsx';
 import ChangelogPage from './pages/ChangelogPage.jsx';
 import WhatsNewPage from './pages/WhatsNewPage.jsx';
@@ -67,6 +69,9 @@ export default function App() {
             <Route element={<RequireOwner />}>
               <Route path="/products" element={<ProductsDashboardPage />} />
               <Route path="/products/:id" element={<ProductEditPage />} />
+            </Route>
+            {/* Phase 50 — settings are manager-class (owner or admin). */}
+            <Route element={<RequireManager />}>
               <Route path="/settings" element={<SettingsPage />} />
               <Route
                 path="/settings/ai-studio"
@@ -75,6 +80,10 @@ export default function App() {
               <Route
                 path="/settings/workspaces"
                 element={<SettingsWorkspacesPage />}
+              />
+              <Route
+                path="/settings/workspaces/:slug"
+                element={<WorkspaceDetailPage />}
               />
             </Route>
             <Route path="/whats-new" element={<WhatsNewPage />} />

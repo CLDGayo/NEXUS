@@ -205,13 +205,17 @@ export function TenantProvider({ children }) {
 
   const value = useMemo(() => {
     const active = tenants.find((t) => t.id === activeTenantId) || null;
+    const role = active ? active.role : null;
     return {
       tenants,
       tenantsLoading,
       activeTenantId,
       activeTenantName: active ? active.name : null,
       activeTenantSlug: active ? active.slug : null,
-      activeTenantRole: active ? active.role : null,
+      activeTenantRole: role,
+      // Phase 50 RBAC — owner OR admin can manage members/settings.
+      // Owner-only surfaces (Danger Zone, transfer) check the role directly.
+      canManage: role === 'owner' || role === 'admin',
       needsSelection,
       cacheVersion,
       error,
