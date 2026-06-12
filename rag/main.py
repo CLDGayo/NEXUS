@@ -73,6 +73,8 @@ from rag.observability.tracing import init_tracing  # noqa: E402
 from rag.routers import admin_users as v2_admin_users  # noqa: E402
 from rag.routers import profile as v2_profile  # noqa: E402
 from rag.routers import v2_tenants  # noqa: E402
+from rag.routers.tenant_invites import public_router as v2_invites_public  # noqa: E402
+from rag.routers.tenant_invites import router as v2_invites  # noqa: E402
 
 # v1 imports (flat — resolved via PYTHONPATH=/app/rag).
 from integrations import dispatcher as integrations_dispatcher  # noqa: E402
@@ -249,6 +251,9 @@ app.include_router(v2_admin_users.router, prefix="/api/admin", tags=["admin"])
 # Phase 29 — tenant CRUD + membership. Router declares its own /api/tenants
 # prefix; mount with no extra prefix here.
 app.include_router(v2_tenants.router)
+# Phase 51 — invite routes (/api/tenants/{id}/invites) + public accept (/api/invites/accept).
+app.include_router(v2_invites)
+app.include_router(v2_invites_public)
 
 app.include_router(chat.router, prefix="/api/chat")
 app.include_router(chat_uploads.router, prefix="/api/chat")

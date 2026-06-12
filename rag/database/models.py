@@ -155,6 +155,45 @@ class TenantUser(Base):
     )
 
 
+class TenantInvite(Base):
+    """Phase 51 — one row per outstanding invite (email-targeted or open code).
+
+    token_hash is SHA-256(raw_token). The raw token is returned once at
+    creation time and is never stored. Default expiry: 7 days.
+    """
+
+    __tablename__ = "tenant_invites"
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('owner', 'admin', 'member')",
+            name="ck_tenant_invites_role",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'accepted', 'revoked')",
+            name="ck_tenant_invites_status",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    email: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="member")
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    invited_by: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class MessengerPageTenant(Base):
     """Phase 29.2 — bind a Facebook/Messenger page id to its owning tenant.
 

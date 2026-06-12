@@ -274,6 +274,12 @@ class Settings(BaseSettings):
     # Defaults to None so the system boots without it configured.
     n8n_webhook_notify_url: str | None = None
 
+    # Phase 51 — workspace invite emails via n8n.
+    # n8n receives { email, workspace_name, invite_link, role } and delivers
+    # the invite email. Defaults to None so the system boots without it;
+    # create_invite skips the n8n POST when unset.
+    n8n_webhook_invite_url: str | None = None
+
     # Phase 37 — how long (seconds) the bot pauses after the human owner
     # reads or replies in the thread. Default 3600 = 1 hour. TTL-backed
     # via Redis so the pause auto-clears without a cron / cleanup job.

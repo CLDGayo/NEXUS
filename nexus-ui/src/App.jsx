@@ -28,6 +28,7 @@ import ChangelogPage from './pages/ChangelogPage.jsx';
 import WhatsNewPage from './pages/WhatsNewPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
+import JoinWorkspacePage from './pages/JoinWorkspacePage.jsx';
 import GlassSpinner from './components/graph/GlassSpinner.jsx';
 
 // GraphPage is lazy-loaded to code-split react-force-graph-2d + d3-force
@@ -98,6 +99,17 @@ export default function App() {
               }
             />
           </Route>
+          {/* Phase 51 — /join is outside RequireTenant so users with zero
+              workspaces can still accept an invite. RequireAuth still guards
+              it so unauthed visitors bounce to /login with state preserved. */}
+          <Route
+            path="/join"
+            element={
+              <RequireAuth>
+                <JoinWorkspacePage />
+              </RequireAuth>
+            }
+          />
           <Route path="*" element={<Navigate to="/chat" replace />} />
         </Routes>
         </Tooltip.Provider>
