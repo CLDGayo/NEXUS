@@ -3,14 +3,18 @@
 > **Canonical plan:** `~/.claude/plans/building-out-a-robust-compiled-newt.md`
 > This file is the in-repo reference copy. The `.claude/plans/` file is the execution source.
 
-## Status
+## Status — PROGRAM COMPLETE ✅ (archived 2026-06-12)
 
-| Phase | Status | Notes |
-|---|---|---|
-| WM-1 — RBAC Foundation + Members | ✅ SHIPPED (2026-06-11) | 425 tests passing, build green |
-| WM-2 — Invitations & Onboarding | 🟡 Code-complete, uncommitted | Migration 0009, `tenant_invites` router, MembersTab invite form, `/join` route — all in worktree, not yet committed |
-| WM-3 — Workspace Lifecycle & Danger Zone | 🟡 Code-complete, uncommitted (2026-06-12) | Migration 0010, PATCH rename/slug/avatar, archive/unarchive/transfer/hard-delete, GeneralTab + AdvancedTab; 909 backend tests passing (17 new), build green |
-| WM-4 — Usage Dashboard | 🔲 Pending | Qdrant chunk count + Postgres message/doc counts, UsageTab |
+| Phase | Status | Commit | Notes |
+|---|---|---|---|
+| WM-1 — RBAC Foundation + Members | ✅ SHIPPED (2026-06-11) | `ab35e94`…`e95d1e2` | 3-tier RBAC, migration 0008, member endpoints, MembersTab |
+| WM-2 — Invitations & Onboarding | ✅ SHIPPED (2026-06-12) | `cbf54da` | Migration 0009, `tenant_invites` router, n8n invite emails, MembersTab invite form, `/join` route |
+| WM-3 — Workspace Lifecycle & Danger Zone | ✅ SHIPPED (2026-06-12) | `b7f283a` | Migration 0010, PATCH rename/slug/avatar, archive/unarchive/transfer/hard-delete, GeneralTab + AdvancedTab |
+| WM-4 — Usage Dashboard | ✅ SHIPPED (2026-06-12) | `7d94036` | GET /usage endpoint, TenantUsageRead schema, 8 tests, UsageTab.jsx |
+
+Related: `59c6fb3` fix(rbac) — ai-settings endpoints gated `require_manager` (WM-1 audit stray).
+
+Final verification: 917 backend tests passing, ruff clean, frontend build green. Deploy (migrations 0009+0010) still pending via `./deploy-rag.sh`.
 
 ## Context
 

@@ -1,6 +1,6 @@
 # NEXUS - All Context
 
-Last updated: 2026-06-01 (Phases 38.x + 39 shipped, HEAD 784e059)
+Last updated: 2026-06-12 (Phases 50–53 Workspace Manager shipped, HEAD 7d94036)
 
 This file is the root context entrypoint for the repo.
 
@@ -165,6 +165,7 @@ Migrated from the old CLAUDE.md. Every PR in `rag/` should close a gap or harden
 - **Product context (Phase 32.x):** catalog rows hoisted into LLM context, carousel image URLs Meta-fetchable, payload normalization/backfill.
 - **Guardrails (`rag/guardrails/`):** input/output validators + pipeline.
 - **SaaS showcase (`nexus-ui/`, Phase 39):** `/whats-new` curated capability page (4 active + 4 locked roadmap cards). Premium integration empty states: `PremiumIntegrationsGrid` + `IntegrationCard` + `PremiumConnectModal` mounted in `IntegrationsPage`. `GET /api/integrations/catalog` read-only stub endpoint (Hunter + Akiro, enterprise tier, no DB/env).
+- **Workspace Manager (Phases 50–53, SHIPPED 2026-06-12):** full B2B workspace management. 3-tier RBAC `owner|admin|member` (`require_manager` in `rag/routers/deps.py`, CHECK constraint migration 0008); member CRUD + token-based invites (`rag/routers/tenant_invites.py`, SHA-256 token_hash, n8n email webhook, public `/api/invites/accept`, `/join` route); lifecycle (migration 0010 `avatar_url`/`archived_at`, PATCH rename/slug — slug blocked while documents exist, MinIO tenant avatars, archive guard in `get_current_tenant` with `/api/tenants` exemption, ownership transfer, hard-delete: Qdrant slug-filter cascade then Postgres FK cascade); usage telemetry (`GET /api/tenants/{id}/usage` — doc/product/member counts, Qdrant chunk count with graceful null degrade, 7-day message buckets). UI: master-detail `/settings/workspaces/:slug` with General/Members/Usage/Advanced Radix tabs.
 
 ## Key Patterns and Conventions
 
@@ -205,7 +206,8 @@ Feature folders with 5+ artifacts or multi-phase programs. Stored under `process
 
 | Feature | Status | Notes |
 |---|---|---|
-| `tenant-ai-customization` | Phase 46 in progress | Phases 45–48 umbrella: Lifecycle Persona Engine, Knowledge Boundary Harden, Workflow Toggles, Model Params |
+| `tenant-ai-customization` | ✅ SHIPPED (2026-06-04) | Phases 45–49 ALL shipped: Lifecycle Persona Engine, Knowledge Boundary Harden, Workflow Toggles, Model Params, Prompt Studio frontend + GET/PUT /workspace/ai-settings |
+| `workspace-manager` | ✅ SHIPPED (2026-06-12) | Phases 50–53 ALL shipped: 3-tier RBAC (owner/admin/member), token-based invites + n8n emails + `/join` flow, workspace lifecycle (rename/slug/avatar, archive, ownership transfer, hard-delete with Qdrant cascade), usage telemetry dashboard. Plan archived at `process/features/workspace-manager/completed/` |
 
 ## Context Group Lifecycle
 
