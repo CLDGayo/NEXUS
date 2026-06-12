@@ -33,7 +33,7 @@ export default function NodeTogglesPanel({ value, onChange }) {
               onCheckedChange={(checked) => onChange(n.key, checked)}
               className="relative h-5 w-9 shrink-0 rounded-full bg-slate-300 transition-colors data-[state=checked]:bg-nexus-accent"
             >
-              <Switch.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-white dark:bg-slate-900 shadow transition-transform data-[state=checked]:translate-x-[18px]" />
+              <Switch.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-white/55 backdrop-blur-glass dark:bg-white/5 shadow transition-transform data-[state=checked]:translate-x-[18px]" />
             </Switch.Root>
           </label>
         );

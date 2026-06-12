@@ -59,7 +59,7 @@ export default function MessageBubble({
             'inline-block max-w-full rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm',
             isUser
               ? 'bg-nexus-accent text-white rounded-br-sm'
-              : 'bg-white dark:bg-slate-900 border border-nexus-border rounded-bl-sm text-slate-800 dark:text-slate-100',
+              : 'bg-white/55 backdrop-blur-glass dark:bg-white/5 border border-nexus-border rounded-bl-sm text-slate-800 dark:text-slate-100',
           ].join(' ')}
         >
           {isUser && attachments && attachments.length > 0 && (

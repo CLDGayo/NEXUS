@@ -29,7 +29,7 @@ function StatusBadge({ status }) {
 export default function RecentActivityTable({ items }) {
   const rows = Array.isArray(items) ? items : [];
   return (
-    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 shadow-sm">
+    <section className="glass-card">
       <div className="border-b border-nexus-border px-4 py-2.5">
         <div className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Recent Activity</div>
       </div>

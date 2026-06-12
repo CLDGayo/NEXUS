@@ -1,7 +1,7 @@
 export default function EnvReadonlyCard({ env }) {
   const entries = Object.entries(env || {});
   return (
-    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <section className="glass-card p-5">
       <div className="mb-3">
         <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Environment (read-only)</h3>
         <p className="text-xs text-nexus-muted">Configured via env vars on the host. Edit via systemd EnvironmentFile + restart.</p>

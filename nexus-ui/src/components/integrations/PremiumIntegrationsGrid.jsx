@@ -36,7 +36,7 @@ function CardSkeleton() {
   // Same min-height as IntegrationCard so swapping skeleton → card causes
   // no layout shift (CLS guard).
   return (
-    <div className="min-h-[208px] animate-pulse rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm">
+    <div className="min-h-[208px] animate-pulse glass-card p-4">
       <div className="h-10 w-10 rounded-lg bg-slate-100 dark:bg-slate-800" />
       <div className="mt-3 h-3.5 w-24 rounded bg-slate-100 dark:bg-slate-800" />
       <div className="mt-2 h-2.5 w-32 rounded bg-slate-100 dark:bg-slate-800" />
@@ -79,7 +79,7 @@ export default function PremiumIntegrationsGrid() {
   }, []);
 
   return (
-    <section className="space-y-3 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <section className="space-y-3 glass-card p-5">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">

@@ -87,7 +87,7 @@ export default function Dropzone({ onUploaded }) {
   const hasActionable = items.some((it) => it.state === 'queued' || it.state === 'error');
 
   return (
-    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 shadow-sm">
+    <section className="glass-card">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

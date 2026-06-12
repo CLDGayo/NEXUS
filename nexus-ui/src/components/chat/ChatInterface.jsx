@@ -20,7 +20,7 @@ export default function ChatInterface() {
 
   return (
     <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-900">
-      <div className="flex items-center justify-between border-b border-nexus-border bg-white dark:bg-slate-900 px-6 py-2">
+      <div className="flex items-center justify-between border-b border-nexus-border bg-white/55 backdrop-blur-glass dark:bg-white/5 px-6 py-2">
         <p className="text-sm text-nexus-muted">
           Ask questions about your knowledge base
         </p>

@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LockKeyhole, Loader2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.js';
+import BackgroundBoundary from '../background/BackgroundBoundary.jsx';
+
+const LiquidBackground = lazy(() => import('../background/LiquidBackground.jsx'));
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -31,8 +34,20 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-nexus-border rounded-2xl shadow-sm p-8">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden p-6">
+      {/* Pastel mesh fallback + 3D liquid orbs behind the frosted login card.
+          Body holds the cream/ink base color; mesh + orbs are fixed z-0. */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-[10%] -top-[15%] h-[60vh] w-[60vh] animate-mesh-drift rounded-full bg-[radial-gradient(circle,rgba(191,232,212,0.6),transparent_70%)] blur-3xl dark:bg-[radial-gradient(circle,rgba(91,124,250,0.3),transparent_70%)]" />
+        <div className="absolute right-[-12%] bottom-[-10%] h-[55vh] w-[55vh] animate-mesh-drift rounded-full bg-[radial-gradient(circle,rgba(246,212,221,0.55),transparent_70%)] blur-3xl [animation-delay:-7s] dark:bg-[radial-gradient(circle,rgba(157,180,255,0.2),transparent_70%)]" />
+      </div>
+      <BackgroundBoundary>
+        <Suspense fallback={null}>
+          <LiquidBackground />
+        </Suspense>
+      </BackgroundBoundary>
+
+      <div className="glass-dialog relative z-10 w-full max-w-md p-8 text-slate-900 dark:text-slate-100">
         <div className="flex items-center gap-2 text-nexus-accent mb-1">
           <LockKeyhole size={18} />
           <span className="text-xs uppercase tracking-widest font-semibold">
@@ -53,7 +68,7 @@ export default function LoginScreen() {
             autoFocus
             required
             placeholder="Email"
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
+            className="w-full rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-sm shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)] backdrop-blur-glass focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent dark:border-white/10 dark:bg-white/5"
             disabled={submitting}
           />
           <input
@@ -63,13 +78,13 @@ export default function LoginScreen() {
             autoComplete="current-password"
             required
             placeholder="Password"
-            className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
+            className="w-full rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-sm shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)] backdrop-blur-glass focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent dark:border-white/10 dark:bg-white/5"
             disabled={submitting}
           />
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full rounded-lg bg-nexus-accent text-white text-sm font-medium py-2 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="glass-pressable w-full rounded-xl bg-nexus-accent text-white text-sm font-medium py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] hover:bg-nexus-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
             {submitting ? 'Signing in…' : 'Sign In'}

@@ -137,13 +137,13 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by title, folder, tag…"
-            className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:border-nexus-accent"
+            className="w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:border-nexus-accent"
           />
         </div>
         <select
           value={folder}
           onChange={(e) => setFolder(e.target.value)}
-          className="rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm shadow-sm focus:border-nexus-accent"
+          className="rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 text-sm shadow-sm focus:border-nexus-accent"
         >
           <option value="">All folders</option>
           {PARA_FOLDERS.map((f) => <option key={f} value={f}>{f}</option>)}
@@ -151,7 +151,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm shadow-sm focus:border-nexus-accent"
+          className="rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 text-sm shadow-sm focus:border-nexus-accent"
         >
           <option value="">All statuses</option>
           <option value="indexed">Indexed</option>
@@ -167,14 +167,14 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
           type="button"
           onClick={bulkArchive}
           disabled={selected.size === 0}
-          className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white dark:bg-slate-900 px-2.5 py-1.5 font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-2.5 py-1.5 font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Trash2 size={12} /> Archive selected
         </button>
         <button
           type="button"
           onClick={reconcile}
-          className="inline-flex items-center gap-1 rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2.5 py-1.5 font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900"
+          className="inline-flex items-center gap-1 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2.5 py-1.5 font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900"
         >
           <Sparkles size={12} /> Vault cleanup
         </button>
@@ -193,7 +193,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-nexus-border bg-white dark:bg-slate-900 shadow-sm">
+      <div className="overflow-x-auto glass-card">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase tracking-wide text-nexus-muted">
             <tr>
@@ -272,7 +272,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
             type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="inline-flex items-center rounded-md border border-nexus-border bg-white dark:bg-slate-900 p-1.5 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
+            className="inline-flex items-center rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 p-1.5 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
             aria-label="Previous page"
           >
             <ChevronLeft size={14} />
@@ -281,7 +281,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
             type="button"
             onClick={() => setPage((p) => Math.min(pages, p + 1))}
             disabled={page >= pages}
-            className="inline-flex items-center rounded-md border border-nexus-border bg-white dark:bg-slate-900 p-1.5 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
+            className="inline-flex items-center rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 p-1.5 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
             aria-label="Next page"
           >
             <ChevronRight size={14} />

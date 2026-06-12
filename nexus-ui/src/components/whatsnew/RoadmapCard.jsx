@@ -6,7 +6,7 @@ import { Lock } from 'lucide-react';
 export default function RoadmapCard({ item }) {
   const { Icon, title, summary } = item;
   return (
-    <div className="relative h-full overflow-hidden rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <div className="relative h-full overflow-hidden glass-card p-5">
       <div className="flex items-start justify-between">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400">
           {Icon ? <Icon size={20} /> : null}

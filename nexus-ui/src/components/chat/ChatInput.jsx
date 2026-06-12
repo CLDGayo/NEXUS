@@ -77,7 +77,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
   const canSend = !streaming && !uploading && (text.trim() || attachment);
 
   return (
-    <div className="border-t border-nexus-border bg-white dark:bg-slate-900 px-6 py-3">
+    <div className="border-t border-nexus-border bg-white/55 backdrop-blur-glass dark:bg-white/5 px-6 py-3">
       <div className="max-w-3xl mx-auto">
         {(attachment || uploadError || uploading) && (
           <div className="mb-2 flex items-center gap-2">
@@ -119,7 +119,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
             type="button"
             onClick={openFilePicker}
             disabled={streaming || uploading}
-            className="h-10 w-10 shrink-0 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 flex items-center justify-center hover:border-nexus-accent hover:text-nexus-accent disabled:opacity-40 disabled:cursor-not-allowed"
+            className="h-10 w-10 shrink-0 rounded-xl border border-slate-300 dark:border-slate-600 bg-white/55 backdrop-blur-glass dark:bg-white/5 text-slate-600 dark:text-slate-400 flex items-center justify-center hover:border-nexus-accent hover:text-nexus-accent disabled:opacity-40 disabled:cursor-not-allowed"
             title="Attach image"
           >
             <Paperclip size={16} />

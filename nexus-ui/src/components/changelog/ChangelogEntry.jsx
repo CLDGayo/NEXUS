@@ -30,7 +30,7 @@ const MD_COMPONENTS = {
 export default function ChangelogEntry({ entry }) {
   const tags = Array.isArray(entry.type_tags) ? entry.type_tags : [];
   return (
-    <article className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <article className="glass-card p-5">
       <header className="mb-3 flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center rounded-full bg-nexus-accent/10 px-2.5 py-0.5 text-[11px] font-semibold text-nexus-accent">
           v{entry.version}

@@ -2,7 +2,7 @@ import { CheckCircle2, Edit3, Power, Trash2 } from 'lucide-react';
 
 export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDeactivate, onDelete, busy }) {
   return (
-    <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm">
+    <div className="glass-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -20,7 +20,7 @@ export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDea
             type="button"
             onClick={onEdit}
             disabled={busy}
-            className="inline-flex items-center gap-1 rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-nexus-accent disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-nexus-accent disabled:opacity-50"
           >
             <Edit3 size={11} /> Edit
           </button>
@@ -29,7 +29,7 @@ export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDea
               type="button"
               onClick={onDeactivate}
               disabled={busy}
-              className="inline-flex items-center gap-1 rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-nexus-accent disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-nexus-accent disabled:opacity-50"
             >
               <Power size={11} /> Deactivate
             </button>
@@ -47,7 +47,7 @@ export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDea
             type="button"
             onClick={onDelete}
             disabled={busy}
-            className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
             <Trash2 size={11} /> Delete
           </button>

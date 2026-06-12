@@ -38,7 +38,7 @@ export default function RequireTenant({ children }) {
   if (tenants.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <div className="max-w-md rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 shadow-sm text-center">
+        <div className="max-w-md glass-card p-6 shadow-sm text-center">
           <div className="text-sm font-semibold mb-1">No workspaces yet</div>
           <p className="text-xs text-nexus-muted mb-4">
             Create your first workspace to start using NEXUS.

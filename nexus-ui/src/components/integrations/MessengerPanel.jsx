@@ -46,7 +46,7 @@ function ReadOnlyField({ label, value, copyable, sublabel }) {
           <button
             type="button"
             onClick={copy}
-            className="border-l border-nexus-border bg-white dark:bg-slate-900 px-3 text-xs font-medium text-nexus-muted hover:text-nexus-accent"
+            className="border-l border-nexus-border bg-white/55 backdrop-blur-glass dark:bg-white/5 px-3 text-xs font-medium text-nexus-muted hover:text-nexus-accent"
             title="Copy to clipboard"
           >
             {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
@@ -133,7 +133,7 @@ export default function MessengerPanel() {
 
   if (loading) {
     return (
-      <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+      <section className="glass-card p-5">
         <div className="text-sm text-nexus-muted">Loading Messenger configuration…</div>
       </section>
     );
@@ -148,7 +148,7 @@ export default function MessengerPanel() {
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <section className="space-y-4 glass-card p-5">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Facebook Messenger</h3>
@@ -218,7 +218,7 @@ export default function MessengerPanel() {
               placeholder="EAA… (paste new PAT)"
               minLength={16}
               required
-              className="flex-1 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
+              className="flex-1 rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
             />
             <button
               type="submit"
@@ -274,7 +274,7 @@ export default function MessengerPanel() {
               placeholder="App Secret from Meta App Dashboard → Settings → Basic"
               minLength={16}
               required
-              className="flex-1 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
+              className="flex-1 rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
             />
             <button
               type="submit"

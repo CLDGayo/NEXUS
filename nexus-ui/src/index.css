@@ -6,35 +6,135 @@ html, body, #root {
   height: 100%;
 }
 
+/* App base color lives on body so the fixed liquid background (z-0) composites
+   ABOVE it, and translucent glass content (z-10) refracts the background. */
+body {
+  background-color: #f6f3ec; /* nexus-cream */
+}
+.dark body {
+  background-color: #10131c; /* nexus-ink */
+}
+
 @layer components {
-  /* Frosted surface. On the light app bg (slate-50), glass reads as a brighter,
-     higher-opacity WHITE veil — a dark tint on a light bg looks muddy and kills
-     text contrast. Dark tint is reserved for the modal scrim (.glass-overlay). */
+  /* ───────────────────────────── iOS Liquid Glass ─────────────────────────────
+     Frosted surfaces layer four things: heavy backdrop blur + saturate (vibrancy
+     makes content behind glass read RICHER, not muddy), a bright specular top
+     edge (light catches the rim), a subtle inner glow for depth, and a large
+     soft outer drop. On the light app bg, glass stays a bright same-hue veil — a
+     dark tint on a light bg looks muddy and kills text contrast. Dark tint is
+     reserved for the modal scrim (.glass-overlay).
+
+     box-shadow combines specular (inset) + drop in raw CSS because Tailwind's
+     shadow-x shadow-y utilities overwrite each other (single --tw-shadow var). */
+
   .glass-pane {
-    @apply rounded-xl border border-white/60 bg-white/70 shadow-glass backdrop-blur-md;
-    @apply dark:border-white/10 dark:bg-slate-900/60 dark:text-slate-100;
+    @apply rounded-glass border border-white/70 bg-white/55 backdrop-blur-glass backdrop-saturate-150;
+    @apply dark:border-white/10 dark:bg-nexus-ink/55 dark:text-slate-100;
+    box-shadow:
+      inset 0 1.5px 0 0 rgba(255,255,255,0.75),
+      inset 0 -1px 0 0 rgba(255,255,255,0.30),
+      inset 0 0 0 1px rgba(255,255,255,0.20),
+      0 6px 20px rgba(20,22,40,0.07),
+      0 2px 5px rgba(20,22,40,0.04);
   }
+  .dark .glass-pane {
+    box-shadow:
+      inset 0 1.5px 0 0 rgba(255,255,255,0.14),
+      inset 0 0 0 1px rgba(255,255,255,0.05),
+      0 8px 28px rgba(0,0,0,0.42);
+  }
+
+  /* Thick luminous-edged frosted card (ref 1). The doubled inset highlight +
+     full ring reads as a chunky glass bevel; large radius + soft float drop. */
   .glass-card {
-    @apply rounded-2xl border border-white/50 bg-white/75 shadow-glass-lg backdrop-blur-lg;
-    @apply dark:border-white/10 dark:bg-slate-900/55;
+    @apply rounded-glass-xl border border-white/70 bg-white/55 backdrop-blur-glass backdrop-saturate-150;
+    @apply dark:border-white/10 dark:bg-nexus-ink/50;
+    box-shadow:
+      inset 0 2px 0 0 rgba(255,255,255,0.85),
+      inset 0 -1.5px 0 0 rgba(255,255,255,0.40),
+      inset 0 0 0 1px rgba(255,255,255,0.30),
+      inset 0 0 28px rgba(255,255,255,0.18),
+      0 20px 56px rgba(20,22,40,0.13),
+      0 6px 16px rgba(20,22,40,0.07);
   }
+  .dark .glass-card {
+    box-shadow:
+      inset 0 2px 0 0 rgba(255,255,255,0.16),
+      inset 0 0 0 1px rgba(255,255,255,0.06),
+      inset 0 0 28px rgba(255,255,255,0.04),
+      0 20px 56px rgba(0,0,0,0.48);
+  }
+
   .glass-header {
-    @apply border-b border-nexus-border/70 bg-white/65 shadow-glass-sm backdrop-blur-xl;
-    @apply dark:border-white/10 dark:bg-slate-950/55;
+    @apply border-b border-white/40 bg-white/45 backdrop-blur-glass-xl backdrop-saturate-150;
+    @apply dark:border-white/10 dark:bg-nexus-ink/55;
+    box-shadow:
+      inset 0 1px 0 0 rgba(255,255,255,0.6),
+      0 1px 3px rgba(20,22,40,0.05);
   }
+  .dark .glass-header {
+    box-shadow:
+      inset 0 1px 0 0 rgba(255,255,255,0.08),
+      0 1px 3px rgba(0,0,0,0.4);
+  }
+
   .glass-rail {
-    @apply border-r border-nexus-border/60 bg-white/60 backdrop-blur-xl;
-    @apply dark:border-white/10 dark:bg-slate-950/50;
+    @apply border-r border-white/40 bg-white/40 backdrop-blur-glass-xl backdrop-saturate-150;
+    @apply dark:border-white/10 dark:bg-nexus-ink/50;
+    box-shadow:
+      inset 1px 0 0 0 rgba(255,255,255,0.5),
+      inset -1px 0 0 0 rgba(255,255,255,0.25);
   }
+  .dark .glass-rail {
+    box-shadow: inset -1px 0 0 0 rgba(255,255,255,0.05);
+  }
+
   /* The ONLY correct place for a dark tint: a scrim sitting OVER content. */
   .glass-overlay {
-    @apply fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm;
+    @apply fixed inset-0 z-50 bg-nexus-ink/35 backdrop-blur-md;
+    @apply motion-safe:animate-[glass-rise_0.25s_ease-out];
   }
+
   .glass-dialog {
-    @apply rounded-2xl border border-white/60 bg-white/90 shadow-glass-lg backdrop-blur-2xl;
-    @apply dark:border-white/10 dark:bg-slate-900/85;
+    @apply rounded-glass-xl border border-white/75 bg-white/70 backdrop-blur-glass-xl backdrop-saturate-150;
+    @apply dark:border-white/10 dark:bg-nexus-ink/80;
+    box-shadow:
+      inset 0 2px 0 0 rgba(255,255,255,0.9),
+      inset 0 -1.5px 0 0 rgba(255,255,255,0.45),
+      inset 0 0 0 1px rgba(255,255,255,0.35),
+      0 28px 72px rgba(20,22,40,0.24),
+      0 10px 28px rgba(20,22,40,0.12);
   }
+  .dark .glass-dialog {
+    box-shadow:
+      inset 0 2px 0 0 rgba(255,255,255,0.18),
+      inset 0 0 0 1px rgba(255,255,255,0.06),
+      0 28px 72px rgba(0,0,0,0.58);
+  }
+
   .glass-hover {
     @apply transition-shadow duration-300 hover:shadow-glass-glow;
+  }
+
+  /* Tactile press for buttons / nav items — compress on active. Disabled under
+     reduced motion. Pair with the existing useTactilePress hook where a JS
+     spring is wanted; this is the CSS-only path for list items. */
+  .glass-pressable {
+    @apply transition-transform duration-150 ease-out;
+    @apply motion-safe:active:scale-[0.97];
+  }
+
+  /* iOS mount reveal — rise + fade. Attach to floating surfaces (dialog, panels). */
+  .glass-rise {
+    @apply motion-safe:animate-glass-rise;
+  }
+}
+
+/* Honor reduced-motion for the ambient mesh + perpetual glass motion. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-mesh-drift,
+  .animate-glass-float,
+  .animate-glass-pulse {
+    animation: none !important;
   }
 }

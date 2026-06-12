@@ -33,7 +33,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
           <Slider.Track className="relative h-1.5 grow rounded-full bg-slate-200">
             <Slider.Range className="absolute h-full rounded-full bg-nexus-accent" />
           </Slider.Track>
-          <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white dark:bg-slate-900 shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
+          <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white/55 backdrop-blur-glass dark:bg-white/5 shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
         </Slider.Root>
         <p className="mt-1 text-[11px] text-nexus-muted">0 = deterministic · 2 = most creative</p>
       </div>
@@ -66,7 +66,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
           <Slider.Track className="relative h-1.5 grow rounded-full bg-slate-200">
             <Slider.Range className="absolute h-full rounded-full bg-nexus-accent" />
           </Slider.Track>
-          <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white dark:bg-slate-900 shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
+          <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white/55 backdrop-blur-glass dark:bg-white/5 shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
         </Slider.Root>
       </div>
 

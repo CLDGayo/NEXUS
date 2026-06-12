@@ -7,11 +7,11 @@ import { buildCommands } from './commands.js';
 
 export default function CommandPalette({ open, onOpenChange }) {
   const { isSuperuser, logout } = useAuth();
-  const { activeTenantRole } = useTenant();
+  const { activeTenantRole, canManage } = useTenant();
   const navigate = useNavigate();
 
   const isOwner = activeTenantRole === 'owner';
-  const allCommands = buildCommands({ isOwner, isSuperuser });
+  const allCommands = buildCommands({ isOwner, canManage, isSuperuser });
 
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -62,7 +62,7 @@ export default function CommandPalette({ open, onOpenChange }) {
       <Dialog.Portal>
         <Dialog.Overlay className="glass-overlay" />
         <Dialog.Content
-          className="fixed left-1/2 top-24 z-50 w-full max-w-lg -translate-x-1/2 glass-dialog overflow-hidden focus:outline-none"
+          className="fixed left-1/2 top-24 z-50 w-full max-w-lg -translate-x-1/2 glass-dialog glass-rise overflow-hidden focus:outline-none"
           aria-describedby={undefined}
           onOpenAutoFocus={(e) => {
             // Manually focus the input; prevent Radix from focusing the content div
@@ -102,10 +102,10 @@ export default function CommandPalette({ open, onOpenChange }) {
                     key={cmd.id}
                     type="button"
                     className={[
-                      'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-left transition-colors',
+                      'glass-pressable flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-left transition-colors',
                       isActive
-                        ? 'bg-nexus-accent/10 text-nexus-accent'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100/70',
+                        ? 'bg-nexus-accent/12 text-nexus-accent shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4)] dark:bg-nexus-accent/20'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-white/50 dark:hover:bg-white/5',
                     ].join(' ')}
                     onMouseEnter={() => setActiveIndex(idx)}
                     onClick={() => runCommand(cmd)}

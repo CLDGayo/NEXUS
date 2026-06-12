@@ -25,7 +25,7 @@ export default function HealthPanel({ health }) {
   const messenger = h.messenger || {};
   const watcher = h.watcher || {};
   return (
-    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm">
+    <section className="glass-card p-4">
       <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">System Health</div>
       <div className="divide-y divide-nexus-border">
         <Row label="Qdrant" ok={!!qdrant.ok} hint={qdrant.ok ? null : qdrant.hint} />

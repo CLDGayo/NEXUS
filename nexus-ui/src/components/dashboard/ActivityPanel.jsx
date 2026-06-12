@@ -49,7 +49,7 @@ export default function ActivityPanel({ activity }) {
   const a = activity || {};
   const integrations = `${a.active_integrations ?? 0} / ${a.total_integrations ?? 0}`;
   return (
-    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm">
+    <section className="glass-card p-4">
       <div className="mb-1 flex items-center gap-2">
         <Activity size={14} className="text-nexus-accent" />
         <div className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">

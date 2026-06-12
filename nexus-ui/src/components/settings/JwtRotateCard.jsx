@@ -49,7 +49,7 @@ export default function JwtRotateCard() {
         type="button"
         onClick={rotate}
         disabled={busy}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm hover:bg-amber-100 disabled:opacity-50"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm hover:bg-amber-100 disabled:opacity-50"
       >
         <RotateCcw size={12} />
         {busy ? 'Rotating…' : 'Rotate now'}

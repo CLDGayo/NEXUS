@@ -9,7 +9,7 @@ function formatDate(iso) {
 export default function QueryVolumeChart({ data }) {
   const series = Array.isArray(data) ? data : [];
   return (
-    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm">
+    <section className="glass-card p-4">
       <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Query Volume (7d)</div>
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">

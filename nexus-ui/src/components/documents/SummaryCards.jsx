@@ -2,7 +2,7 @@ import { FileText, Layers, Clock } from 'lucide-react';
 
 function Card({ icon: Icon, label, value, sub }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 px-4 py-3 shadow-sm">
+    <div className="flex items-center gap-3 glass-card px-4 py-3 shadow-sm">
       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-nexus-accent">
         <Icon size={16} />
       </div>

@@ -57,7 +57,7 @@ export default function PageHeader({ title, right, onOpenCommand }) {
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenCommand}
-          className="hidden sm:flex items-center gap-1.5 rounded-md border border-slate-200/80 bg-white/50 px-2.5 py-1.5 text-xs text-slate-500 hover:bg-white/80 hover:text-slate-700 transition-colors dark:border-white/10 dark:bg-slate-800/40 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200"
+          className="glass-pressable hidden sm:flex items-center gap-1.5 rounded-xl border border-white/60 bg-white/50 px-2.5 py-1.5 text-xs text-slate-500 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)] backdrop-blur-glass hover:bg-white/80 hover:text-slate-700 transition-colors dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-200"
           aria-label="Open command palette"
         >
           <Search size={13} />

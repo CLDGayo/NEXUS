@@ -18,7 +18,7 @@ export default function WorkspacePickerModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-nexus-border bg-white dark:bg-slate-900 p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 p-6 shadow-xl">
         <div className="mb-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
             <Building2 size={16} className="text-nexus-accent" />

@@ -50,7 +50,7 @@ export default function PasswordCard({
   }
 
   return (
-    <section className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <section className="glass-card p-5">
       <div className="mb-3 flex items-center gap-2">
         <KeyRound size={14} className="text-nexus-accent" />
         <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
@@ -69,7 +69,7 @@ export default function PasswordCard({
             onChange={(e) => setOldPw(e.target.value)}
             required
             autoComplete="current-password"
-            className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
+            className="w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
           />
         </div>
         <div>
@@ -83,7 +83,7 @@ export default function PasswordCard({
             minLength={8}
             required
             autoComplete="new-password"
-            className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
+            className="w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
           />
         </div>
 

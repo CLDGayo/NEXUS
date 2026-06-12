@@ -24,7 +24,7 @@ export default function ProductsTable({ products = [], onDelete }) {
         return (
           <div
             key={p.id}
-            className="rounded-lg border border-nexus-border bg-white dark:bg-slate-900 overflow-hidden flex flex-col"
+            className="rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 overflow-hidden flex flex-col"
           >
             <Link
               to={`/products/${p.id}`}

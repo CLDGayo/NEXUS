@@ -27,7 +27,7 @@ export default function IntegrationCard({ connector, onConnect }) {
   return (
     <div
       className={[
-        'relative flex min-h-[208px] flex-col rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-4 shadow-sm transition-colors',
+        'relative flex min-h-[208px] flex-col glass-card p-4 transition-colors',
         connected ? '' : 'opacity-80',
       ].join(' ')}
     >

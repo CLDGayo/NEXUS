@@ -28,7 +28,7 @@ export default function PremiumConnectModal({ open, connectorName, onClose }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-nexus-border bg-white dark:bg-slate-900 p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-start justify-between">

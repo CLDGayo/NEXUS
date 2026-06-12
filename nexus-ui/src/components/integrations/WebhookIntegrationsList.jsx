@@ -89,7 +89,7 @@ export default function WebhookIntegrationsList() {
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <section className="space-y-3 glass-card p-5">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Webhook integrations</h3>
@@ -113,7 +113,7 @@ export default function WebhookIntegrationsList() {
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
                 required
-                className="mt-1 w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-sm focus:border-nexus-accent"
+                className="mt-1 w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-1.5 text-sm focus:border-nexus-accent"
               >
                 <option value="">Choose…</option>
                 {meta.types.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -126,7 +126,7 @@ export default function WebhookIntegrationsList() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 required
-                className="mt-1 w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-sm focus:border-nexus-accent"
+                className="mt-1 w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-1.5 text-sm focus:border-nexus-accent"
               />
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function WebhookIntegrationsList() {
               value={form.config}
               onChange={(e) => setForm({ ...form, config: e.target.value })}
               placeholder='{"url": "https://hooks.example.com/abc", "secret": "shh"}'
-              className="mt-1 w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 font-mono text-xs focus:border-nexus-accent"
+              className="mt-1 w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 font-mono text-xs focus:border-nexus-accent"
             />
           </div>
           <div>
@@ -195,21 +195,21 @@ export default function WebhookIntegrationsList() {
                     type="button"
                     onClick={() => testFire(it.id)}
                     disabled={busy}
-                    className="inline-flex items-center gap-1 rounded border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800 disabled:opacity-50"
                   >
                     <Send size={11} /> Test
                   </button>
                   <button
                     type="button"
                     onClick={() => toggle(it)}
-                    className="inline-flex items-center gap-1 rounded border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800"
+                    className="inline-flex items-center gap-1 rounded border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800"
                   >
                     <Power size={11} /> {it.enabled ? 'Disable' : 'Enable'}
                   </button>
                   <button
                     type="button"
                     onClick={() => remove(it.id)}
-                    className="inline-flex items-center gap-1 rounded border border-red-200 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
+                    className="inline-flex items-center gap-1 rounded border border-red-200 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50"
                   >
                     <Trash2 size={11} />
                   </button>

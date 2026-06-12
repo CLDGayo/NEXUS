@@ -35,7 +35,7 @@ export default function SourceChip({ source, onClick }) {
       type="button"
       onClick={() => onClick?.(source)}
       title={tipParts.join(' · ')}
-      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs text-slate-700 dark:text-slate-300 hover:border-nexus-accent hover:text-nexus-accent transition-colors"
+      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700/50 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-2.5 py-1 text-xs text-slate-700 dark:text-slate-300 hover:border-nexus-accent hover:text-nexus-accent transition-colors"
     >
       <span className="font-mono font-semibold text-nexus-accent">
         [{source.index ?? '?'}]

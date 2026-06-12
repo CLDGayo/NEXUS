@@ -4,7 +4,7 @@ import { Check } from 'lucide-react';
 export default function CapabilityCard({ item }) {
   const { Icon, title, summary } = item;
   return (
-    <div className="flex h-full flex-col rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <div className="flex h-full flex-col glass-card p-5">
       <div className="flex items-start justify-between">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-nexus-accent/10 text-nexus-accent">
           {Icon ? <Icon size={20} /> : null}

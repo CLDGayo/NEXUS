@@ -11,7 +11,7 @@ import {
 function Card({ icon: Icon, label, value, sub, accent }) {
   const ring = accent ?? 'bg-blue-50 text-nexus-accent';
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-nexus-border bg-white px-4 py-3 shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-slate-900/50">
+    <div className="glass-card glass-hover flex items-center gap-3 px-4 py-3">
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${ring}`}>
         <Icon size={16} />
       </div>
