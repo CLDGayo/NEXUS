@@ -77,6 +77,16 @@ async def get_current_tenant(
         # clearly in logs if it ever happens.
         raise HTTPException(status_code=404, detail="tenant not found")
 
+    # Phase 52 — archived workspace guard. Data-bearing routes (anything
+    # outside /api/tenants) return 403 "workspace_archived" so active
+    # members cannot interact with a suspended workspace. The /api/tenants
+    # prefix is exempted so owners can view/unarchive/transfer/delete the
+    # archived workspace without having to bypass the guard themselves.
+    if tenant.archived_at is not None and not request.url.path.startswith(
+        "/api/tenants"
+    ):
+        raise HTTPException(status_code=403, detail="workspace_archived")
+
     # Stash on request.state for observability hooks (OTEL spans + Langfuse
     # traces read these in Phase 5+).
     request.state.tenant_id = tenant.id
@@ -118,6 +128,8 @@ async def list_tenants_for_user(db: AsyncSession, user: User) -> list[TenantRead
             created_at=tenant.created_at,
             role=role,
             member_count=member_count,
+            avatar_url=tenant.avatar_url,
+            archived_at=tenant.archived_at,
         )
         for tenant, role, member_count in rows
     ]

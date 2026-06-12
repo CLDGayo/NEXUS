@@ -101,6 +101,17 @@ class Tenant(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Phase 52 — Workspace Lifecycle & Danger Zone.
+    # ``avatar_url`` is either a stable public HTTPS URL (CDN) or the
+    # ``minio:tenant/{id}.webp`` sentinel used by the profile avatar system.
+    # ``archived_at`` is the soft-delete timestamp; data routes return 403
+    # ``workspace_archived`` when this is non-null so active members cannot
+    # continue using a suspended workspace.
+    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # Phase 45 — Lifecycle Persona Engine. Carries the full ai_settings blob
     # (scenario_prompts, active_nodes, model_params). Default is the empty-
     # string / True / None shape so existing tenants behave byte-identically

@@ -22,6 +22,13 @@ export default function WorkspaceSwitcher() {
   if (tenants.length === 0) return null;
 
   const label = activeTenantName || 'Select workspace';
+  const activeTenant = tenants.find((t) => t.id === activeTenantId);
+  // Only render real http(s) URLs — the `minio:` sentinel means no public
+  // base URL is configured, so fall back to the default icon.
+  const avatarUrl =
+    activeTenant?.avatar_url && /^https?:\/\//.test(activeTenant.avatar_url)
+      ? activeTenant.avatar_url
+      : null;
 
   return (
     <DropdownMenu.Root>
@@ -32,7 +39,15 @@ export default function WorkspaceSwitcher() {
           className="inline-flex items-center gap-2 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2.5 py-1.5 text-sm text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 hover:dark:bg-slate-900 focus:outline-none"
           title="Switch workspace"
         >
-          <Building2 size={14} className="text-nexus-accent" />
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              className="h-4 w-4 shrink-0 rounded-sm object-cover"
+            />
+          ) : (
+            <Building2 size={14} className="text-nexus-accent" />
+          )}
           <span className="max-w-[140px] truncate font-medium">{label}</span>
           <ChevronDown size={14} className="text-slate-500 dark:text-slate-400" />
         </button>

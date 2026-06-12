@@ -81,6 +81,7 @@ class _FakeTenantRow:
         self.name = slug.capitalize()
         self.slug = slug
         self.created_at = datetime(2026, 5, 25, tzinfo=timezone.utc)
+        self.archived_at = None
 
 
 class _FakeTenantUser:

@@ -152,6 +152,9 @@ export const api = {
   patch: (path, json) => apiFetch(path, { method: 'PATCH', json }),
   put: (path, json) => apiFetch(path, { method: 'PUT', json }),
   del: (path) => apiFetch(path, { method: 'DELETE' }),
+  // Phase 52 — DELETE with a JSON body (workspace hard-delete confirm_name).
+  // Paths starting with /tenants/ skip auto X-Tenant-ID injection (same as del).
+  delWithBody: (path, json) => apiFetch(path, { method: 'DELETE', json }),
   upload: (path, formData) => apiFetch(path, { method: 'POST', body: formData }),
   raw: apiFetch,
 };
