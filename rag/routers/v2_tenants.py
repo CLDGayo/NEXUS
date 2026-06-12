@@ -29,14 +29,15 @@ from __future__ import annotations
 import io
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
 from qdrant_client.models import FieldCondition, Filter, FilterSelector, MatchValue
-from sqlalchemy import func, select
+from sqlalchemy import cast, func, select
+from sqlalchemy.dialects.postgresql import DATE
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -52,7 +53,7 @@ from rag.auth import (
 )
 from rag.config import settings
 from rag.database.engine import get_async_session
-from rag.database.models import Document, Tenant, TenantUser, User
+from rag.database.models import Document, Message, Product, Tenant, TenantUser, User
 from rag.retrieval.dense import get_qdrant_client
 from rag.services import object_store
 from routers.deps import require_manager, require_owner
@@ -632,6 +633,141 @@ async def transfer_ownership(
     # Return caller's new role (admin after transfer)
     new_caller_role = caller_link.role if caller_link else "admin"
     return _tenant_read_from_model(tenant, new_caller_role)
+
+
+# ---------------------------------------------------------------------------
+# Phase 53 — WM-4 Usage Dashboard
+# ---------------------------------------------------------------------------
+
+
+class _DayCount(BaseModel):
+    date: str  # ISO date string "YYYY-MM-DD"
+    count: int
+
+
+class TenantUsageRead(BaseModel):
+    document_count: int
+    product_count: int
+    member_count: int
+    vector_chunks: int | None
+    messages_7d: list[_DayCount]
+    messages_total: int
+
+
+@router.get("/{tenant_id}/usage", response_model=TenantUsageRead)
+async def get_tenant_usage(
+    tenant_id: uuid.UUID,
+    tenant: Tenant = Depends(require_manager),
+    db: AsyncSession = Depends(get_async_session),
+) -> TenantUsageRead:
+    """Return usage stats for the workspace.
+
+    Gated by ``require_manager`` (owner|admin). Path id must match the
+    ``X-Tenant-ID`` header — ``_check_path_matches_header`` enforces this.
+
+    Vector chunk count is a live Qdrant ``count`` by slug filter. On any
+    Qdrant error the field degrades to ``null`` rather than 500.
+    """
+    _check_path_matches_header(tenant, tenant_id)
+
+    # --- Postgres counts ---------------------------------------------------
+
+    doc_stmt = (
+        select(func.count())
+        .select_from(Document)
+        .where(Document.tenant_id == tenant.id)
+    )
+    document_count: int = (await db.execute(doc_stmt)).scalar_one()
+
+    product_stmt = (
+        select(func.count())
+        .select_from(Product)
+        .where(Product.tenant_id == tenant.id)
+    )
+    product_count: int = (await db.execute(product_stmt)).scalar_one()
+
+    member_stmt = (
+        select(func.count())
+        .select_from(TenantUser)
+        .where(TenantUser.tenant_id == tenant.id)
+    )
+    member_count: int = (await db.execute(member_stmt)).scalar_one()
+
+    msg_total_stmt = (
+        select(func.count())
+        .select_from(Message)
+        .where(Message.tenant_id == tenant.id)
+    )
+    messages_total: int = (await db.execute(msg_total_stmt)).scalar_one()
+
+    # --- 7-day message volume (UTC date buckets, zero-filled) ---------------
+    today_utc = datetime.now(timezone.utc).date()
+    seven_days_ago = today_utc - timedelta(days=6)
+
+    msg_7d_stmt = (
+        select(
+            cast(Message.created_at, DATE).label("day"),
+            func.count().label("cnt"),
+        )
+        .where(
+            Message.tenant_id == tenant.id,
+            Message.created_at >= datetime(
+                seven_days_ago.year,
+                seven_days_ago.month,
+                seven_days_ago.day,
+                tzinfo=timezone.utc,
+            ),
+        )
+        .group_by(cast(Message.created_at, DATE))
+        .order_by(cast(Message.created_at, DATE))
+    )
+    rows_7d = (await db.execute(msg_7d_stmt)).all()
+
+    # Build a zero-filled series for all 7 days
+    day_counts: dict[date, int] = {
+        today_utc - timedelta(days=i): 0 for i in range(6, -1, -1)
+    }
+    for row in rows_7d:
+        d: date = row.day if isinstance(row.day, date) else date.fromisoformat(str(row.day))
+        if d in day_counts:
+            day_counts[d] = row.cnt
+    messages_7d = [
+        _DayCount(date=d.isoformat(), count=c)
+        for d, c in sorted(day_counts.items())
+    ]
+
+    # --- Qdrant vector chunk count (graceful degrade) -----------------------
+    vector_chunks: int | None = None
+    try:
+        qdrant = get_qdrant_client()
+        result = await qdrant.count(
+            collection_name=settings.qdrant_collection,
+            count_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="tenant_id",
+                        match=MatchValue(value=tenant.slug),
+                    )
+                ]
+            ),
+            exact=True,
+        )
+        vector_chunks = result.count
+    except Exception:  # noqa: BLE001
+        _log.warning(
+            "usage.qdrant_count_failed tenant_id=%s slug=%s",
+            str(tenant.id),
+            tenant.slug,
+        )
+
+    return TenantUsageRead(
+        document_count=document_count,
+        product_count=product_count,
+        member_count=member_count,
+        vector_chunks=vector_chunks,
+        messages_7d=messages_7d,
+        messages_total=messages_total,
+    )
 
 
 @router.delete("/{tenant_id}", status_code=204)

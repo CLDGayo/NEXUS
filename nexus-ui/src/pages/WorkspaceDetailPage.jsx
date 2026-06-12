@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs.
 import MembersTab from '../components/workspace/MembersTab.jsx';
 import GeneralTab from '../components/workspace/GeneralTab.jsx';
 import AdvancedTab from '../components/workspace/AdvancedTab.jsx';
+import UsageTab from '../components/workspace/UsageTab.jsx';
 
 function PlaceholderTab({ icon: Icon, title, copy }) {
   return (
@@ -150,11 +151,15 @@ export default function WorkspaceDetailPage() {
             </TabsContent>
 
             <TabsContent value="usage">
-              <PlaceholderTab
-                icon={Gauge}
-                title="Usage dashboard coming soon"
-                copy="Vector chunks, message volume, and document counts for this workspace will appear here."
-              />
+              {isActive ? (
+                <UsageTab tenantId={tenant.id} />
+              ) : (
+                <PlaceholderTab
+                  icon={Gauge}
+                  title="Switch to this workspace to view usage"
+                  copy="Usage stats operate on the active workspace. Use the switch banner above."
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="advanced">
