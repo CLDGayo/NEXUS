@@ -5,9 +5,9 @@ Exposes the read/write API behind the Settings → AI Studio page:
     GET  /api/workspace/ai-settings   -> full merged blob (defaults filled)
     PUT  /api/workspace/ai-settings   -> partial update, merged + persisted
 
-Both endpoints are gated by ``require_owner`` (Phase 31 RBAC) so only a
-workspace owner can read or mutate the persona / node-toggle / model-param
-configuration. The write path reuses ``ai_settings`` engine helpers
+Both endpoints are gated by ``require_manager`` (Phase 50 RBAC) so workspace
+owners and admins can read or mutate the persona / node-toggle / model-param
+configuration; plain members are rejected. The write path reuses ``ai_settings`` engine helpers
 (``merged_ai_settings`` for shape normalization, ``model_choice_allowlist``
 for the model id allowlist) so the HTTP layer never re-derives bounds.
 """
@@ -26,7 +26,7 @@ from rag.orchestrator.ai_settings import (
     merged_ai_settings,
     model_choice_allowlist,
 )
-from routers.deps import require_owner
+from routers.deps import require_manager
 
 router = APIRouter(tags=["workspace-ai-settings"])
 
@@ -94,7 +94,7 @@ def _with_meta(merged: dict[str, Any]) -> dict[str, Any]:
 
 @router.get("/ai-settings")
 async def get_ai_settings(
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
 ) -> dict[str, Any]:
     """Return the tenant's fully-merged ai_settings (every field populated)."""
     return _with_meta(merged_ai_settings(tenant.ai_settings))
@@ -103,7 +103,7 @@ async def get_ai_settings(
 @router.put("/ai-settings")
 async def put_ai_settings(
     body: AiSettingsPut,
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict[str, Any]:
     """Apply a partial update, validate bounds, persist, return the merged blob."""
