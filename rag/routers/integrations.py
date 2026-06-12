@@ -4,7 +4,7 @@ Phase 30.1 — every row lives in ``app.integrations``. ``id`` is now a
 UUID (was an autoincrement int); ``config`` is JSONB rather than a
 TEXT-serialised JSON blob.
 
-Phase 31 — gated by ``require_owner`` end to end. Every select/insert/
+Phase 50 — gated by ``require_manager`` (owner or admin) end to end. Every select/insert/
 update/delete filters by ``Integration.tenant_id == tenant.id`` so an
 owner of workspace A cannot see, mutate, or fire-test an integration
 configured under workspace B. The Messenger token management routes
@@ -32,7 +32,7 @@ from integrations.providers import PROVIDERS
 
 from rag.database.engine import get_async_session
 from rag.database.models import Integration, MessengerPageTenant, Tenant
-from routers.deps import require_owner
+from routers.deps import require_manager
 
 router = APIRouter(tags=["integrations"])
 
@@ -117,7 +117,7 @@ async def _load_for_tenant(
 
 @router.get("")
 async def list_integrations(
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> list[dict]:
     stmt = (
@@ -130,7 +130,7 @@ async def list_integrations(
 
 
 @router.get("/events")
-async def list_events(_: Tenant = Depends(require_owner)) -> dict:
+async def list_events(_: Tenant = Depends(require_manager)) -> dict:
     return {"events": list(EVENT_NAMES), "types": sorted(VALID_TYPES)}
 
 
@@ -182,7 +182,7 @@ _PREMIUM_CATALOG: tuple[CatalogConnector, ...] = (
 
 @router.get("/catalog")
 async def get_integration_catalog(
-    _: Tenant = Depends(require_owner),
+    _: Tenant = Depends(require_manager),
 ) -> dict[str, list[dict[str, Any]]]:
     """Static premium-connector catalog. Read-only; no DB, no secrets."""
     return {"connectors": [c.model_dump() for c in _PREMIUM_CATALOG]}
@@ -232,7 +232,7 @@ def _messenger_payload(request: Request) -> dict[str, Any]:
 @router.get("/messenger")
 async def get_messenger(
     request: Request,
-    _: Tenant = Depends(require_owner),
+    _: Tenant = Depends(require_manager),
 ) -> dict[str, Any]:
     return _messenger_payload(request)
 
@@ -240,7 +240,7 @@ async def get_messenger(
 @router.post("/messenger/rotate-verify-token")
 async def rotate_messenger_verify_token(
     request: Request,
-    _: Tenant = Depends(require_owner),
+    _: Tenant = Depends(require_manager),
 ) -> dict[str, Any]:
     messenger_overlay.rotate_verify_token()
     return _messenger_payload(request)
@@ -250,7 +250,7 @@ async def rotate_messenger_verify_token(
 async def patch_messenger(
     body: MessengerPatch,
     request: Request,
-    _: Tenant = Depends(require_owner),
+    _: Tenant = Depends(require_manager),
 ) -> dict[str, Any]:
     if (
         body.verify_token is None
@@ -293,7 +293,7 @@ def _serialize_page(row: MessengerPageTenant) -> dict[str, Any]:
 
 @router.get("/messenger/pages")
 async def list_messenger_pages(
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> list[dict[str, Any]]:
     """List the Facebook pages bound to the active tenant."""
@@ -314,7 +314,7 @@ async def list_messenger_pages(
 @router.post("/messenger/pages", status_code=201)
 async def bind_messenger_page(
     body: MessengerPageBindRequest,
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict[str, Any]:
     """Bind a Facebook page id to the active tenant.
@@ -352,7 +352,7 @@ async def bind_messenger_page(
 )
 async def unbind_messenger_page(
     facebook_page_id: str,
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> Response:
     """Unbind a page from the active tenant. 404 if it belongs to someone else."""
@@ -374,7 +374,7 @@ async def unbind_messenger_page(
 @router.post("", status_code=201)
 async def create_integration(
     body: IntegrationCreate,
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
     _validate_type(body.type)
@@ -398,7 +398,7 @@ async def create_integration(
 async def update_integration(
     integration_id: uuid.UUID,
     body: IntegrationPatch,
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
     if body.events is not None:
@@ -430,7 +430,7 @@ async def update_integration(
 @router.delete("/{integration_id}", status_code=204, response_class=Response)
 async def delete_integration(
     integration_id: uuid.UUID,
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> Response:
     integration = await _load_for_tenant(db, integration_id, tenant.id)
@@ -442,7 +442,7 @@ async def delete_integration(
 @router.post("/{integration_id}/test")
 async def test_integration(
     integration_id: uuid.UUID,
-    tenant: Tenant = Depends(require_owner),
+    tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
     # Confirm the integration belongs to this tenant before the dispatcher
