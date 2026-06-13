@@ -1,0 +1,148 @@
+{
+  "nodes": [
+    {
+      "id": "requirements_aioboto3",
+      "label": "aioboto3",
+      "file_type": "code",
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "requirements_pillow",
+      "label": "pillow",
+      "file_type": "code",
+      "source_file": "requirements.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "system_brix_seina",
+      "label": "Seina (Sales Persona)",
+      "file_type": "concept",
+      "source_file": "orchestrator/prompts/system_brix.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "system_internal_nexus",
+      "label": "Nexus Internal Assistant",
+      "file_type": "concept",
+      "source_file": "orchestrator/prompts/system_internal.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "system_recovery_seina",
+      "label": "Seina (Recovery Persona)",
+      "file_type": "concept",
+      "source_file": "orchestrator/prompts/system_recovery.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_nexus_ui",
+      "label": "Nexus Knowledge Base UI",
+      "file_type": "document",
+      "source_file": "static/index.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "widget_nexus_chat",
+      "label": "Nexus Chat Widget",
+      "file_type": "document",
+      "source_file": "widget-static/widget.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "api_chat_stream",
+      "label": "/api/chat/stream",
+      "file_type": "code",
+      "source_file": "widget-static/widget.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "system_brix_seina",
+      "target": "system_recovery_seina",
+      "relation": "semantically_similar_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "orchestrator/prompts/system_recovery.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "system_brix_seina",
+      "target": "system_internal_nexus",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "orchestrator/prompts/system_brix.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "widget_nexus_chat",
+      "target": "api_chat_stream",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "widget-static/widget.html",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "index_nexus_ui",
+      "target": "system_internal_nexus",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "static/index.html",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "system_internal_nexus",
+      "target": "api_chat_stream",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.7,
+      "source_file": "orchestrator/prompts/system_internal.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 8455,
+  "output_tokens": 1317,
+  "failed_chunks": 0
+}

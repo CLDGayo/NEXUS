@@ -1,0 +1,83 @@
+[     148ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5199/node_modules/.vite/deps/chunk-KDCVS43I.js?v=8daf8fc1:21608
+[     167ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://127.0.0.1:5199/node_modules/.vite/deps/react-router-dom.js?v=d36030f4:4435
+[     168ms] [WARNING] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. @ http://127.0.0.1:5199/node_modules/.vite/deps/react-router-dom.js?v=d36030f4:4435
+[    2963ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:5199/node_modules/.vite/deps/recharts.js?v=9bd190e7:9152
+[    2963ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:5199/node_modules/.vite/deps/recharts.js?v=9bd190e7:9152
+[    2963ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:5199/node_modules/.vite/deps/recharts.js?v=9bd190e7:9152
+[    2964ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:5199/node_modules/.vite/deps/recharts.js?v=9bd190e7:9152
+[   56255ms] [LOG] [vite] server connection lost. Polling for restart... @ http://127.0.0.1:5199/@vite/client:963
+[   56256ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   57258ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   58261ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   59263ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   60265ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   60617ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/health:0
+[   61268ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   62271ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   63274ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   64276ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   65277ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   66279ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   67281ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   68283ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   69288ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   70292ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   71297ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   72303ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   73307ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   74311ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   75320ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   76325ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   77337ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   78346ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   79357ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   80399ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   81441ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   82457ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   83539ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   84600ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   85646ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   86782ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   87880ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   88968ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   90107ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   90619ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/health:0
+[   91379ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   92601ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   93960ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   95464ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   96687ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[   98812ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[  100300ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[  102054ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[  103709ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[  106847ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[  109922ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[  110074ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/documents?page=1&limit=50&search=:0
+[  110074ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/documents?page=1&limit=50&search=:0
+[  110074ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/documents/index_summary:0
+[  110074ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/documents/index_summary:0
+[  110739ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/logs:0
+[  110739ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/logs:0
+[  111356ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/resources/prompts:0
+[  111356ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/resources/prompts:0
+[  111989ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/workspace/ai-settings:0
+[  111990ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/workspace/ai-settings:0
+[  112081ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034
+[  112873ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/changelog:0
+[  112873ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/changelog:0
+[  116556ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/workspace/ai-settings:0
+[  116556ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/api/workspace/ai-settings:0
+[  117649ms] [ERROR] WebSocket connection to 'ws://127.0.0.1:5199/' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://127.0.0.1:5199/@vite/client:1034

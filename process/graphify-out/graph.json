@@ -1,0 +1,315 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "Process Directory Guide",
+      "file_type": "document",
+      "source_file": "_seeds/_GUIDE.md",
+      "community": 3,
+      "id": "_guide_md",
+      "norm_label": "process directory guide"
+    },
+    {
+      "label": "Feature Folders Guide",
+      "file_type": "document",
+      "source_file": "_seeds/features/_GUIDE.md",
+      "community": 4,
+      "id": "features__guide_md",
+      "norm_label": "feature folders guide"
+    },
+    {
+      "label": "NEXUS - All Context",
+      "file_type": "document",
+      "source_file": "context/all-context.md",
+      "community": 1,
+      "id": "all_context_md",
+      "norm_label": "nexus - all context"
+    },
+    {
+      "label": "Planning Context",
+      "file_type": "document",
+      "source_file": "context/planning/all-planning.md",
+      "community": 1,
+      "id": "all_planning_md",
+      "norm_label": "planning context"
+    },
+    {
+      "label": "LinkedIn Achievements Dashboard PRD",
+      "file_type": "document",
+      "source_file": "context/planning/example-complex-prd.md",
+      "community": 1,
+      "id": "example_complex_prd_md",
+      "norm_label": "linkedin achievements dashboard prd"
+    },
+    {
+      "label": "Duma Neobrutalist Redesign Plan",
+      "file_type": "document",
+      "source_file": "context/planning/example-simple-prd.md",
+      "community": 1,
+      "id": "example_simple_prd_md",
+      "norm_label": "duma neobrutalist redesign plan"
+    },
+    {
+      "label": "NEXUS - All Tests",
+      "file_type": "document",
+      "source_file": "context/tests/all-tests.md",
+      "community": 1,
+      "id": "all_tests_md",
+      "norm_label": "nexus - all tests"
+    },
+    {
+      "label": "Development Protocols",
+      "file_type": "document",
+      "source_file": "development-protocols/all-development-protocols.md",
+      "community": 0,
+      "id": "all_development_protocols_md",
+      "norm_label": "development protocols"
+    },
+    {
+      "label": "Context Maintenance Protocol",
+      "file_type": "document",
+      "source_file": "development-protocols/context-maintenance.md",
+      "community": 0,
+      "id": "context_maintenance_md",
+      "norm_label": "context maintenance protocol"
+    },
+    {
+      "label": "Implementation Standards",
+      "file_type": "document",
+      "source_file": "development-protocols/implementation-standards.md",
+      "community": 0,
+      "id": "implementation_standards_md",
+      "norm_label": "implementation standards"
+    },
+    {
+      "label": "Intent Clarification Protocol",
+      "file_type": "document",
+      "source_file": "development-protocols/intent-clarification.md",
+      "community": 0,
+      "id": "intent_clarification_md",
+      "norm_label": "intent clarification protocol"
+    },
+    {
+      "label": "Orchestration Protocol",
+      "file_type": "document",
+      "source_file": "development-protocols/orchestration.md",
+      "community": 0,
+      "id": "orchestration_md",
+      "norm_label": "orchestration protocol"
+    },
+    {
+      "label": "Parallel Fan-Out Protocol",
+      "file_type": "document",
+      "source_file": "development-protocols/parallel-fan-out.md",
+      "community": 0,
+      "id": "parallel_fan_out_md",
+      "norm_label": "parallel fan-out protocol"
+    },
+    {
+      "label": "Phase Programs Protocol",
+      "file_type": "document",
+      "source_file": "development-protocols/phase-programs.md",
+      "community": 2,
+      "id": "phase_programs_md",
+      "norm_label": "phase programs protocol"
+    },
+    {
+      "label": "Plan Lifecycle Protocol",
+      "file_type": "document",
+      "source_file": "development-protocols/plan-lifecycle.md",
+      "community": 0,
+      "id": "plan_lifecycle_md",
+      "norm_label": "plan lifecycle protocol"
+    },
+    {
+      "label": "Tenant AI Customization Engine Plan",
+      "file_type": "document",
+      "source_file": "features/tenant-ai-customization/active/tenant-ai-customization_PLAN.md",
+      "community": 2,
+      "id": "tenant_ai_customization_plan_md",
+      "norm_label": "tenant ai customization engine plan"
+    },
+    {
+      "label": "Workspace Manager + RBAC Plan",
+      "file_type": "document",
+      "source_file": "features/workspace-manager/active/workspace-manager_PLAN.md",
+      "community": 5,
+      "id": "workspace_manager_plan_md",
+      "norm_label": "workspace manager + rbac plan"
+    },
+    {
+      "label": "Phase 40 \u2014 Proactive Cart Recovery",
+      "file_type": "document",
+      "source_file": "general-plans/completed/cart-recovery_PLAN_01-06-26.md",
+      "community": 1,
+      "id": "cart_recovery_plan_md",
+      "norm_label": "phase 40 \u2014 proactive cart recovery"
+    },
+    {
+      "label": "RIPER-5 Harness",
+      "file_type": "concept",
+      "source_file": "development-protocols/all-development-protocols.md",
+      "community": 0,
+      "id": "riper_5_harness",
+      "norm_label": "riper-5 harness"
+    },
+    {
+      "label": "NEXUS RAG System",
+      "file_type": "concept",
+      "source_file": "context/all-context.md",
+      "community": 1,
+      "id": "nexus_rag_system",
+      "norm_label": "nexus rag system"
+    }
+  ],
+  "links": [
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "context/all-context.md",
+      "source": "all_context_md",
+      "target": "all_planning_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "context/all-context.md",
+      "source": "all_context_md",
+      "target": "all_tests_md"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "context/all-context.md",
+      "source": "all_context_md",
+      "target": "nexus_rag_system"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "context/planning/all-planning.md",
+      "source": "all_planning_md",
+      "target": "example_complex_prd_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "context/planning/all-planning.md",
+      "source": "all_planning_md",
+      "target": "example_simple_prd_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/all-development-protocols.md",
+      "source": "all_development_protocols_md",
+      "target": "context_maintenance_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/all-development-protocols.md",
+      "source": "all_development_protocols_md",
+      "target": "implementation_standards_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/all-development-protocols.md",
+      "source": "all_development_protocols_md",
+      "target": "intent_clarification_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/all-development-protocols.md",
+      "source": "all_development_protocols_md",
+      "target": "orchestration_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/all-development-protocols.md",
+      "source": "all_development_protocols_md",
+      "target": "parallel_fan_out_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/all-development-protocols.md",
+      "source": "all_development_protocols_md",
+      "target": "phase_programs_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/all-development-protocols.md",
+      "source": "all_development_protocols_md",
+      "target": "plan_lifecycle_md"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "development-protocols/all-development-protocols.md",
+      "source": "all_development_protocols_md",
+      "target": "riper_5_harness"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/orchestration.md",
+      "source": "intent_clarification_md",
+      "target": "orchestration_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/orchestration.md",
+      "source": "orchestration_md",
+      "target": "parallel_fan_out_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "development-protocols/orchestration.md",
+      "source": "orchestration_md",
+      "target": "phase_programs_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "features/tenant-ai-customization/active/tenant-ai-customization_PLAN.md",
+      "source": "phase_programs_md",
+      "target": "tenant_ai_customization_plan_md"
+    },
+    {
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "general-plans/completed/cart-recovery_PLAN_01-06-26.md",
+      "source": "cart_recovery_plan_md",
+      "target": "nexus_rag_system"
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "e95d1e2168bd142c1daf3e1a7023ac7ba7ada31d"
+}

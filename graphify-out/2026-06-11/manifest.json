@@ -1,0 +1,1732 @@
+{
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/settings.json": {
+    "mtime": 1780190594.8530471,
+    "ast_hash": "73be3c8eeefd01a13a9b8a200e9435ec",
+    "semantic_hash": "73be3c8eeefd01a13a9b8a200e9435ec"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/references/skill-routing-policy.json": {
+    "mtime": 1780190594.8934631,
+    "ast_hash": "7410a099b686b7ad561084acd4680183",
+    "semantic_hash": "7410a099b686b7ad561084acd4680183"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/scripts/generate-skills-catalog.mjs": {
+    "mtime": 1780190594.8985233,
+    "ast_hash": "2c22f6c6871895dd9f29ed90926d4ba9",
+    "semantic_hash": "2c22f6c6871895dd9f29ed90926d4ba9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/scripts/shared-skill-utils.mjs": {
+    "mtime": 1780190594.903282,
+    "ast_hash": "830e3dac5f0beeda0d463de031c35d8e",
+    "semantic_hash": "830e3dac5f0beeda0d463de031c35d8e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/scripts/validate-confusable-skills.mjs": {
+    "mtime": 1780190594.9085023,
+    "ast_hash": "4b794e443fc75be8638b68cca9de0c36",
+    "semantic_hash": "4b794e443fc75be8638b68cca9de0c36"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs": {
+    "mtime": 1780190594.913978,
+    "ast_hash": "4a29025a3c950bca26d975d04b0dd4b3",
+    "semantic_hash": "4a29025a3c950bca26d975d04b0dd4b3"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/scripts/validate-skill-cross-refs.mjs": {
+    "mtime": 1780190594.918288,
+    "ast_hash": "8548a6304866fedcf57f711d0622ac3b",
+    "semantic_hash": "8548a6304866fedcf57f711d0622ac3b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/scripts/validate-skill-dependencies.mjs": {
+    "mtime": 1780190594.9251873,
+    "ast_hash": "3ad74ffd88591cb927ad0492f5bbf2b1",
+    "semantic_hash": "3ad74ffd88591cb927ad0492f5bbf2b1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/scripts/validate-skill-routing.mjs": {
+    "mtime": 1780190594.930613,
+    "ast_hash": "861b3d0a1269e85de12c3cc4c106d068",
+    "semantic_hash": "861b3d0a1269e85de12c3cc4c106d068"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-plans/scripts/validate-plan-inventory.mjs": {
+    "mtime": 1780190594.9472234,
+    "ast_hash": "c13472723178a0fbe45f79fadfdf316b",
+    "semantic_hash": "c13472723178a0fbe45f79fadfdf316b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-vc/scripts/validate-agent-parity.mjs": {
+    "mtime": 1780190594.9567645,
+    "ast_hash": "b31c586b201786917e4109756c434462",
+    "semantic_hash": "b31c586b201786917e4109756c434462"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-vc/scripts/validate-guide-sync.mjs": {
+    "mtime": 1780190594.9617562,
+    "ast_hash": "6ea2792cab9fe3ced03af78f98a4b8e0",
+    "semantic_hash": "6ea2792cab9fe3ced03af78f98a4b8e0"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-vc/scripts/validate-protocol-wiring.mjs": {
+    "mtime": 1780190594.967633,
+    "ast_hash": "3cf386a4130a982cf26a209c3c2235af",
+    "semantic_hash": "3cf386a4130a982cf26a209c3c2235af"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-vc/scripts/validate-seeds.mjs": {
+    "mtime": 1780190594.9732318,
+    "ast_hash": "8a1101d87002ec49f875e3ed8ee6a53c",
+    "semantic_hash": "8a1101d87002ec49f875e3ed8ee6a53c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-vc/scripts/validate-skills.mjs": {
+    "mtime": 1780190594.9784403,
+    "ast_hash": "e0b0aec55191d570e3a8bc0462fb5d22",
+    "semantic_hash": "e0b0aec55191d570e3a8bc0462fb5d22"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/__tests__/error-handling.test.js": {
+    "mtime": 1780190595.4454737,
+    "ast_hash": "258f1640c5f86fe7a7ed328465d51f63",
+    "semantic_hash": "258f1640c5f86fe7a7ed328465d51f63"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/__tests__/selector.test.js": {
+    "mtime": 1780190595.4510653,
+    "ast_hash": "c6a91691ee0d2e34569f363ac816bf78",
+    "semantic_hash": "c6a91691ee0d2e34569f363ac816bf78"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/aria-snapshot.js": {
+    "mtime": 1780190595.4580712,
+    "ast_hash": "c48d1fe67714a9f3f41c9ba8b76d8ec6",
+    "semantic_hash": "c48d1fe67714a9f3f41c9ba8b76d8ec6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/attach-listener.js": {
+    "mtime": 1780190595.4629648,
+    "ast_hash": "be930d9e5465d5fb17c0e11cbe59b1c2",
+    "semantic_hash": "be930d9e5465d5fb17c0e11cbe59b1c2"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/click.js": {
+    "mtime": 1780190595.4678118,
+    "ast_hash": "738877cacc0bc09d46f98e76e5599e14",
+    "semantic_hash": "738877cacc0bc09d46f98e76e5599e14"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/connect-chrome.js": {
+    "mtime": 1780190595.4731169,
+    "ast_hash": "ac90313a043fb077ea49fa24f45ed8e5",
+    "semantic_hash": "ac90313a043fb077ea49fa24f45ed8e5"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/console.js": {
+    "mtime": 1780190595.4782019,
+    "ast_hash": "9d7e4e363f23ded205cd3a7c132f065c",
+    "semantic_hash": "9d7e4e363f23ded205cd3a7c132f065c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/evaluate.js": {
+    "mtime": 1780190595.482856,
+    "ast_hash": "7d64f5fd19bdb372dc6f05795d16f79a",
+    "semantic_hash": "7d64f5fd19bdb372dc6f05795d16f79a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/fill.js": {
+    "mtime": 1780190595.4873846,
+    "ast_hash": "c6cac4dee389d5ac5d9a74fcf8bdf31b",
+    "semantic_hash": "c6cac4dee389d5ac5d9a74fcf8bdf31b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/import-cookies.js": {
+    "mtime": 1780190595.4922736,
+    "ast_hash": "790e1fcf3cb9258ed6ea638796545acc",
+    "semantic_hash": "790e1fcf3cb9258ed6ea638796545acc"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/inject-auth.js": {
+    "mtime": 1780190595.497251,
+    "ast_hash": "b6489e390ff953ff20f42e8b2bd2c050",
+    "semantic_hash": "b6489e390ff953ff20f42e8b2bd2c050"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/inspect-chat-page.js": {
+    "mtime": 1780190595.5015662,
+    "ast_hash": "5793ae351308646cf97794a8f8d69aed",
+    "semantic_hash": "5793ae351308646cf97794a8f8d69aed"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/install-deps.sh": {
+    "mtime": 1780190595.5061486,
+    "ast_hash": "780ab55a3e08ec07e568435d43cd27ee",
+    "semantic_hash": "780ab55a3e08ec07e568435d43cd27ee"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/install.sh": {
+    "mtime": 1780190595.5107572,
+    "ast_hash": "3d304e4888907bfda3c36711b63305e1",
+    "semantic_hash": "3d304e4888907bfda3c36711b63305e1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/lib/browser.js": {
+    "mtime": 1780190595.5161228,
+    "ast_hash": "71318452f9f4c075b6afda3c094b2b53",
+    "semantic_hash": "71318452f9f4c075b6afda3c094b2b53"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/lib/selector.js": {
+    "mtime": 1780190595.5215092,
+    "ast_hash": "fe29ea76b3b3ecf2f25a20535370fc80",
+    "semantic_hash": "fe29ea76b3b3ecf2f25a20535370fc80"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/navigate.js": {
+    "mtime": 1780190595.5276768,
+    "ast_hash": "e92f536846bf059f2314b161fefa384c",
+    "semantic_hash": "e92f536846bf059f2314b161fefa384c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/network.js": {
+    "mtime": 1780190595.5334926,
+    "ast_hash": "677e2d1b0a38f1d089edcf45c698a164",
+    "semantic_hash": "677e2d1b0a38f1d089edcf45c698a164"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/package.json": {
+    "mtime": 1780190595.5432436,
+    "ast_hash": "ea5cad14a580656387007fb461a9f638",
+    "semantic_hash": "ea5cad14a580656387007fb461a9f638"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/performance.js": {
+    "mtime": 1780190595.552001,
+    "ast_hash": "f25cf8df2e379ed119201ae837b25949",
+    "semantic_hash": "f25cf8df2e379ed119201ae837b25949"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/reload-and-listen.js": {
+    "mtime": 1780190595.5581417,
+    "ast_hash": "210701eec41b1dbf684352d639517814",
+    "semantic_hash": "210701eec41b1dbf684352d639517814"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/screenshot.js": {
+    "mtime": 1780190595.565072,
+    "ast_hash": "dd385a1729b7aae2ec1b86a4f5de4e69",
+    "semantic_hash": "dd385a1729b7aae2ec1b86a4f5de4e69"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/select-ref.js": {
+    "mtime": 1780190595.5933263,
+    "ast_hash": "041da3d9ba17c0a9f89c6fe19db20b74",
+    "semantic_hash": "041da3d9ba17c0a9f89c6fe19db20b74"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/snapshot.js": {
+    "mtime": 1780190595.6348565,
+    "ast_hash": "82b2ea30a29cf6fee708e253e98a5bd0",
+    "semantic_hash": "82b2ea30a29cf6fee708e253e98a5bd0"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/ws-debug.js": {
+    "mtime": 1780190595.6428804,
+    "ast_hash": "e0f84b1cfd8dd0c066d31a07cec97671",
+    "semantic_hash": "e0f84b1cfd8dd0c066d31a07cec97671"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/ws-full-debug.js": {
+    "mtime": 1780190595.6550646,
+    "ast_hash": "26c0eccece9e2bc448bf5705b7fb13c5",
+    "semantic_hash": "26c0eccece9e2bc448bf5705b7fb13c5"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/scripts/compression_evaluator.py": {
+    "mtime": 1780190595.7272213,
+    "ast_hash": "a9bab30ec980be613f352d90459e259c",
+    "semantic_hash": "a9bab30ec980be613f352d90459e259c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/scripts/context_analyzer.py": {
+    "mtime": 1780190595.7341423,
+    "ast_hash": "80716348c20298384beaf7599a6c60cd",
+    "semantic_hash": "80716348c20298384beaf7599a6c60cd"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/scripts/tests/test_edge_cases.py": {
+    "mtime": 1780190595.7442575,
+    "ast_hash": "385b88ba450dc9a870dd98a6a3c5d3cc",
+    "semantic_hash": "385b88ba450dc9a870dd98a6a3c5d3cc"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/scripts/find-polluter.sh": {
+    "mtime": 1780190595.8337622,
+    "ast_hash": "aa97c8d8386826da28ea668e642dce96",
+    "semantic_hash": "aa97c8d8386826da28ea668e642dce96"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/package.json": {
+    "mtime": 1780190595.861397,
+    "ast_hash": "851b2b962d85a21bcdcf293c6cfa53fd",
+    "semantic_hash": "851b2b962d85a21bcdcf293c6cfa53fd"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/scripts/analyze-llms-txt.js": {
+    "mtime": 1780190595.882946,
+    "ast_hash": "f83f14899111f76570e4ebfbaf782c39",
+    "semantic_hash": "f83f14899111f76570e4ebfbaf782c39"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/scripts/detect-topic.js": {
+    "mtime": 1780190595.8903024,
+    "ast_hash": "cbe114d9af9e62cac3c92fa6cad47f0a",
+    "semantic_hash": "cbe114d9af9e62cac3c92fa6cad47f0a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/scripts/fetch-docs.js": {
+    "mtime": 1780190595.8966382,
+    "ast_hash": "9c854a4c5d071b32a17f1648afc01dbb",
+    "semantic_hash": "9c854a4c5d071b32a17f1648afc01dbb"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/scripts/tests/run-tests.js": {
+    "mtime": 1780190595.9017186,
+    "ast_hash": "005d069a0ea56dbae305adb41feff084",
+    "semantic_hash": "005d069a0ea56dbae305adb41feff084"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/scripts/tests/test-analyze-llms.js": {
+    "mtime": 1780190595.9074078,
+    "ast_hash": "46ced14350fbab500670a9ab08fc2c83",
+    "semantic_hash": "46ced14350fbab500670a9ab08fc2c83"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/scripts/tests/test-detect-topic.js": {
+    "mtime": 1780190595.9133494,
+    "ast_hash": "a3679ae645af5b33c17ec8ea9ec1d1e7",
+    "semantic_hash": "a3679ae645af5b33c17ec8ea9ec1d1e7"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/scripts/tests/test-fetch-docs.js": {
+    "mtime": 1780190595.918231,
+    "ast_hash": "bf4b20d97470fdf3b68dd2f3a8a7268b",
+    "semantic_hash": "bf4b20d97470fdf3b68dd2f3a8a7268b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/scripts/utils/env-loader.js": {
+    "mtime": 1780190595.9234471,
+    "ast_hash": "c8c085d495b9c1608f2b21a84d821101",
+    "semantic_hash": "c8c085d495b9c1608f2b21a84d821101"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-generate-context/scripts/validate-all-context.mjs": {
+    "mtime": 1780190596.1832814,
+    "ast_hash": "77d987ef4ddd53f80c13648ea4deebf0",
+    "semantic_hash": "77d987ef4ddd53f80c13648ea4deebf0"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-generate-plan/scripts/validate-plan-artifact.mjs": {
+    "mtime": 1780190596.2041395,
+    "ast_hash": "d13cfe350d960651c28f6bb782a3dade",
+    "semantic_hash": "d13cfe350d960651c28f6bb782a3dade"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/assets/tools.json": {
+    "mtime": 1780190596.2263281,
+    "ast_hash": "fae03d0b5e4f10247573ee2a29dc4e53",
+    "semantic_hash": "fae03d0b5e4f10247573ee2a29dc4e53"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/scripts/cli.ts": {
+    "mtime": 1780190596.2602768,
+    "ast_hash": "1fee9cc9b5d462ec4bb9789f9912b260",
+    "semantic_hash": "1fee9cc9b5d462ec4bb9789f9912b260"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/scripts/mcp-client.ts": {
+    "mtime": 1780190596.2816803,
+    "ast_hash": "6d909e5642b27f7a1b394bc65213893a",
+    "semantic_hash": "6d909e5642b27f7a1b394bc65213893a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/scripts/package.json": {
+    "mtime": 1780190596.2861438,
+    "ast_hash": "9a086959323f82b6a9fc66b1aeaab567",
+    "semantic_hash": "9a086959323f82b6a9fc66b1aeaab567"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/scripts/tsconfig.json": {
+    "mtime": 1780190596.2910683,
+    "ast_hash": "b1ac37fa223a9673563b69c8518f696c",
+    "semantic_hash": "b1ac37fa223a9673563b69c8518f696c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-repomix/scripts/repomix_batch.py": {
+    "mtime": 1780190596.648397,
+    "ast_hash": "491af6a47014b82ad8f5953e961d5ee3",
+    "semantic_hash": "491af6a47014b82ad8f5953e961d5ee3"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-repomix/scripts/repos.example.json": {
+    "mtime": 1780190596.653918,
+    "ast_hash": "f918758d43826677df87616e8ff94d20",
+    "semantic_hash": "f918758d43826677df87616e8ff94d20"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-repomix/scripts/tests/test_repomix_batch.py": {
+    "mtime": 1780190596.6651733,
+    "ast_hash": "2216a0830ea218395bfac9431f3c520f",
+    "semantic_hash": "2216a0830ea218395bfac9431f3c520f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/package.json": {
+    "mtime": 1780190596.7567012,
+    "ast_hash": "83b7cff7d56afb7d26d06a5e13f6f8d9",
+    "semantic_hash": "83b7cff7d56afb7d26d06a5e13f6f8d9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/scripts/format-thought.js": {
+    "mtime": 1780190596.8025005,
+    "ast_hash": "27093987ea8b92794ae57814c43fa28a",
+    "semantic_hash": "27093987ea8b92794ae57814c43fa28a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/scripts/process-thought.js": {
+    "mtime": 1780190596.8082936,
+    "ast_hash": "d4dff9da0ee90ee82f002ca2ff5c8a39",
+    "semantic_hash": "d4dff9da0ee90ee82f002ca2ff5c8a39"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/tests/format-thought.test.js": {
+    "mtime": 1780190596.8179553,
+    "ast_hash": "2ca3934462ded5f1832ffdee6f8485d7",
+    "semantic_hash": "2ca3934462ded5f1832ffdee6f8485d7"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/tests/process-thought.test.js": {
+    "mtime": 1780190596.826003,
+    "ast_hash": "833b3fb3d6ce02d8717f2c94158a972f",
+    "semantic_hash": "833b3fb3d6ce02d8717f2c94158a972f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/fixtures/agent-memory-types-style4.json": {
+    "mtime": 1780190596.8960612,
+    "ast_hash": "b4b587fadb6b6f2ef60d8e826be85b01",
+    "semantic_hash": "b4b587fadb6b6f2ef60d8e826be85b01"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/fixtures/api-flow-style7.json": {
+    "mtime": 1780190596.9046514,
+    "ast_hash": "ab4b08fa04fc134a9a14a2c1751f3519",
+    "semantic_hash": "ab4b08fa04fc134a9a14a2c1751f3519"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/fixtures/mem0-style1.json": {
+    "mtime": 1780190596.913816,
+    "ast_hash": "30c1d6ffc74c5fae48fa36685b2898c9",
+    "semantic_hash": "30c1d6ffc74c5fae48fa36685b2898c9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/fixtures/microservices-style3.json": {
+    "mtime": 1780190596.922892,
+    "ast_hash": "8fb485113a5da4d4f0a4b906749897a9",
+    "semantic_hash": "8fb485113a5da4d4f0a4b906749897a9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/fixtures/multi-agent-style5.json": {
+    "mtime": 1780190596.9298594,
+    "ast_hash": "3d694035d22596f0d3b25e8742aa297a",
+    "semantic_hash": "3d694035d22596f0d3b25e8742aa297a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/fixtures/system-architecture-style6.json": {
+    "mtime": 1780190596.938136,
+    "ast_hash": "892b139d7353664b3b8510a305187fe8",
+    "semantic_hash": "892b139d7353664b3b8510a305187fe8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/fixtures/tool-call-style2.json": {
+    "mtime": 1780190596.9441862,
+    "ast_hash": "c9abe94a24509ccbc855223a4e99a842",
+    "semantic_hash": "c9abe94a24509ccbc855223a4e99a842"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/scripts/generate-diagram.sh": {
+    "mtime": 1780190597.013609,
+    "ast_hash": "e1c7e6ce2c886c7523b648b658362bd5",
+    "semantic_hash": "e1c7e6ce2c886c7523b648b658362bd5"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/scripts/generate-from-template.py": {
+    "mtime": 1780190597.0187118,
+    "ast_hash": "e875addca6bf15685a3ec1992666ecd3",
+    "semantic_hash": "e875addca6bf15685a3ec1992666ecd3"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/scripts/test-all-styles.sh": {
+    "mtime": 1780190597.0245059,
+    "ast_hash": "6925a9eb7e88de0d1cf34700e183081a",
+    "semantic_hash": "6925a9eb7e88de0d1cf34700e183081a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/scripts/validate-svg.sh": {
+    "mtime": 1780190597.0295959,
+    "ast_hash": "067a8bb1b251da4613a1b66d25daea8e",
+    "semantic_hash": "067a8bb1b251da4613a1b66d25daea8e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/scripts/analyze-test-results.js": {
+    "mtime": 1780190597.316394,
+    "ast_hash": "014f86e7cd2ec5d6e7328ea20d8698f4",
+    "semantic_hash": "014f86e7cd2ec5d6e7328ea20d8698f4"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/scripts/init-playwright.js": {
+    "mtime": 1780190597.3217344,
+    "ast_hash": "0e2a31587df7006bfcc2568e21f8c9f1",
+    "semantic_hash": "0e2a31587df7006bfcc2568e21f8c9f1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-code-reviewer.md": {
+    "mtime": 1780190594.483145,
+    "ast_hash": "b9ec069c8784d3eb8189eb76ef9307f1",
+    "semantic_hash": "b9ec069c8784d3eb8189eb76ef9307f1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-code-simplifier.md": {
+    "mtime": 1780190594.4907475,
+    "ast_hash": "3fa087ad7940859e0838e28d3ad07948",
+    "semantic_hash": "3fa087ad7940859e0838e28d3ad07948"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-debugger.md": {
+    "mtime": 1780190594.4974768,
+    "ast_hash": "a25dc347ad55bb04b2312111fa29d12d",
+    "semantic_hash": "a25dc347ad55bb04b2312111fa29d12d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-execute-agent.md": {
+    "mtime": 1780190594.5041273,
+    "ast_hash": "271036799d4b29c9c7750ac2203510b0",
+    "semantic_hash": "271036799d4b29c9c7750ac2203510b0"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-fast-mode-agent.md": {
+    "mtime": 1780190594.5098476,
+    "ast_hash": "8fdc00ffd8dab6525fd020ddad4689dd",
+    "semantic_hash": "8fdc00ffd8dab6525fd020ddad4689dd"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-git-manager.md": {
+    "mtime": 1780190594.515706,
+    "ast_hash": "c4bc59bbf33725ba5b6ca680e5e694d1",
+    "semantic_hash": "c4bc59bbf33725ba5b6ca680e5e694d1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-innovate-agent.md": {
+    "mtime": 1780190594.521912,
+    "ast_hash": "4471f1b408eda551fe20479de1202430",
+    "semantic_hash": "4471f1b408eda551fe20479de1202430"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-plan-agent.md": {
+    "mtime": 1780190594.535294,
+    "ast_hash": "139737a49c225721988e7de617cb8845",
+    "semantic_hash": "139737a49c225721988e7de617cb8845"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-research-agent.md": {
+    "mtime": 1780190594.5475397,
+    "ast_hash": "9355c63b71e42e173f8c043a358f9a6f",
+    "semantic_hash": "9355c63b71e42e173f8c043a358f9a6f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-tester.md": {
+    "mtime": 1780190594.5559874,
+    "ast_hash": "d8e3ef235f604a266f342b5af463f747",
+    "semantic_hash": "d8e3ef235f604a266f342b5af463f747"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-ui-ux-designer.md": {
+    "mtime": 1780190594.5617843,
+    "ast_hash": "5c207900e85866cb361a2f000ca81f54",
+    "semantic_hash": "5c207900e85866cb361a2f000ca81f54"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/agents/vc-update-process-agent.md": {
+    "mtime": 1780190594.567516,
+    "ast_hash": "c3aec06e0a8d802dd9d54f488186643b",
+    "semantic_hash": "c3aec06e0a8d802dd9d54f488186643b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/hooks/lib/__tests__/README.md": {
+    "mtime": 1780190594.585995,
+    "ast_hash": "31d20e3d550864c64b7e8cb395f72d7b",
+    "semantic_hash": "31d20e3d550864c64b7e8cb395f72d7b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-agent-browser/SKILL.md": {
+    "mtime": 1780190594.858827,
+    "ast_hash": "aa2bf161c2c468b357b004874b8298db",
+    "semantic_hash": "aa2bf161c2c468b357b004874b8298db"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-agent-browser/references/agent-browser-vs-chrome-devtools.md": {
+    "mtime": 1780190594.8710759,
+    "ast_hash": "59a974d8a6f8541904343745d7f80a5b",
+    "semantic_hash": "59a974d8a6f8541904343745d7f80a5b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-agent-browser/references/browserbase-cloud-setup.md": {
+    "mtime": 1780190594.8763657,
+    "ast_hash": "48d4d05112e0af0a379e685f5123a578",
+    "semantic_hash": "48d4d05112e0af0a379e685f5123a578"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/SKILL.md": {
+    "mtime": 1780190594.8827684,
+    "ast_hash": "b992aac97fe9bd1b8023903a0b788c37",
+    "semantic_hash": "b992aac97fe9bd1b8023903a0b788c37"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-context/references/audit-context.md": {
+    "mtime": 1780190594.8884962,
+    "ast_hash": "9549d8efc4b2b3f1a5039fb59e9c2e06",
+    "semantic_hash": "9549d8efc4b2b3f1a5039fb59e9c2e06"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-plans/SKILL.md": {
+    "mtime": 1780190594.936028,
+    "ast_hash": "c17dcf8ab3f772d6e1a6a18dda1c6793",
+    "semantic_hash": "c17dcf8ab3f772d6e1a6a18dda1c6793"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-plans/references/audit-plans.md": {
+    "mtime": 1780190594.9418874,
+    "ast_hash": "b4637c3dc3f321ac75bbb2b003282413",
+    "semantic_hash": "b4637c3dc3f321ac75bbb2b003282413"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-audit-vc/SKILL.md": {
+    "mtime": 1780190594.9516869,
+    "ast_hash": "641f1ac3345dbf8fa9d7dc5fe567f1b9",
+    "semantic_hash": "641f1ac3345dbf8fa9d7dc5fe567f1b9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-autoresearch/SKILL.md": {
+    "mtime": 1780190594.9834452,
+    "ast_hash": "09abb84ea2509d7924bc68448b6e6a75",
+    "semantic_hash": "09abb84ea2509d7924bc68448b6e6a75"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-autoresearch/references/autonomous-loop-protocol.md": {
+    "mtime": 1780190594.9895685,
+    "ast_hash": "6ae43f728d398c0dedf5a701729c7b37",
+    "semantic_hash": "6ae43f728d398c0dedf5a701729c7b37"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-autoresearch/references/git-memory-pattern.md": {
+    "mtime": 1780190594.994308,
+    "ast_hash": "0cb985096e96e630575e496352144fba",
+    "semantic_hash": "0cb985096e96e630575e496352144fba"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-autoresearch/references/guard-and-noise.md": {
+    "mtime": 1780190594.999267,
+    "ast_hash": "22034ccf442db4528359cb6501259d0c",
+    "semantic_hash": "22034ccf442db4528359cb6501259d0c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-autoresearch/references/metric-library.md": {
+    "mtime": 1780190595.0043533,
+    "ast_hash": "939788e2ff1804aa34cb5252df3f344f",
+    "semantic_hash": "939788e2ff1804aa34cb5252df3f344f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-autoresearch/references/results-logging.md": {
+    "mtime": 1780190595.0093303,
+    "ast_hash": "a585822d8bdde6dfa490ff024343b4ea",
+    "semantic_hash": "a585822d8bdde6dfa490ff024343b4ea"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/SKILL.md": {
+    "mtime": 1780190595.0145614,
+    "ast_hash": "221b28a294d62b9552000d44c55c8273",
+    "semantic_hash": "221b28a294d62b9552000d44c55c8273"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/references/cdp-domains.md": {
+    "mtime": 1780190595.019007,
+    "ast_hash": "bc16a321757d478b5f0e09291becca8c",
+    "semantic_hash": "bc16a321757d478b5f0e09291becca8c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/references/performance-guide.md": {
+    "mtime": 1780190595.0238287,
+    "ast_hash": "5ca916ba48f171048008327cb7897017",
+    "semantic_hash": "5ca916ba48f171048008327cb7897017"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/references/puppeteer-reference.md": {
+    "mtime": 1780190595.028728,
+    "ast_hash": "20d52865a2785a6a2b224805e4b867e6",
+    "semantic_hash": "20d52865a2785a6a2b224805e4b867e6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/scripts/README.md": {
+    "mtime": 1780190595.440356,
+    "ast_hash": "fefe570d170cbd2b118faf912adaf7c1",
+    "semantic_hash": "fefe570d170cbd2b118faf912adaf7c1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/SKILL.md": {
+    "mtime": 1780190595.6635408,
+    "ast_hash": "945401170213ba01982f59eff9b35a10",
+    "semantic_hash": "945401170213ba01982f59eff9b35a10"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/context-compression.md": {
+    "mtime": 1780190595.6686962,
+    "ast_hash": "5a2cb337d352cabeb5451d9513525327",
+    "semantic_hash": "5a2cb337d352cabeb5451d9513525327"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/context-degradation.md": {
+    "mtime": 1780190595.6734662,
+    "ast_hash": "af6e9135bec93f8afc91a321c620494e",
+    "semantic_hash": "af6e9135bec93f8afc91a321c620494e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/context-fundamentals.md": {
+    "mtime": 1780190595.6786382,
+    "ast_hash": "8dfb25b4b64e35844587e1b0bb638e92",
+    "semantic_hash": "8dfb25b4b64e35844587e1b0bb638e92"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/context-optimization.md": {
+    "mtime": 1780190595.6838005,
+    "ast_hash": "a8e59cce6a062fd2e34c9c49e0e38b9a",
+    "semantic_hash": "a8e59cce6a062fd2e34c9c49e0e38b9a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/evaluation.md": {
+    "mtime": 1780190595.689505,
+    "ast_hash": "d64c40efd079a79d3712bdffd103b29f",
+    "semantic_hash": "d64c40efd079a79d3712bdffd103b29f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/memory-systems.md": {
+    "mtime": 1780190595.6946812,
+    "ast_hash": "68b5bd7f038a405e411dcdf65f37d560",
+    "semantic_hash": "68b5bd7f038a405e411dcdf65f37d560"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/multi-agent-patterns.md": {
+    "mtime": 1780190595.7006383,
+    "ast_hash": "31e4da82943f75793e3b8a0d9cdeabc3",
+    "semantic_hash": "31e4da82943f75793e3b8a0d9cdeabc3"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/project-development.md": {
+    "mtime": 1780190595.7070107,
+    "ast_hash": "1e870fa1b525941617c0362e51699ade",
+    "semantic_hash": "1e870fa1b525941617c0362e51699ade"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/runtime-awareness.md": {
+    "mtime": 1780190595.712518,
+    "ast_hash": "1d99ebe2ccddce1cbd239ca5c3359721",
+    "semantic_hash": "1d99ebe2ccddce1cbd239ca5c3359721"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-context-engineering/references/tool-design.md": {
+    "mtime": 1780190595.7205153,
+    "ast_hash": "d8c909ecc9eb30031bfdd40588e74890",
+    "semantic_hash": "d8c909ecc9eb30031bfdd40588e74890"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/SKILL.md": {
+    "mtime": 1780190595.753794,
+    "ast_hash": "44557685712be3fad9c7cd2894a9db57",
+    "semantic_hash": "44557685712be3fad9c7cd2894a9db57"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/defense-in-depth.md": {
+    "mtime": 1780190595.7630625,
+    "ast_hash": "82c5a82d32673fa5328961ed733e8634",
+    "semantic_hash": "82c5a82d32673fa5328961ed733e8634"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/frontend-verification.md": {
+    "mtime": 1780190595.7708485,
+    "ast_hash": "b2c5a6ba5b30b0755b3ab7a321986688",
+    "semantic_hash": "b2c5a6ba5b30b0755b3ab7a321986688"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/investigation-methodology.md": {
+    "mtime": 1780190595.7772162,
+    "ast_hash": "bef16bcf535b50de71bc5fd3d3a221c8",
+    "semantic_hash": "bef16bcf535b50de71bc5fd3d3a221c8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/log-and-ci-analysis.md": {
+    "mtime": 1780190595.783474,
+    "ast_hash": "058c751bedcb49119e77b895878846ff",
+    "semantic_hash": "058c751bedcb49119e77b895878846ff"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/performance-diagnostics.md": {
+    "mtime": 1780190595.7904527,
+    "ast_hash": "cd32550de62681f20d8d7b7824aa62b1",
+    "semantic_hash": "cd32550de62681f20d8d7b7824aa62b1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/reporting-standards.md": {
+    "mtime": 1780190595.7965107,
+    "ast_hash": "951958da3929d98f1f12450ff040fa91",
+    "semantic_hash": "951958da3929d98f1f12450ff040fa91"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/root-cause-tracing.md": {
+    "mtime": 1780190595.8050566,
+    "ast_hash": "b9c94b4de6d27566b1d09a13317bb812",
+    "semantic_hash": "b9c94b4de6d27566b1d09a13317bb812"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/systematic-debugging.md": {
+    "mtime": 1780190595.8133602,
+    "ast_hash": "c76e627d3a8e0a3dc15af2133bf94ad3",
+    "semantic_hash": "c76e627d3a8e0a3dc15af2133bf94ad3"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/task-management-debugging.md": {
+    "mtime": 1780190595.8205044,
+    "ast_hash": "022e8d279b31b5060bb9037e503fee1a",
+    "semantic_hash": "022e8d279b31b5060bb9037e503fee1a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/references/verification.md": {
+    "mtime": 1780190595.8268485,
+    "ast_hash": "e2ed00d1741795be8f26ce5e63de1e1a",
+    "semantic_hash": "e2ed00d1741795be8f26ce5e63de1e1a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-debug/scripts/find-polluter.test.md": {
+    "mtime": 1780190595.8411171,
+    "ast_hash": "af9604c30d4aaf555f5a9de93e1edf9f",
+    "semantic_hash": "af9604c30d4aaf555f5a9de93e1edf9f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/SKILL.md": {
+    "mtime": 1780190595.8555114,
+    "ast_hash": "c048b6c943adf21fe95beedf7f8323c8",
+    "semantic_hash": "c048b6c943adf21fe95beedf7f8323c8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/references/advanced.md": {
+    "mtime": 1780190595.866495,
+    "ast_hash": "89f42b2fe8a2b65eabf826b05d2453e9",
+    "semantic_hash": "89f42b2fe8a2b65eabf826b05d2453e9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/references/context7-patterns.md": {
+    "mtime": 1780190595.8724241,
+    "ast_hash": "a54848ab2f5f271846fc24e66f44376c",
+    "semantic_hash": "a54848ab2f5f271846fc24e66f44376c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/references/errors.md": {
+    "mtime": 1780190595.8774917,
+    "ast_hash": "411ab8b568f2fdff023c7eaf93bcfe9a",
+    "semantic_hash": "411ab8b568f2fdff023c7eaf93bcfe9a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/workflows/library-search.md": {
+    "mtime": 1780190595.9282575,
+    "ast_hash": "960ef83c035f21216ae9a63273a361ef",
+    "semantic_hash": "960ef83c035f21216ae9a63273a361ef"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/workflows/repo-analysis.md": {
+    "mtime": 1780190595.9331348,
+    "ast_hash": "67804ba3b35f0ee56e737d2476e59ab8",
+    "semantic_hash": "67804ba3b35f0ee56e737d2476e59ab8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs-seeker/workflows/topic-search.md": {
+    "mtime": 1780190595.9393725,
+    "ast_hash": "239b5c6a2f9cfb2d0b5298b787b6b311",
+    "semantic_hash": "239b5c6a2f9cfb2d0b5298b787b6b311"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs/SKILL.md": {
+    "mtime": 1780190595.945151,
+    "ast_hash": "dc88e303145cbf4f25a17951f0b224a1",
+    "semantic_hash": "dc88e303145cbf4f25a17951f0b224a1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs/references/init-workflow.md": {
+    "mtime": 1780190595.951753,
+    "ast_hash": "9144c48f96e2f6ec02b27e35336eb6bf",
+    "semantic_hash": "9144c48f96e2f6ec02b27e35336eb6bf"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs/references/summarize-workflow.md": {
+    "mtime": 1780190595.9576027,
+    "ast_hash": "823eb0c05de2f6574e120c0b48df620c",
+    "semantic_hash": "823eb0c05de2f6574e120c0b48df620c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-docs/references/update-workflow.md": {
+    "mtime": 1780190595.9645936,
+    "ast_hash": "e604cdf90870f462b74df6561a50c695",
+    "semantic_hash": "e604cdf90870f462b74df6561a50c695"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/SKILL.md": {
+    "mtime": 1780190595.9714572,
+    "ast_hash": "77626d54d14dea306385b66c09d27f5e",
+    "semantic_hash": "77626d54d14dea306385b66c09d27f5e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/ai-multimodal-overview.md": {
+    "mtime": 1780190595.9814608,
+    "ast_hash": "2a4910e2c1338d03c2ce839884a2e1db",
+    "semantic_hash": "2a4910e2c1338d03c2ce839884a2e1db"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/analysis-best-practices.md": {
+    "mtime": 1780190595.988715,
+    "ast_hash": "ff05549101a96da21c6d511f1bdbc749",
+    "semantic_hash": "ff05549101a96da21c6d511f1bdbc749"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/analysis-prompts.md": {
+    "mtime": 1780190595.9950619,
+    "ast_hash": "7aabdc1070dea89b9e1ec12ade4fcbf2",
+    "semantic_hash": "7aabdc1070dea89b9e1ec12ade4fcbf2"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/analysis-techniques.md": {
+    "mtime": 1780190596.0009084,
+    "ast_hash": "6d33e9e8f8a67e52b6051f8939074754",
+    "semantic_hash": "6d33e9e8f8a67e52b6051f8939074754"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/animejs.md": {
+    "mtime": 1780190596.006984,
+    "ast_hash": "46f26071f2b7f2b969f71b0585a3b44c",
+    "semantic_hash": "46f26071f2b7f2b969f71b0585a3b44c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/anti-slop-rules.md": {
+    "mtime": 1780190596.0132124,
+    "ast_hash": "2a5fc0b46c3798fa5214fae779d6500f",
+    "semantic_hash": "2a5fc0b46c3798fa5214fae779d6500f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/asset-generation.md": {
+    "mtime": 1780190596.0182498,
+    "ast_hash": "87c8ed9bfc493cc57ec343b76abac1fb",
+    "semantic_hash": "87c8ed9bfc493cc57ec343b76abac1fb"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/bento-motion-engine.md": {
+    "mtime": 1780190596.0235922,
+    "ast_hash": "a96f4a4e7f868dffdd44967e51f34c00",
+    "semantic_hash": "a96f4a4e7f868dffdd44967e51f34c00"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/design-extraction-overview.md": {
+    "mtime": 1780190596.0302536,
+    "ast_hash": "565b4b1884b58c73e3bed76c2d34be8d",
+    "semantic_hash": "565b4b1884b58c73e3bed76c2d34be8d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/extraction-best-practices.md": {
+    "mtime": 1780190596.036611,
+    "ast_hash": "adebe2ac7a2f22600db605d69db9d5c8",
+    "semantic_hash": "adebe2ac7a2f22600db605d69db9d5c8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/extraction-output-templates.md": {
+    "mtime": 1780190596.0433626,
+    "ast_hash": "3da13cd0f37f47423bf2e7a05927e7cb",
+    "semantic_hash": "3da13cd0f37f47423bf2e7a05927e7cb"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/extraction-prompts.md": {
+    "mtime": 1780190596.0529864,
+    "ast_hash": "08e7d7b95ab0c21b952a90a1578bc3dc",
+    "semantic_hash": "08e7d7b95ab0c21b952a90a1578bc3dc"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/magicui-components.md": {
+    "mtime": 1780190596.0592062,
+    "ast_hash": "30ac62a2b84e9015e4633f97c9c43aa1",
+    "semantic_hash": "30ac62a2b84e9015e4633f97c9c43aa1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/performance-guardrails.md": {
+    "mtime": 1780190596.0659685,
+    "ast_hash": "7be75768198c99768175a151c320de55",
+    "semantic_hash": "7be75768198c99768175a151c320de55"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/premium-design-patterns.md": {
+    "mtime": 1780190596.0725796,
+    "ast_hash": "fc9a0f3943f93303d11971bfe975e080",
+    "semantic_hash": "fc9a0f3943f93303d11971bfe975e080"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/redesign-audit-checklist.md": {
+    "mtime": 1780190596.079709,
+    "ast_hash": "6870a6589dbb9beed2bd8209b22030a6",
+    "semantic_hash": "6870a6589dbb9beed2bd8209b22030a6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/technical-accessibility.md": {
+    "mtime": 1780190596.085103,
+    "ast_hash": "4cbc893606b5f74c74ad94dbd24083a1",
+    "semantic_hash": "4cbc893606b5f74c74ad94dbd24083a1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/technical-best-practices.md": {
+    "mtime": 1780190596.0912611,
+    "ast_hash": "e98d22e458c9be39a6aa579a8417301d",
+    "semantic_hash": "e98d22e458c9be39a6aa579a8417301d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/technical-optimization.md": {
+    "mtime": 1780190596.0995317,
+    "ast_hash": "8e55b84fc20cce9f5b819ad480353cbc",
+    "semantic_hash": "8e55b84fc20cce9f5b819ad480353cbc"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/technical-overview.md": {
+    "mtime": 1780190596.1066897,
+    "ast_hash": "2cc9f8732510558493daaa997dc69dfa",
+    "semantic_hash": "2cc9f8732510558493daaa997dc69dfa"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/technical-workflows.md": {
+    "mtime": 1780190596.1142886,
+    "ast_hash": "591e4a84234a6852b08649e739bea71e",
+    "semantic_hash": "591e4a84234a6852b08649e739bea71e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/visual-analysis-overview.md": {
+    "mtime": 1780190596.1203501,
+    "ast_hash": "189b46b441ccd60b794a57a8b41435c8",
+    "semantic_hash": "189b46b441ccd60b794a57a8b41435c8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/workflow-3d.md": {
+    "mtime": 1780190596.1258636,
+    "ast_hash": "63bd776d853ba459a7ab7801ca950766",
+    "semantic_hash": "63bd776d853ba459a7ab7801ca950766"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/workflow-describe.md": {
+    "mtime": 1780190596.132769,
+    "ast_hash": "b2736b3e5a1f3ec67cc66f1f3bec32cd",
+    "semantic_hash": "b2736b3e5a1f3ec67cc66f1f3bec32cd"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/workflow-immersive.md": {
+    "mtime": 1780190596.1402893,
+    "ast_hash": "eb953328a2f6300dc356f46fcc4edad4",
+    "semantic_hash": "eb953328a2f6300dc356f46fcc4edad4"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/workflow-quick.md": {
+    "mtime": 1780190596.1474864,
+    "ast_hash": "e462b3266bd81c7d729833850cab8a00",
+    "semantic_hash": "e462b3266bd81c7d729833850cab8a00"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/workflow-screenshot.md": {
+    "mtime": 1780190596.1547399,
+    "ast_hash": "1bae3ca76610c4b1484043dbaa44724b",
+    "semantic_hash": "1bae3ca76610c4b1484043dbaa44724b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-frontend-design/references/workflow-video.md": {
+    "mtime": 1780190596.1623824,
+    "ast_hash": "bfd6015a96a83a614a0a22ef36e1f8e3",
+    "semantic_hash": "bfd6015a96a83a614a0a22ef36e1f8e3"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-generate-context/SKILL.md": {
+    "mtime": 1780190596.1692803,
+    "ast_hash": "9d03a2acc9847e14bf849c87db4b0d96",
+    "semantic_hash": "9d03a2acc9847e14bf849c87db4b0d96"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-generate-context/references/generate-context.md": {
+    "mtime": 1780190596.17526,
+    "ast_hash": "9b34a20c5a8e47d0e9adbed7a267a547",
+    "semantic_hash": "9b34a20c5a8e47d0e9adbed7a267a547"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-generate-plan/SKILL.md": {
+    "mtime": 1780190596.190395,
+    "ast_hash": "dc99d6d80f70ddc13311036033c49247",
+    "semantic_hash": "dc99d6d80f70ddc13311036033c49247"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-generate-plan/references/generate-plan.md": {
+    "mtime": 1780190596.1978703,
+    "ast_hash": "8d8d9ad6fc04b3f40d54f121344106be",
+    "semantic_hash": "8d8d9ad6fc04b3f40d54f121344106be"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/README.md": {
+    "mtime": 1780190596.2125492,
+    "ast_hash": "eba306d677a7ee3649bd81f718139880",
+    "semantic_hash": "eba306d677a7ee3649bd81f718139880"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/SKILL.md": {
+    "mtime": 1780190596.219473,
+    "ast_hash": "e82d2f81eda0833f9ab94edcb02b366f",
+    "semantic_hash": "e82d2f81eda0833f9ab94edcb02b366f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/references/configuration.md": {
+    "mtime": 1780190596.2329738,
+    "ast_hash": "49b73fbb69cde042f5874f5c9aab7092",
+    "semantic_hash": "49b73fbb69cde042f5874f5c9aab7092"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/references/gemini-cli-integration.md": {
+    "mtime": 1780190596.2385108,
+    "ast_hash": "f2311c6050d927069479cdbf261e8bb0",
+    "semantic_hash": "f2311c6050d927069479cdbf261e8bb0"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-mcp-management/references/mcp-protocol.md": {
+    "mtime": 1780190596.2435737,
+    "ast_hash": "53a6ee6792598e2b4174e73a322e23df",
+    "semantic_hash": "53a6ee6792598e2b4174e73a322e23df"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-merge-worktree/SKILL.md": {
+    "mtime": 1780190596.2957156,
+    "ast_hash": "484d3b60870dfe7ab61895d62f251b2e",
+    "semantic_hash": "484d3b60870dfe7ab61895d62f251b2e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-predict/SKILL.md": {
+    "mtime": 1780190596.300347,
+    "ast_hash": "b5b54b83c6d9377e8bc5ee849d1015b7",
+    "semantic_hash": "b5b54b83c6d9377e8bc5ee849d1015b7"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/SKILL.md": {
+    "mtime": 1780190596.3055575,
+    "ast_hash": "d16acd3872a175169114b9e637686679",
+    "semantic_hash": "d16acd3872a175169114b9e637686679"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/references/generation-modes.md": {
+    "mtime": 1780190596.310922,
+    "ast_hash": "255d5f70652ab16fa7cfa9b000256a0c",
+    "semantic_hash": "255d5f70652ab16fa7cfa9b000256a0c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/references/html-css-patterns.md": {
+    "mtime": 1780190596.3159602,
+    "ast_hash": "a5225e4ad77efc3f997ffd9d4c6a3d58",
+    "semantic_hash": "a5225e4ad77efc3f997ffd9d4c6a3d58"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/references/html-design-guidelines.md": {
+    "mtime": 1780190596.3214746,
+    "ast_hash": "1b050a05f213eed090044e9416b12552",
+    "semantic_hash": "1b050a05f213eed090044e9416b12552"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/references/html-libraries.md": {
+    "mtime": 1780190596.3296518,
+    "ast_hash": "c3409cd875d54a2fd5fdf71592a46324",
+    "semantic_hash": "c3409cd875d54a2fd5fdf71592a46324"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/references/html-responsive-nav.md": {
+    "mtime": 1780190596.3364897,
+    "ast_hash": "2d8318360ba390a990fb51e888fe65ec",
+    "semantic_hash": "2d8318360ba390a990fb51e888fe65ec"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/references/html-slide-patterns.md": {
+    "mtime": 1780190596.3427687,
+    "ast_hash": "bddaf47270b46b8f6ec5e9f6b5eac88b",
+    "semantic_hash": "bddaf47270b46b8f6ec5e9f6b5eac88b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/references/view-mode.md": {
+    "mtime": 1780190596.3509104,
+    "ast_hash": "28f9f8b71e97c03713e0271dc27ff240",
+    "semantic_hash": "28f9f8b71e97c03713e0271dc27ff240"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/templates/architecture.html": {
+    "mtime": 1780190596.3706594,
+    "ast_hash": "fc0517e4b5c3faca17b485dd6b7454f0",
+    "semantic_hash": "fc0517e4b5c3faca17b485dd6b7454f0"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/templates/data-table.html": {
+    "mtime": 1780190596.4126027,
+    "ast_hash": "57b51ba2c9f6f8e0b89f628b018a990d",
+    "semantic_hash": "57b51ba2c9f6f8e0b89f628b018a990d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/templates/mermaid-flowchart.html": {
+    "mtime": 1780190596.4288538,
+    "ast_hash": "6d9dea43508086412262e0f7948593ce",
+    "semantic_hash": "6d9dea43508086412262e0f7948593ce"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-preview/templates/slide-deck.html": {
+    "mtime": 1780190596.4518282,
+    "ast_hash": "6e2a70d881ced05b805d2156426009a2",
+    "semantic_hash": "6e2a70d881ced05b805d2156426009a2"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-problem-solving/SKILL.md": {
+    "mtime": 1780190596.4772494,
+    "ast_hash": "40725154b7811ed27432057240c8634f",
+    "semantic_hash": "40725154b7811ed27432057240c8634f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-problem-solving/references/attribution.md": {
+    "mtime": 1780190596.495013,
+    "ast_hash": "ddaf8e961c892919a09463a2e280dae2",
+    "semantic_hash": "ddaf8e961c892919a09463a2e280dae2"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-problem-solving/references/collision-zone-thinking.md": {
+    "mtime": 1780190596.5175033,
+    "ast_hash": "0c3bbfcf3880eb7be8260f11dde7a1cd",
+    "semantic_hash": "0c3bbfcf3880eb7be8260f11dde7a1cd"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-problem-solving/references/inversion-exercise.md": {
+    "mtime": 1780190596.5409832,
+    "ast_hash": "ad9c77fe216ce07515fb392e8bddfac1",
+    "semantic_hash": "ad9c77fe216ce07515fb392e8bddfac1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-problem-solving/references/meta-pattern-recognition.md": {
+    "mtime": 1780190596.5623085,
+    "ast_hash": "f39d6c1660852ee71e2dc5f947292847",
+    "semantic_hash": "f39d6c1660852ee71e2dc5f947292847"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-problem-solving/references/scale-game.md": {
+    "mtime": 1780190596.5718336,
+    "ast_hash": "1419ef04a63d0e2f1b1a7e176f3202e7",
+    "semantic_hash": "1419ef04a63d0e2f1b1a7e176f3202e7"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-problem-solving/references/simplification-cascades.md": {
+    "mtime": 1780190596.5815268,
+    "ast_hash": "2ada7c1b43f4205513544cdcc8f14f26",
+    "semantic_hash": "2ada7c1b43f4205513544cdcc8f14f26"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-problem-solving/references/when-stuck.md": {
+    "mtime": 1780190596.590743,
+    "ast_hash": "04d128bbbb08d55f98f0d3e9db91e0fa",
+    "semantic_hash": "04d128bbbb08d55f98f0d3e9db91e0fa"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-publish/SKILL.md": {
+    "mtime": 1780190596.6000004,
+    "ast_hash": "2e0cf6bba0031d41aa58c87488327fcb",
+    "semantic_hash": "2e0cf6bba0031d41aa58c87488327fcb"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-publish/references/vc-publish.md": {
+    "mtime": 1780190596.6091821,
+    "ast_hash": "885c73efccc906ae9d92909586d7a32b",
+    "semantic_hash": "885c73efccc906ae9d92909586d7a32b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-repomix/SKILL.md": {
+    "mtime": 1780190596.6156588,
+    "ast_hash": "bbb1f1656c2c98fa623ab9ff37d03d6a",
+    "semantic_hash": "bbb1f1656c2c98fa623ab9ff37d03d6a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-repomix/references/configuration.md": {
+    "mtime": 1780190596.6219633,
+    "ast_hash": "613a9ed2d5dee7a2598518d94b4a9beb",
+    "semantic_hash": "613a9ed2d5dee7a2598518d94b4a9beb"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-repomix/references/repomix-workflow.md": {
+    "mtime": 1780190596.6271083,
+    "ast_hash": "c3d3d4ce839dbb8eadb6c8a8afc2967d",
+    "semantic_hash": "c3d3d4ce839dbb8eadb6c8a8afc2967d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-repomix/references/usage-patterns.md": {
+    "mtime": 1780190596.6321583,
+    "ast_hash": "c113a0131178102a547fa624ab821e9b",
+    "semantic_hash": "c113a0131178102a547fa624ab821e9b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-repomix/scripts/README.md": {
+    "mtime": 1780190596.6370537,
+    "ast_hash": "580f8a5846271b944295b521176396fb",
+    "semantic_hash": "580f8a5846271b944295b521176396fb"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-scenario/SKILL.md": {
+    "mtime": 1780190596.6705973,
+    "ast_hash": "6106b5d43f2e1adc075cc988db75711f",
+    "semantic_hash": "6106b5d43f2e1adc075cc988db75711f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-scout/SKILL.md": {
+    "mtime": 1780190596.6763775,
+    "ast_hash": "1659988a4ba06f842ac83e8def885212",
+    "semantic_hash": "1659988a4ba06f842ac83e8def885212"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-scout/references/external-scouting.md": {
+    "mtime": 1780190596.6830947,
+    "ast_hash": "a738233fed3ddb09c85f55512a05421b",
+    "semantic_hash": "a738233fed3ddb09c85f55512a05421b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-scout/references/internal-scouting.md": {
+    "mtime": 1780190596.6896293,
+    "ast_hash": "b731adea9e15d10d8ee2821e4feef82f",
+    "semantic_hash": "b731adea9e15d10d8ee2821e4feef82f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-scout/references/task-management-scouting.md": {
+    "mtime": 1780190596.6949742,
+    "ast_hash": "f265c4ea25cfa79206ea074907981826",
+    "semantic_hash": "f265c4ea25cfa79206ea074907981826"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-security/SKILL.md": {
+    "mtime": 1780190596.7016132,
+    "ast_hash": "d519e2e1c3cf3d4dc7288dd75e7948c8",
+    "semantic_hash": "d519e2e1c3cf3d4dc7288dd75e7948c8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-security/references/stride-owasp-checklist.md": {
+    "mtime": 1780190596.7165263,
+    "ast_hash": "596d71a3779f05f426dc5a81951c73f3",
+    "semantic_hash": "596d71a3779f05f426dc5a81951c73f3"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-security/references/vulnerability-patterns.md": {
+    "mtime": 1780190596.7229598,
+    "ast_hash": "ef77ff596f906263408f85e5ae8db698",
+    "semantic_hash": "ef77ff596f906263408f85e5ae8db698"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/README.md": {
+    "mtime": 1780190596.7430754,
+    "ast_hash": "fe5d7edc66ea49c22846fc389d9aa650",
+    "semantic_hash": "fe5d7edc66ea49c22846fc389d9aa650"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/SKILL.md": {
+    "mtime": 1780190596.750312,
+    "ast_hash": "aa6ecbf1fe8c1aec22e857f803dc7184",
+    "semantic_hash": "aa6ecbf1fe8c1aec22e857f803dc7184"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/references/advanced-strategies.md": {
+    "mtime": 1780190596.763213,
+    "ast_hash": "5548d754f061095e6c72d14182bb5959",
+    "semantic_hash": "5548d754f061095e6c72d14182bb5959"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/references/advanced-techniques.md": {
+    "mtime": 1780190596.769378,
+    "ast_hash": "4a6da65cde5152bddb47be7eaa53666a",
+    "semantic_hash": "4a6da65cde5152bddb47be7eaa53666a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/references/core-patterns.md": {
+    "mtime": 1780190596.7756002,
+    "ast_hash": "1b46b03033bf9dc3941338e627f015fe",
+    "semantic_hash": "1b46b03033bf9dc3941338e627f015fe"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/references/examples-api.md": {
+    "mtime": 1780190596.7825902,
+    "ast_hash": "8466b3e1173c2d87a2f4a9a9a2928829",
+    "semantic_hash": "8466b3e1173c2d87a2f4a9a9a2928829"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/references/examples-architecture.md": {
+    "mtime": 1780190596.7884398,
+    "ast_hash": "918612c6e36e7d71aa54573640dd21b7",
+    "semantic_hash": "918612c6e36e7d71aa54573640dd21b7"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-sequential-thinking/references/examples-debug.md": {
+    "mtime": 1780190596.7960777,
+    "ast_hash": "ce5e31d1793c7858109f5d05544e929a",
+    "semantic_hash": "ce5e31d1793c7858109f5d05544e929a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-setup/SKILL.md": {
+    "mtime": 1780190596.832872,
+    "ast_hash": "ab1643db4fc57da060c99a2c2b8f058b",
+    "semantic_hash": "ab1643db4fc57da060c99a2c2b8f058b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-setup/references/vc-setup.md": {
+    "mtime": 1780190596.839252,
+    "ast_hash": "6e8f223ca4f729ed5ff47735797fcf43",
+    "semantic_hash": "6e8f223ca4f729ed5ff47735797fcf43"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-team/SKILL.md": {
+    "mtime": 1780190596.8469083,
+    "ast_hash": "5cadfccc35a35dbb8771d54b2f00bbdf",
+    "semantic_hash": "5cadfccc35a35dbb8771d54b2f00bbdf"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-team/references/agent-teams-controls-and-modes.md": {
+    "mtime": 1780190596.8541553,
+    "ast_hash": "ee76c28a266f92029356a6354f0dd296",
+    "semantic_hash": "ee76c28a266f92029356a6354f0dd296"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-team/references/agent-teams-examples-and-best-practices.md": {
+    "mtime": 1780190596.8597293,
+    "ast_hash": "d7777ed61193753bcf65013ef6d53d4b",
+    "semantic_hash": "d7777ed61193753bcf65013ef6d53d4b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-team/references/agent-teams-official-docs.md": {
+    "mtime": 1780190596.866761,
+    "ast_hash": "c54125d614f39cf5820b3be94c3014d4",
+    "semantic_hash": "c54125d614f39cf5820b3be94c3014d4"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/README.md": {
+    "mtime": 1780190596.8808062,
+    "ast_hash": "be4f85e5df5eb99ec63acfcb0299b632",
+    "semantic_hash": "be4f85e5df5eb99ec63acfcb0299b632"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/SKILL.md": {
+    "mtime": 1780190596.8893564,
+    "ast_hash": "7c1c3b25f28153ae04df966f68236dd7",
+    "semantic_hash": "7c1c3b25f28153ae04df966f68236dd7"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/icons.md": {
+    "mtime": 1780190596.9494772,
+    "ast_hash": "373249ad66de942ec47a0f26efee972e",
+    "semantic_hash": "373249ad66de942ec47a0f26efee972e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/style-1-flat-icon.md": {
+    "mtime": 1780190596.955759,
+    "ast_hash": "e9afb5b77f71a628c5661b8a3e17b404",
+    "semantic_hash": "e9afb5b77f71a628c5661b8a3e17b404"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/style-2-dark-terminal.md": {
+    "mtime": 1780190596.9607327,
+    "ast_hash": "139d4de3bc9de6c42a6bd6c425db1b2d",
+    "semantic_hash": "139d4de3bc9de6c42a6bd6c425db1b2d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/style-3-blueprint.md": {
+    "mtime": 1780190596.9657078,
+    "ast_hash": "527f1f9bd4ab3d1012dd29e0f07180f6",
+    "semantic_hash": "527f1f9bd4ab3d1012dd29e0f07180f6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/style-4-notion-clean.md": {
+    "mtime": 1780190596.9712431,
+    "ast_hash": "3be9cd7a76f3935a6b26489a1275abe8",
+    "semantic_hash": "3be9cd7a76f3935a6b26489a1275abe8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/style-5-glassmorphism.md": {
+    "mtime": 1780190596.9763422,
+    "ast_hash": "b6baea71d8decd1278bd585fc45ca327",
+    "semantic_hash": "b6baea71d8decd1278bd585fc45ca327"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/style-6-claude-official.md": {
+    "mtime": 1780190596.981981,
+    "ast_hash": "5ef9b859ff4bf3f85fd12581937417d5",
+    "semantic_hash": "5ef9b859ff4bf3f85fd12581937417d5"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/style-7-openai.md": {
+    "mtime": 1780190596.9875393,
+    "ast_hash": "b61e2a588f14d7abfa4fa064cd7802c6",
+    "semantic_hash": "b61e2a588f14d7abfa4fa064cd7802c6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/style-diagram-matrix.md": {
+    "mtime": 1780190596.9929414,
+    "ast_hash": "f04302ca1a9a1809fbf15daea7376fad",
+    "semantic_hash": "f04302ca1a9a1809fbf15daea7376fad"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/svg-layout-best-practices.md": {
+    "mtime": 1780190596.9975843,
+    "ast_hash": "a778defe18cfe582a58b9c0480af1e5d",
+    "semantic_hash": "a778defe18cfe582a58b9c0480af1e5d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/references/tech-graph-workflow.md": {
+    "mtime": 1780190597.0023117,
+    "ast_hash": "23f27a40743125eec51f4e6be47d12c5",
+    "semantic_hash": "23f27a40743125eec51f4e6be47d12c5"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/scripts/README.md": {
+    "mtime": 1780190597.0085604,
+    "ast_hash": "9f44fea4304a733c45589ae4c32c50a3",
+    "semantic_hash": "9f44fea4304a733c45589ae4c32c50a3"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-update/SKILL.md": {
+    "mtime": 1780190597.1071908,
+    "ast_hash": "2aaadd416c955b2435d788d949e0cb22",
+    "semantic_hash": "2aaadd416c955b2435d788d949e0cb22"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-update/references/vc-update.md": {
+    "mtime": 1780190597.1155567,
+    "ast_hash": "1d8ca4216c53a763a9b6efc9bf40baa4",
+    "semantic_hash": "1d8ca4216c53a763a9b6efc9bf40baa4"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-watzup/SKILL.md": {
+    "mtime": 1780190597.122897,
+    "ast_hash": "fc56b069b80afd4e97dc7f6c74b25fb0",
+    "semantic_hash": "fc56b069b80afd4e97dc7f6c74b25fb0"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-watzup/references/watzup-workflow.md": {
+    "mtime": 1780190597.1305912,
+    "ast_hash": "deff572a986b7b5e2bf04d9d9b5d5215",
+    "semantic_hash": "deff572a986b7b5e2bf04d9d9b5d5215"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/SKILL.md": {
+    "mtime": 1780190597.1519275,
+    "ast_hash": "e738ff3ea8b90495bee929e1dcd3693d",
+    "semantic_hash": "e738ff3ea8b90495bee929e1dcd3693d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/accessibility-testing.md": {
+    "mtime": 1780190597.158394,
+    "ast_hash": "795aecc797922319255ed6b0ea42085f",
+    "semantic_hash": "795aecc797922319255ed6b0ea42085f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/api-testing.md": {
+    "mtime": 1780190597.1661012,
+    "ast_hash": "9fa43d15830be69f8ce199a1b9e75031",
+    "semantic_hash": "9fa43d15830be69f8ce199a1b9e75031"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/ci-cd-testing-workflows.md": {
+    "mtime": 1780190597.1731288,
+    "ast_hash": "40ed071d4463f4fd2e7eefa3f04d8485",
+    "semantic_hash": "40ed071d4463f4fd2e7eefa3f04d8485"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/component-testing.md": {
+    "mtime": 1780190597.180705,
+    "ast_hash": "17da4f994a6c79cb8efa00ab90bc07b9",
+    "semantic_hash": "17da4f994a6c79cb8efa00ab90bc07b9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/contract-testing.md": {
+    "mtime": 1780190597.1865933,
+    "ast_hash": "d603d9a875af5730d34726686ef20b63",
+    "semantic_hash": "d603d9a875af5730d34726686ef20b63"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/cross-browser-checklist.md": {
+    "mtime": 1780190597.1924736,
+    "ast_hash": "04c8a3960880ed4c32b62236fd4dc029",
+    "semantic_hash": "04c8a3960880ed4c32b62236fd4dc029"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/database-testing.md": {
+    "mtime": 1780190597.1999705,
+    "ast_hash": "3edc2b2410ce9605339ed687572a338d",
+    "semantic_hash": "3edc2b2410ce9605339ed687572a338d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/e2e-testing-playwright.md": {
+    "mtime": 1780190597.2073216,
+    "ast_hash": "3c7c2c7cb8842aaee20e418c38ad119a",
+    "semantic_hash": "3c7c2c7cb8842aaee20e418c38ad119a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/functional-testing-checklist.md": {
+    "mtime": 1780190597.2146742,
+    "ast_hash": "51d3b3adad6f5657333bb9b5524a1fea",
+    "semantic_hash": "51d3b3adad6f5657333bb9b5524a1fea"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/interactive-testing-patterns.md": {
+    "mtime": 1780190597.220427,
+    "ast_hash": "0e1b72789d79cc6356fcb32be5e5bb14",
+    "semantic_hash": "0e1b72789d79cc6356fcb32be5e5bb14"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/load-testing-k6.md": {
+    "mtime": 1780190597.2266412,
+    "ast_hash": "01699d57398dd7d12269a68ae4b1ab02",
+    "semantic_hash": "01699d57398dd7d12269a68ae4b1ab02"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/mobile-gesture-testing.md": {
+    "mtime": 1780190597.2337725,
+    "ast_hash": "5e04fca254c6137c6e49d98d6a50b294",
+    "semantic_hash": "5e04fca254c6137c6e49d98d6a50b294"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/performance-core-web-vitals.md": {
+    "mtime": 1780190597.2399707,
+    "ast_hash": "9e8b4573f06ea6dcbe22617ffe156950",
+    "semantic_hash": "9e8b4573f06ea6dcbe22617ffe156950"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/playwright-component-testing.md": {
+    "mtime": 1780190597.2476883,
+    "ast_hash": "81a30e34870038faaa5c2ad63d6597b5",
+    "semantic_hash": "81a30e34870038faaa5c2ad63d6597b5"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/pre-release-checklist.md": {
+    "mtime": 1780190597.2538712,
+    "ast_hash": "cad12e38978c5c859299d38346121905",
+    "semantic_hash": "cad12e38978c5c859299d38346121905"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/security-checklists.md": {
+    "mtime": 1780190597.260097,
+    "ast_hash": "ebf0dc7a0d0872c24c28f8e24bb6e788",
+    "semantic_hash": "ebf0dc7a0d0872c24c28f8e24bb6e788"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/security-testing-overview.md": {
+    "mtime": 1780190597.2685378,
+    "ast_hash": "a88c41d3e592b3a97e739339a8e7731f",
+    "semantic_hash": "a88c41d3e592b3a97e739339a8e7731f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/shadow-dom-testing.md": {
+    "mtime": 1780190597.2741745,
+    "ast_hash": "03ace46bfb231971b320b619951116bf",
+    "semantic_hash": "03ace46bfb231971b320b619951116bf"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/test-data-management.md": {
+    "mtime": 1780190597.2815435,
+    "ast_hash": "1293c08d8c997c37dcd7ed605b979a2b",
+    "semantic_hash": "1293c08d8c997c37dcd7ed605b979a2b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/test-flakiness-mitigation.md": {
+    "mtime": 1780190597.2876751,
+    "ast_hash": "c9c576c538ca7b344e5488377490dd8d",
+    "semantic_hash": "c9c576c538ca7b344e5488377490dd8d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/testing-pyramid-strategy.md": {
+    "mtime": 1780190597.292694,
+    "ast_hash": "9b55f933cc7884edce9db847409caa97",
+    "semantic_hash": "9b55f933cc7884edce9db847409caa97"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/unit-integration-testing.md": {
+    "mtime": 1780190597.2992866,
+    "ast_hash": "666bb1e560e21220b4e4cd7f29bac883",
+    "semantic_hash": "666bb1e560e21220b4e4cd7f29bac883"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/visual-regression.md": {
+    "mtime": 1780190597.305025,
+    "ast_hash": "d1940593bd50acf279fd70fcbe705402",
+    "semantic_hash": "d1940593bd50acf279fd70fcbe705402"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-web-testing/references/vulnerability-payloads.md": {
+    "mtime": 1780190597.3101354,
+    "ast_hash": "2fd1b56549104f8a859f3b4340e47807",
+    "semantic_hash": "2fd1b56549104f8a859f3b4340e47807"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-xia/SKILL.md": {
+    "mtime": 1780190597.3274643,
+    "ast_hash": "39d1ceebd5dd4c21cec9cc97dcd15f5e",
+    "semantic_hash": "39d1ceebd5dd4c21cec9cc97dcd15f5e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-xia/references/challenge-framework.md": {
+    "mtime": 1780190597.3342752,
+    "ast_hash": "bdee702b7cd618b84600c1da09d16c46",
+    "semantic_hash": "bdee702b7cd618b84600c1da09d16c46"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-xia/references/comparison-template.md": {
+    "mtime": 1780190597.3393762,
+    "ast_hash": "e6ab580c570b13fe398508f50378d268",
+    "semantic_hash": "e6ab580c570b13fe398508f50378d268"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-xia/references/xia-workflow.md": {
+    "mtime": 1780190597.3955321,
+    "ast_hash": "82ce12eb1f20a1b7ad4df9fad2b0dcc1",
+    "semantic_hash": "82ce12eb1f20a1b7ad4df9fad2b0dcc1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/chat-mock-v1.png": {
+    "mtime": 1780190595.033259,
+    "ast_hash": "32b97e3657946dc054888f9a6a471c2a",
+    "semantic_hash": "32b97e3657946dc054888f9a6a471c2a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/chat-mock-v2.png": {
+    "mtime": 1780190595.037985,
+    "ast_hash": "2ce752322a8e0719d1f5177f7e87f73c",
+    "semantic_hash": "2ce752322a8e0719d1f5177f7e87f73c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/chat-mock-v3-wide.png": {
+    "mtime": 1780190595.0458276,
+    "ast_hash": "c85369f0dcd00d5bfe23720ea91d3b5b",
+    "semantic_hash": "c85369f0dcd00d5bfe23720ea91d3b5b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/chat-mock-v4.png": {
+    "mtime": 1780190595.0579324,
+    "ast_hash": "89e285c191e2f02c257403bce465c082",
+    "semantic_hash": "89e285c191e2f02c257403bce465c082"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/chat-mock-workspace.png": {
+    "mtime": 1780190595.0646646,
+    "ast_hash": "de5e31a5c8ba35bc6d455f0456d4661e",
+    "semantic_hash": "de5e31a5c8ba35bc6d455f0456d4661e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/01-dashboard-instances-list-single-running.png": {
+    "mtime": 1780190595.087845,
+    "ast_hash": "362325b4bbf60ef27e34fadfac6e50ee",
+    "semantic_hash": "362325b4bbf60ef27e34fadfac6e50ee"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/02-instance-overview-details-connections-actions.png": {
+    "mtime": 1780190595.1059444,
+    "ast_hash": "48f520ca29071a45489d0f973c000cce",
+    "semantic_hash": "48f520ca29071a45489d0f973c000cce"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/03-instance-settings-top-details-power-secrets-form.png": {
+    "mtime": 1780190595.1283112,
+    "ast_hash": "7307b125301bc8d5c903c8d49f7cab03",
+    "semantic_hash": "7307b125301bc8d5c903c8d49f7cab03"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/04-instance-settings-scrolled-secrets-dangerzone.png": {
+    "mtime": 1780190595.1363528,
+    "ast_hash": "85ac5f6be9ff020006c7f7c79eac6755",
+    "semantic_hash": "85ac5f6be9ff020006c7f7c79eac6755"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/05-agent-chat-full-layout-sidebar-expanded-3panel.png": {
+    "mtime": 1780190595.1495333,
+    "ast_hash": "1509aa10db020e574af1623d75dfc025",
+    "semantic_hash": "1509aa10db020e574af1623d75dfc025"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/06-agent-chat-sidebar-collapsed-with-e2e-job.png": {
+    "mtime": 1780190595.162993,
+    "ast_hash": "8c4aa5b0f530611857c00e984d81f289",
+    "semantic_hash": "8c4aa5b0f530611857c00e984d81f289"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/07-agent-chat-sidebar-icons-conversation-start.png": {
+    "mtime": 1780190595.1801646,
+    "ast_hash": "e08ef3e18903e775bd9495206e7183e6",
+    "semantic_hash": "e08ef3e18903e775bd9495206e7183e6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/08-sidebar-pinned-full-agent-list-chat-active.png": {
+    "mtime": 1780190595.190469,
+    "ast_hash": "f15af52b8a0693e1cdb920151a1ceb03",
+    "semantic_hash": "f15af52b8a0693e1cdb920151a1ceb03"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/09-history-panel-linkedin-feed-results.png": {
+    "mtime": 1780190595.1990058,
+    "ast_hash": "39e6ac103a5568cf8d500f9f88ffdf91",
+    "semantic_hash": "39e6ac103a5568cf8d500f9f88ffdf91"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/10-chat-model-identity-minimax-m25-nitro.png": {
+    "mtime": 1780190595.2078989,
+    "ast_hash": "ca13c0289d8437c5a804f5a72c1ac3be",
+    "semantic_hash": "ca13c0289d8437c5a804f5a72c1ac3be"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/11-workspace-tab-file-explorer-no-selection.png": {
+    "mtime": 1780190595.213433,
+    "ast_hash": "8d394e7ef53bb0d2a5b211e18882eae8",
+    "semantic_hash": "8d394e7ef53bb0d2a5b211e18882eae8"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/12-workspace-identity-md-file-open-in-editor.png": {
+    "mtime": 1780190595.2184486,
+    "ast_hash": "8acff703923189f1ec1c60c18dd753b9",
+    "semantic_hash": "8acff703923189f1ec1c60c18dd753b9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/13-integrations-tab-connector-grid-overview.png": {
+    "mtime": 1780190595.224228,
+    "ast_hash": "37b8c5d164dbb9cd3388981f706c91e5",
+    "semantic_hash": "37b8c5d164dbb9cd3388981f706c91e5"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/14-integration-linkedin-detail-connected-account.png": {
+    "mtime": 1780190595.2294443,
+    "ast_hash": "86abdc7df1c841e122ac367b4f65448d",
+    "semantic_hash": "86abdc7df1c841e122ac367b4f65448d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/15-integrations-composio-detail-no-accounts.png": {
+    "mtime": 1780190595.2350898,
+    "ast_hash": "cda3cb24508712a8eb9de814cb832d8b",
+    "semantic_hash": "cda3cb24508712a8eb9de814cb832d8b"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/16-chat-workflows-tab-linkedin-engagement-package.png": {
+    "mtime": 1780190595.2407207,
+    "ast_hash": "6ec96982d8a92837873b85afb2f8b6b6",
+    "semantic_hash": "6ec96982d8a92837873b85afb2f8b6b6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/17-chat-schedule-tab-heartbeat-and-cronjobs.png": {
+    "mtime": 1780190595.246138,
+    "ast_hash": "f49e6471cfb83a980b15d7c1e7ec7bd2",
+    "semantic_hash": "f49e6471cfb83a980b15d7c1e7ec7bd2"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/18-chat-settings-tab-identity-proxy-tools.png": {
+    "mtime": 1780190595.2521844,
+    "ast_hash": "767b4a01045eb5397814e04fa907c989",
+    "semantic_hash": "767b4a01045eb5397814e04fa907c989"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/19-chat-browser-tab-user-typing-message.png": {
+    "mtime": 1780190595.2585726,
+    "ast_hash": "ba13bd7e31f4942c246b8993037f4c3a",
+    "semantic_hash": "ba13bd7e31f4942c246b8993037f4c3a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/20-new-chat-empty-state-with-browser-panel.png": {
+    "mtime": 1780190595.2641482,
+    "ast_hash": "f63dc4f8f98f8962bb08642011939035",
+    "semantic_hash": "f63dc4f8f98f8962bb08642011939035"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/21-instances-page-create-instance-modal.png": {
+    "mtime": 1780190595.2702665,
+    "ast_hash": "eda5f3585f6c55b66287aa6e15f856af",
+    "semantic_hash": "eda5f3585f6c55b66287aa6e15f856af"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/22-chat-create-agent-modal-over-integrations-grid.png": {
+    "mtime": 1780190595.2763982,
+    "ast_hash": "01d5db9483034878ac1700bfe32cf08a",
+    "semantic_hash": "01d5db9483034878ac1700bfe32cf08a"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/23-integration-gmail-detail-no-accounts.png": {
+    "mtime": 1780190595.28204,
+    "ast_hash": "7b7eeff812ca876a50d4a5f086b182bf",
+    "semantic_hash": "7b7eeff812ca876a50d4a5f086b182bf"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/24-integrations-search-linkedin-filtered-grid.png": {
+    "mtime": 1780190595.2870638,
+    "ast_hash": "7c0f1272fa89420274a85b0e0cd676cf",
+    "semantic_hash": "7c0f1272fa89420274a85b0e0cd676cf"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/25-chat-cron-e2e-test-job-composio-panel.png": {
+    "mtime": 1780190595.2922983,
+    "ast_hash": "c7d7076c0c129406ae7ce99655ef4d45",
+    "semantic_hash": "c7d7076c0c129406ae7ce99655ef4d45"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/26-workspace-openclaw-json-editor-file-tree.png": {
+    "mtime": 1780190595.2979379,
+    "ast_hash": "321866e19f21ab84fbfcdc4f87148c5e",
+    "semantic_hash": "321866e19f21ab84fbfcdc4f87148c5e"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/27-workspace-skills-folder-skill2md-empty-editor.png": {
+    "mtime": 1780190595.3036683,
+    "ast_hash": "85fa2da8a6189b4254230c49c7fc3884",
+    "semantic_hash": "85fa2da8a6189b4254230c49c7fc3884"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/28-workspace-agents-identity-folders-expanded.png": {
+    "mtime": 1780190595.31043,
+    "ast_hash": "32cf4e7098a7acdbacf6ddc77cae6e81",
+    "semantic_hash": "32cf4e7098a7acdbacf6ddc77cae6e81"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408-v2/29-workspace-memory-sqlite-files-tree-expanded.png": {
+    "mtime": 1780190595.3204942,
+    "ast_hash": "5ceac88f8ef0315399c9ba87bf67874d",
+    "semantic_hash": "5ceac88f8ef0315399c9ba87bf67874d"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/01-dashboard.png": {
+    "mtime": 1780190595.327586,
+    "ast_hash": "f133351c37b5457399d0cabc1e5d8aac",
+    "semantic_hash": "f133351c37b5457399d0cabc1e5d8aac"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/02-agent-chat-default.png": {
+    "mtime": 1780190595.3370767,
+    "ast_hash": "c1501e3bef1e4f22e27eda7401360641",
+    "semantic_hash": "c1501e3bef1e4f22e27eda7401360641"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/03-agent-chat-browser-tab.png": {
+    "mtime": 1780190595.3442664,
+    "ast_hash": "c1501e3bef1e4f22e27eda7401360641",
+    "semantic_hash": "c1501e3bef1e4f22e27eda7401360641"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/04-agent-chat-workspace-tab.png": {
+    "mtime": 1780190595.350351,
+    "ast_hash": "3a7072366f8f69221fe0e4e5278eb955",
+    "semantic_hash": "3a7072366f8f69221fe0e4e5278eb955"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/05-agent-chat-integrations-tab.png": {
+    "mtime": 1780190595.3571134,
+    "ast_hash": "9bcfa2406d3f3802d5d3f0ad86f64d4f",
+    "semantic_hash": "9bcfa2406d3f3802d5d3f0ad86f64d4f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/06-agent-chat-workflows-tab.png": {
+    "mtime": 1780190595.3623695,
+    "ast_hash": "5f621361229d0acbc0155112ab31a42f",
+    "semantic_hash": "5f621361229d0acbc0155112ab31a42f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/07-agent-chat-schedule-tab.png": {
+    "mtime": 1780190595.367131,
+    "ast_hash": "f62b8ba07367b5b8f2cbab4945fdaa99",
+    "semantic_hash": "f62b8ba07367b5b8f2cbab4945fdaa99"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/08-agent-chat-settings-tab.png": {
+    "mtime": 1780190595.372213,
+    "ast_hash": "ac889199b501e42993df253969a28842",
+    "semantic_hash": "ac889199b501e42993df253969a28842"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/09-agent-overview.png": {
+    "mtime": 1780190595.3768215,
+    "ast_hash": "948d4568a058b64be4cf48e423a80974",
+    "semantic_hash": "948d4568a058b64be4cf48e423a80974"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/10-agent-settings.png": {
+    "mtime": 1780190595.3817773,
+    "ast_hash": "2cd4884ec825ec7074087e8aae62a8ef",
+    "semantic_hash": "2cd4884ec825ec7074087e8aae62a8ef"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/11-agent-workspace.png": {
+    "mtime": 1780190595.3875322,
+    "ast_hash": "975c0414678c3b072d03e8787fad3d36",
+    "semantic_hash": "975c0414678c3b072d03e8787fad3d36"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/12-instance-overview.png": {
+    "mtime": 1780190595.3929393,
+    "ast_hash": "6b9af88d16c0e15edf7fa297595d234c",
+    "semantic_hash": "6b9af88d16c0e15edf7fa297595d234c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/13-instance-browser.png": {
+    "mtime": 1780190595.3982668,
+    "ast_hash": "bf7598e769c041e4fa5e5d421ace6fb5",
+    "semantic_hash": "bf7598e769c041e4fa5e5d421ace6fb5"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/14-instance-files.png": {
+    "mtime": 1780190595.402948,
+    "ast_hash": "66481584b05021390d342d927ee0edd6",
+    "semantic_hash": "66481584b05021390d342d927ee0edd6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/16-instance-settings.png": {
+    "mtime": 1780190595.413165,
+    "ast_hash": "7be05ae26c7ee59e004c6b3d15f93248",
+    "semantic_hash": "7be05ae26c7ee59e004c6b3d15f93248"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/17-modal-create-instance.png": {
+    "mtime": 1780190595.41765,
+    "ast_hash": "20c5b4d8277a496b3a574130fb1e286c",
+    "semantic_hash": "20c5b4d8277a496b3a574130fb1e286c"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/18-modal-create-agent.png": {
+    "mtime": 1780190595.4236648,
+    "ast_hash": "d445d61ea4cd11c306e5465f336f84f4",
+    "semantic_hash": "d445d61ea4cd11c306e5465f336f84f4"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-chrome-devtools/screenshots/ui-audit-20260408/19-chat-session-sidebar.png": {
+    "mtime": 1780190595.4292223,
+    "ast_hash": "541e564ddbaa1ae8f334a9a525cbc7c4",
+    "semantic_hash": "541e564ddbaa1ae8f334a9a525cbc7c4"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/agent-architecture.svg": {
+    "mtime": 1780190597.0343022,
+    "ast_hash": "3b09e51d6cb2b4ada33e2099d5461145",
+    "semantic_hash": "3b09e51d6cb2b4ada33e2099d5461145"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/architecture.svg": {
+    "mtime": 1780190597.0389264,
+    "ast_hash": "b0bc464f72073ee07f3465a3af7fe810",
+    "semantic_hash": "b0bc464f72073ee07f3465a3af7fe810"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/comparison-matrix.svg": {
+    "mtime": 1780190597.0452056,
+    "ast_hash": "d538abadb55898acf969e93f07997f30",
+    "semantic_hash": "d538abadb55898acf969e93f07997f30"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/data-flow.svg": {
+    "mtime": 1780190597.0506914,
+    "ast_hash": "3b09e51d6cb2b4ada33e2099d5461145",
+    "semantic_hash": "3b09e51d6cb2b4ada33e2099d5461145"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/er-diagram.svg": {
+    "mtime": 1780190597.0603702,
+    "ast_hash": "437b48d579d0aadbf4c6cdc5aa452ae6",
+    "semantic_hash": "437b48d579d0aadbf4c6cdc5aa452ae6"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/flowchart.svg": {
+    "mtime": 1780190597.0675144,
+    "ast_hash": "ad720a3323f3c40c66d7d415f2ea097f",
+    "semantic_hash": "ad720a3323f3c40c66d7d415f2ea097f"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/sequence.svg": {
+    "mtime": 1780190597.074351,
+    "ast_hash": "6f547b38c779beaaa9237d2fafcc67e9",
+    "semantic_hash": "6f547b38c779beaaa9237d2fafcc67e9"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/state-machine.svg": {
+    "mtime": 1780190597.0837777,
+    "ast_hash": "8e152d07cb87b63dd9817f6a269e8018",
+    "semantic_hash": "8e152d07cb87b63dd9817f6a269e8018"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/timeline.svg": {
+    "mtime": 1780190597.0914626,
+    "ast_hash": "b69e6801308dc77caa93125003a624b1",
+    "semantic_hash": "b69e6801308dc77caa93125003a624b1"
+  },
+  "/Users/clarencelloydgayo/Gayo Sphere/Second Brain Nexus/.claude/skills/vc-tech-graph/templates/use-case.svg": {
+    "mtime": 1780190597.0996213,
+    "ast_hash": "c4a1d56f5c62e83681e277d8607cd045",
+    "semantic_hash": "c4a1d56f5c62e83681e277d8607cd045"
+  }
+}

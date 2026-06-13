@@ -1,0 +1,20 @@
+[     175ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://127.0.0.1:5199/node_modules/.vite/deps/chunk-KDCVS43I.js?v=8daf8fc1:21608
+[     196ms] [WARNING] ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition. @ http://127.0.0.1:5199/node_modules/.vite/deps/react-router-dom.js?v=d36030f4:4435
+[     197ms] [WARNING] ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath. @ http://127.0.0.1:5199/node_modules/.vite/deps/react-router-dom.js?v=d36030f4:4435
+[   56949ms] [LOG] THREE.WebGLRenderer: Context Lost. @ http://127.0.0.1:5199/node_modules/.vite/deps/@react-three_fiber.js?v=949b736c:33785
+[   59838ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:5199/node_modules/.vite/deps/recharts.js?v=9bd190e7:9152
+[   59838ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:5199/node_modules/.vite/deps/recharts.js?v=9bd190e7:9152
+[   59838ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:5199/node_modules/.vite/deps/recharts.js?v=9bd190e7:9152
+[   59838ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:5199/node_modules/.vite/deps/recharts.js?v=9bd190e7:9152
