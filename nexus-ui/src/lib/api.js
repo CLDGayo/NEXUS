@@ -18,8 +18,16 @@ let _tenantIdProvider = null;
 
 // Endpoints that intentionally run WITHOUT a tenant header. These cover
 // the pre-selection bootstrap surface: auth + identity + the tenant
-// listing the picker itself depends on. Everything else MUST carry a
-// tenant id — backend enforces 400 on missing header.
+// listing/creation the picker itself depends on. Everything else MUST
+// carry a tenant id — backend enforces 400 on missing header.
+//
+// NOTE: bare ``/tenants`` (GET list, POST create) stays header-free, but
+// the tenant *sub-resources* added by the Workspace Manager (WM-1..4) —
+// ``/tenants/<id>/members``, ``/usage``, ``/invites``, ``/transfer``,
+// ``/archive``, ``/avatar`` — AND the detail mutations PATCH/DELETE
+// ``/tenants/<id>`` are all gated by ``require_manager`` /
+// ``require_owner`` and call ``_check_path_matches_header``, so they
+// require ``X-Tenant-ID``. Those are NOT in this set.
 const TENANT_OPTIONAL_PATHS = new Set([
   '/auth/jwt/login',
   '/auth/jwt/logout',
@@ -28,11 +36,12 @@ const TENANT_OPTIONAL_PATHS = new Set([
 ]);
 
 function shouldInjectTenant(path) {
+  // Only the bare bootstrap paths above run without a tenant header.
+  // Every other path — including all ``/tenants/<id>...`` routes — needs
+  // the active workspace's id. The Workspace Manager detail page only
+  // renders its tabs when the viewed workspace is the active one, so the
+  // active-tenant id always matches the path id at call time.
   if (TENANT_OPTIONAL_PATHS.has(path)) return false;
-  // /tenants and /tenants/<id> are both pre-selection (the detail
-  // endpoint also accepts the header but tolerates its absence for the
-  // listing flow that the picker drives).
-  if (path.startsWith('/tenants/')) return false;
   return true;
 }
 
@@ -153,7 +162,8 @@ export const api = {
   put: (path, json) => apiFetch(path, { method: 'PUT', json }),
   del: (path) => apiFetch(path, { method: 'DELETE' }),
   // Phase 52 — DELETE with a JSON body (workspace hard-delete confirm_name).
-  // Paths starting with /tenants/ skip auto X-Tenant-ID injection (same as del).
+  // Carries X-Tenant-ID like every other /tenants/<id> route (backend
+  // require_owner + _check_path_matches_header demand it).
   delWithBody: (path, json) => apiFetch(path, { method: 'DELETE', json }),
   upload: (path, formData) => apiFetch(path, { method: 'POST', body: formData }),
   raw: apiFetch,

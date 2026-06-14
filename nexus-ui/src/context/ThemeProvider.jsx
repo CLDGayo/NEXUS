@@ -5,9 +5,11 @@ export const ThemeContext = createContext(null);
 const STORAGE_KEY = 'nexus.theme';
 const VALID = ['light', 'dark', 'system'];
 
+// Default to light mode when the user has no saved preference. Existing
+// users keep whatever they previously chose (light/dark/system).
 function readStored() {
   const v = localStorage.getItem(STORAGE_KEY);
-  return VALID.includes(v) ? v : 'system';
+  return VALID.includes(v) ? v : 'light';
 }
 
 function systemPrefersDark() {
