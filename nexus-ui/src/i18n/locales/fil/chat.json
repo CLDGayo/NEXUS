@@ -1,0 +1,51 @@
+{
+  "input": {
+    "placeholder": "Magtanong tungkol sa iyong vault…",
+    "defaultImagePrompt": "Ano ang masasabi mo tungkol sa larawang ito?",
+    "imageTooLarge": "Ang larawan ay dapat 5 MB o mas maliit.",
+    "uploadFailed": "Nabigo ang pag-upload.",
+    "uploadingImage": "Ina-upload ang larawan…",
+    "removeImage": "Alisin ang larawan",
+    "attachImage": "Maglakip ng larawan",
+    "stop": "Itigil",
+    "send": "Ipadala",
+    "hint": "Enter para ipadala · Shift+Enter para sa bagong linya"
+  },
+  "header": {
+    "subtitle": "Magtanong tungkol sa iyong knowledge base",
+    "clear": "I-clear",
+    "clearTitle": "I-clear ang usapan"
+  },
+  "empty": {
+    "title": "Magtanong sa iyong vault kahit ano",
+    "subtitle": "Mahahanap ang mga tala, konsepto, at proyekto. Nag-i-stream sa pamamagitan ng LangGraph orchestrator."
+  },
+  "status": {
+    "streaming": "Nagse-stream…",
+    "evaluating": "Sinusuri…",
+    "completed": "Tapos na",
+    "handedOver": "Naipasa",
+    "error": "Error",
+    "somethingWrong": "May nangyaring mali.",
+    "regenerating": "Bumubuo muli…",
+    "traceTitle": "Langfuse trace ID"
+  },
+  "source": {
+    "match": "{{pct}}% tugma"
+  },
+  "thinking": {
+    "searching": "Naghahanap sa Nexus Vault…",
+    "retrieved": "Nakakuha ng kaugnay na mga tala",
+    "generating": "Bumubuo ng sagot…",
+    "complete": "Tapos nang mag-isip",
+    "inProgress": "Nag-iisip…",
+    "retrievedCount_one": "Nakakuha ng {{count}} kaugnay na tala",
+    "retrievedCount_other": "Nakakuha ng {{count}} kaugnay na tala"
+  },
+  "actions": {
+    "copy": "Kopyahin ang sagot",
+    "regenerate": "Bumuo muli",
+    "helpful": "Nakatulong",
+    "notHelpful": "Hindi nakatulong"
+  }
+}

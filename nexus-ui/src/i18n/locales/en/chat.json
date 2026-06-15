@@ -1,0 +1,51 @@
+{
+  "input": {
+    "placeholder": "Ask a question about your vault…",
+    "defaultImagePrompt": "What can you tell me about this image?",
+    "imageTooLarge": "Image must be 5 MB or smaller.",
+    "uploadFailed": "Upload failed.",
+    "uploadingImage": "Uploading image…",
+    "removeImage": "Remove image",
+    "attachImage": "Attach image",
+    "stop": "Stop",
+    "send": "Send",
+    "hint": "Enter to send · Shift+Enter for new line"
+  },
+  "header": {
+    "subtitle": "Ask questions about your knowledge base",
+    "clear": "Clear",
+    "clearTitle": "Clear conversation"
+  },
+  "empty": {
+    "title": "Ask your vault anything",
+    "subtitle": "Notes, concepts, and projects are searchable. Streaming through the LangGraph orchestrator."
+  },
+  "status": {
+    "streaming": "Streaming…",
+    "evaluating": "Evaluating…",
+    "completed": "Completed",
+    "handedOver": "Handed over",
+    "error": "Error",
+    "somethingWrong": "Something went wrong.",
+    "regenerating": "Regenerating…",
+    "traceTitle": "Langfuse trace ID"
+  },
+  "source": {
+    "match": "{{pct}}% match"
+  },
+  "thinking": {
+    "searching": "Searching Nexus Vault…",
+    "retrieved": "Retrieved relevant notes",
+    "generating": "Generating answer…",
+    "complete": "Thinking complete",
+    "inProgress": "Thinking…",
+    "retrievedCount_one": "Retrieved {{count}} relevant note",
+    "retrievedCount_other": "Retrieved {{count}} relevant notes"
+  },
+  "actions": {
+    "copy": "Copy answer",
+    "regenerate": "Regenerate",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful"
+  }
+}

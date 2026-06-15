@@ -1,4 +1,5 @@
 import { FileText, Layers, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function Card({ icon: Icon, label, value, sub }) {
   return (
@@ -18,18 +19,19 @@ function Card({ icon: Icon, label, value, sub }) {
 }
 
 export default function SummaryCards({ totalNotes, totalChunks, lastSync, chunksAvailable }) {
+  const { t } = useTranslation('documents');
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <Card icon={FileText} label="Total Notes" value={totalNotes.toLocaleString()} />
+      <Card icon={FileText} label={t('summary.totalNotes')} value={totalNotes.toLocaleString()} />
       <Card
         icon={Layers}
-        label="Vector Chunks"
+        label={t('summary.vectorChunks')}
         value={chunksAvailable ? totalChunks.toLocaleString() : '—'}
-        sub={chunksAvailable ? null : 'Qdrant unreachable'}
+        sub={chunksAvailable ? null : t('summary.qdrantUnreachable')}
       />
       <Card
         icon={Clock}
-        label="Last Sync"
+        label={t('summary.lastSync')}
         value={lastSync ? new Date(lastSync).toLocaleTimeString() : '—'}
         sub={lastSync ? new Date(lastSync).toLocaleDateString() : null}
       />

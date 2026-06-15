@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "totalNotes": "Total des notes",
+    "vectorChunks": "Fragments vectoriels",
+    "qdrantUnreachable": "Qdrant inaccessible",
+    "lastSync": "Dernière synchronisation"
+  },
+  "upload": {
+    "toggle": "Téléverser un nouveau document",
+    "dropPrompt": "Glissez des fichiers ici ou cliquez pour parcourir",
+    "dropHint": ".md, .txt, .pdf — max 50 Mo chacun",
+    "process": "Traiter et indexer",
+    "processing": "Traitement de {{count}} fichier(s)…",
+    "done": "Terminé",
+    "failed": "Échec du téléversement",
+    "remove": "Retirer {{name}}",
+    "chunksSuffix": "{{label}} · {{count}} fragments",
+    "unsupportedType": "Type de fichier non pris en charge « {{ext}} ». Autorisés : .md, .txt, .pdf",
+    "tooLarge": "Le fichier dépasse 50 Mo ({{size}})",
+    "summaryCreated": "{{count}} créé(s)",
+    "summaryUpdated": "{{count}} mis à jour",
+    "summarySkipped": "{{count}} ignoré(s)",
+    "summaryFailed": "{{count}} échoué(s)",
+    "state": {
+      "queued": "En file d'attente",
+      "running": "Téléversement…",
+      "created": "Indexé",
+      "updated": "Remplacé",
+      "skipped": "Identique — ignoré",
+      "error": "Erreur"
+    }
+  },
+  "table": {
+    "searchPlaceholder": "Rechercher par titre, dossier, étiquette…",
+    "allFolders": "Tous les dossiers",
+    "allStatuses": "Tous les statuts",
+    "selectedTotal": "{{selected}} sélectionné(s) · {{total}} au total",
+    "archiveSelected": "Archiver la sélection",
+    "vaultCleanup": "Nettoyage du coffre",
+    "selectAll": "Tout sélectionner",
+    "selectRow": "Sélectionner {{title}}",
+    "loading": "Chargement…",
+    "empty": "Aucun document correspondant.",
+    "pageOf": "Page {{page}} sur {{pages}}",
+    "prevPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "col": {
+      "title": "Titre",
+      "folder": "Dossier",
+      "tags": "Étiquettes",
+      "status": "Statut",
+      "chunks": "Fragments",
+      "modified": "Modifié"
+    },
+    "status": {
+      "indexed": "Indexé",
+      "pending": "En attente",
+      "unknown": "Inconnu"
+    },
+    "confirmArchive": "Archiver {{count}} document(s) ? Les fichiers sont déplacés vers 04 - Archive et les vecteurs supprimés.",
+    "confirmReconcile": "Lancer le nettoyage du coffre ? Cette opération trouve les vecteurs Qdrant orphelins (fichiers absents du coffre) et les supprime.",
+    "loadFailed": "Échec du chargement : {{error}}",
+    "archived": "{{archived}} archivé(s) · {{purged}} fragments supprimés",
+    "archivedWithFailed": "{{archived}} archivé(s) · {{purged}} fragments supprimés · {{failed}} échoué(s)",
+    "archiveFailed": "Échec de l'archivage : {{error}}",
+    "reconcileComplete": "Nettoyage terminé · {{orphans}} orphelins · {{purged}} fragments supprimés",
+    "reconcileFailed": "Échec du nettoyage : {{error}}"
+  }
+}

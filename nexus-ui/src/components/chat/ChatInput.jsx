@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, Square, Paperclip, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api, HTTPError } from '../../lib/api.js';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const DEFAULT_IMAGE_PROMPT = 'What can you tell me about this image?';
 
 export default function ChatInput({ onSend, onCancel, streaming, value, onValueChange }) {
+  const { t } = useTranslation('chat');
   const [internal, setInternal] = useState('');
   const isControlled = typeof value === 'string';
   const text = isControlled ? value : internal;
@@ -27,7 +28,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
   function submit() {
     const trimmed = (text || '').trim();
     if ((!trimmed && !attachment) || streaming || uploading) return;
-    const question = trimmed || DEFAULT_IMAGE_PROMPT;
+    const question = trimmed || t('input.defaultImagePrompt');
     onSend(question, attachment);
     setText('');
     setAttachment(null);
@@ -51,7 +52,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
     e.target.value = ''; // allow re-picking the same file
     if (!f) return;
     if (f.size > MAX_IMAGE_BYTES) {
-      setUploadError('Image must be 5 MB or smaller.');
+      setUploadError(t('input.imageTooLarge'));
       return;
     }
     setUploading(true);
@@ -63,7 +64,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
       setAttachment(res);
     } catch (err) {
       const detail = err instanceof HTTPError ? err.body || err.message : err.message;
-      setUploadError(detail || 'Upload failed.');
+      setUploadError(detail || t('input.uploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -82,7 +83,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
         {(attachment || uploadError || uploading) && (
           <div className="mb-2 flex items-center gap-2">
             {uploading && (
-              <span className="text-xs text-nexus-muted">Uploading image…</span>
+              <span className="text-xs text-nexus-muted">{t('input.uploadingImage')}</span>
             )}
             {attachment && (
               <div className="relative inline-block">
@@ -95,7 +96,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
                   type="button"
                   onClick={clearAttachment}
                   className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-slate-800 text-white shadow flex items-center justify-center hover:bg-slate-900"
-                  title="Remove image"
+                  title={t('input.removeImage')}
                 >
                   <X size={12} />
                 </button>
@@ -120,7 +121,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
             onClick={openFilePicker}
             disabled={streaming || uploading}
             className="h-10 w-10 shrink-0 rounded-xl border border-slate-300 dark:border-slate-600 bg-white/55 backdrop-blur-glass dark:bg-white/5 text-slate-600 dark:text-slate-400 flex items-center justify-center hover:border-nexus-accent hover:text-nexus-accent disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Attach image"
+            title={t('input.attachImage')}
           >
             <Paperclip size={16} />
           </button>
@@ -130,7 +131,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Ask a question about your vault…"
+            placeholder={t('input.placeholder')}
             rows={1}
             className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent"
           />
@@ -139,7 +140,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
               type="button"
               onClick={onCancel}
               className="h-10 w-10 shrink-0 rounded-xl bg-red-500 text-white flex items-center justify-center hover:bg-red-600"
-              title="Stop"
+              title={t('input.stop')}
             >
               <Square size={14} />
             </button>
@@ -149,7 +150,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
               onClick={submit}
               disabled={!canSend}
               className="h-10 w-10 shrink-0 rounded-xl bg-nexus-accent text-white flex items-center justify-center hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Send"
+              title={t('input.send')}
             >
               <Send size={16} />
             </button>
@@ -157,7 +158,7 @@ export default function ChatInput({ onSend, onCancel, streaming, value, onValueC
         </div>
       </div>
       <div className="mt-1 text-center text-[11px] text-nexus-muted">
-        Enter to send · Shift+Enter for new line
+        {t('input.hint')}
       </div>
     </div>
   );

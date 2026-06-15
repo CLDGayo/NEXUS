@@ -1,0 +1,48 @@
+{
+  "telemetry": {
+    "title": "Live-Telemetrie",
+    "live": "Live",
+    "subtitle": "Echtzeit-Status von Vault, Retrieval und Messenger.",
+    "refresh": "Aktualisieren"
+  },
+  "kpi": {
+    "totalNotes": "Notizen gesamt",
+    "vectorChunks": "Vektor-Chunks",
+    "totalMessages": "Nachrichten gesamt",
+    "conversations": "Unterhaltungen",
+    "activeIntegrations": "Aktive Integrationen",
+    "pendingInbox": "Posteingang ausstehend",
+    "avgRetrieval": "Ø Abruf"
+  },
+  "health": {
+    "title": "Systemzustand",
+    "ok": "OK",
+    "down": "Ausfall",
+    "fileWatcher": "Datei-Überwachung"
+  },
+  "activity": {
+    "title": "Live-Aktivität",
+    "live": "Live",
+    "inactive": "Inaktiv",
+    "activeIntegrations": "Aktive Integrationen",
+    "messenger": "Messenger",
+    "uptime": "Betriebszeit",
+    "model": "Modell"
+  },
+  "charts": {
+    "queryVolume": "Abfragevolumen (7 T.)",
+    "ingestion": "Dokumentaufnahme (7 T.)"
+  },
+  "recent": {
+    "title": "Letzte Aktivität",
+    "when": "Wann",
+    "file": "Datei",
+    "folder": "Ordner",
+    "status": "Status",
+    "empty": "Keine aktuelle Aktivität.",
+    "justNow": "gerade eben",
+    "minutesAgo": "vor {{count}} Min.",
+    "hoursAgo": "vor {{count}} Std.",
+    "daysAgo": "vor {{count}} T."
+  }
+}

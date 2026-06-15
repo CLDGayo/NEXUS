@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { Search, BookOpenCheck, Sparkles, Loader2, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
+// labelKey resolves against the `chat` namespace (thinking.*).
 const STEPS = [
-  { key: 'searching',  Icon: Search,        label: 'Searching Nexus Vault…' },
-  { key: 'retrieved',  Icon: BookOpenCheck, label: 'Retrieved relevant notes' },
-  { key: 'generating', Icon: Sparkles,      label: 'Generating answer…' },
+  { key: 'searching',  Icon: Search,        labelKey: 'thinking.searching' },
+  { key: 'retrieved',  Icon: BookOpenCheck, labelKey: 'thinking.retrieved' },
+  { key: 'generating', Icon: Sparkles,      labelKey: 'thinking.generating' },
 ];
 
 // `events` is the array of {stage, count?} entries emitted on `status`
@@ -12,6 +14,7 @@ const STEPS = [
 // streaming state. We only need a thin progress strip — full audit
 // detail lives in the message metadata / Langfuse later.
 export default function ThinkingPanel({ events, done }) {
+  const { t } = useTranslation('chat');
   const reached = useMemo(() => new Set(events.map((e) => e.stage)), [events]);
   const retrievedCount = useMemo(
     () => events.find((e) => e.stage === 'retrieved')?.count,
@@ -29,14 +32,14 @@ export default function ThinkingPanel({ events, done }) {
         ) : (
           <Loader2 size={14} className="animate-spin text-nexus-accent" />
         )}
-        <span className="font-medium">{done ? 'Thinking complete' : 'Thinking…'}</span>
+        <span className="font-medium">{done ? t('thinking.complete') : t('thinking.inProgress')}</span>
       </summary>
       <ul className="px-3 pb-2 pt-1 space-y-1">
-        {STEPS.map(({ key, Icon, label }) => {
+        {STEPS.map(({ key, Icon, labelKey }) => {
           const isDone = reached.has(key) || (done && key === 'generating');
-          let display = label;
+          let display = t(labelKey);
           if (key === 'retrieved' && typeof retrievedCount === 'number') {
-            display = `Retrieved ${retrievedCount} relevant note${retrievedCount === 1 ? '' : 's'}`;
+            display = t('thinking.retrievedCount', { count: retrievedCount });
           }
           return (
             <li

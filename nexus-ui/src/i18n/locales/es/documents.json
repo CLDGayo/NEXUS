@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "totalNotes": "Notas totales",
+    "vectorChunks": "Fragmentos vectoriales",
+    "qdrantUnreachable": "Qdrant inaccesible",
+    "lastSync": "Última sincronización"
+  },
+  "upload": {
+    "toggle": "Subir nuevo documento",
+    "dropPrompt": "Arrastra archivos aquí o haz clic para explorar",
+    "dropHint": ".md, .txt, .pdf — máx. 50 MB cada uno",
+    "process": "Procesar e indexar",
+    "processing": "Procesando {{count}} archivo(s)…",
+    "done": "Listo",
+    "failed": "Error al subir",
+    "remove": "Quitar {{name}}",
+    "chunksSuffix": "{{label}} · {{count}} fragmentos",
+    "unsupportedType": "Tipo de archivo no admitido \"{{ext}}\". Permitidos: .md, .txt, .pdf",
+    "tooLarge": "El archivo supera los 50 MB ({{size}})",
+    "summaryCreated": "{{count}} creados",
+    "summaryUpdated": "{{count}} actualizados",
+    "summarySkipped": "{{count}} omitidos",
+    "summaryFailed": "{{count}} fallidos",
+    "state": {
+      "queued": "En cola",
+      "running": "Subiendo…",
+      "created": "Indexado",
+      "updated": "Reemplazado",
+      "skipped": "Idéntico — omitido",
+      "error": "Error"
+    }
+  },
+  "table": {
+    "searchPlaceholder": "Buscar por título, carpeta, etiqueta…",
+    "allFolders": "Todas las carpetas",
+    "allStatuses": "Todos los estados",
+    "selectedTotal": "{{selected}} seleccionados · {{total}} en total",
+    "archiveSelected": "Archivar selección",
+    "vaultCleanup": "Limpieza del repositorio",
+    "selectAll": "Seleccionar todo",
+    "selectRow": "Seleccionar {{title}}",
+    "loading": "Cargando…",
+    "empty": "Ningún documento coincide.",
+    "pageOf": "Página {{page}} de {{pages}}",
+    "prevPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "col": {
+      "title": "Título",
+      "folder": "Carpeta",
+      "tags": "Etiquetas",
+      "status": "Estado",
+      "chunks": "Fragmentos",
+      "modified": "Modificado"
+    },
+    "status": {
+      "indexed": "Indexado",
+      "pending": "Pendiente",
+      "unknown": "Desconocido"
+    },
+    "confirmArchive": "¿Archivar {{count}} documento(s)? Los archivos se mueven a 04 - Archive y se purgan los vectores.",
+    "confirmReconcile": "¿Ejecutar la limpieza del repositorio? Encuentra vectores Qdrant huérfanos (archivos que ya no están en el repositorio) y los purga.",
+    "loadFailed": "Error al cargar: {{error}}",
+    "archived": "{{archived}} archivados · {{purged}} fragmentos purgados",
+    "archivedWithFailed": "{{archived}} archivados · {{purged}} fragmentos purgados · {{failed}} fallidos",
+    "archiveFailed": "Error al archivar: {{error}}",
+    "reconcileComplete": "Limpieza completa · {{orphans}} huérfanos · {{purged}} fragmentos purgados",
+    "reconcileFailed": "Error en la limpieza: {{error}}"
+  }
+}

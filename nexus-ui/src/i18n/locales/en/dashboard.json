@@ -1,0 +1,48 @@
+{
+  "telemetry": {
+    "title": "Live Telemetry",
+    "live": "Live",
+    "subtitle": "Real-time vault, retrieval, and Messenger health.",
+    "refresh": "Refresh"
+  },
+  "kpi": {
+    "totalNotes": "Total Notes",
+    "vectorChunks": "Vector Chunks",
+    "totalMessages": "Total Messages",
+    "conversations": "Conversations",
+    "activeIntegrations": "Active Integrations",
+    "pendingInbox": "Pending Inbox",
+    "avgRetrieval": "Avg Retrieval"
+  },
+  "health": {
+    "title": "System Health",
+    "ok": "OK",
+    "down": "Down",
+    "fileWatcher": "File Watcher"
+  },
+  "activity": {
+    "title": "Live Activity",
+    "live": "Live",
+    "inactive": "Inactive",
+    "activeIntegrations": "Active integrations",
+    "messenger": "Messenger",
+    "uptime": "Uptime",
+    "model": "Model"
+  },
+  "charts": {
+    "queryVolume": "Query Volume (7d)",
+    "ingestion": "Document Ingestion (7d)"
+  },
+  "recent": {
+    "title": "Recent Activity",
+    "when": "When",
+    "file": "File",
+    "folder": "Folder",
+    "status": "Status",
+    "empty": "No recent activity.",
+    "justNow": "just now",
+    "minutesAgo": "{{count}}m ago",
+    "hoursAgo": "{{count}}h ago",
+    "daysAgo": "{{count}}d ago"
+  }
+}

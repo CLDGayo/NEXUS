@@ -1,4 +1,5 @@
 import { Activity, Plug, MessageSquare, Cpu, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function humanizeUptime(seconds) {
   if (seconds == null || seconds < 0) return '—';
@@ -12,21 +13,23 @@ function humanizeUptime(seconds) {
 }
 
 function LivePill() {
+  const { t } = useTranslation('dashboard');
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
       <span className="relative flex h-1.5 w-1.5">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
       </span>
-      Live
+      {t('activity.live')}
     </span>
   );
 }
 
 function InactivePill() {
+  const { t } = useTranslation('dashboard');
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 ring-1 ring-slate-200">
-      Inactive
+      {t('activity.inactive')}
     </span>
   );
 }
@@ -46,6 +49,7 @@ function Row({ icon: Icon, label, value, valueNode }) {
 }
 
 export default function ActivityPanel({ activity }) {
+  const { t } = useTranslation('dashboard');
   const a = activity || {};
   const integrations = `${a.active_integrations ?? 0} / ${a.total_integrations ?? 0}`;
   return (
@@ -53,18 +57,18 @@ export default function ActivityPanel({ activity }) {
       <div className="mb-1 flex items-center gap-2">
         <Activity size={14} className="text-nexus-accent" />
         <div className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">
-          Live Activity
+          {t('activity.title')}
         </div>
       </div>
       <div className="divide-y divide-nexus-border">
-        <Row icon={Plug} label="Active integrations" value={integrations} />
+        <Row icon={Plug} label={t('activity.activeIntegrations')} value={integrations} />
         <Row
           icon={MessageSquare}
-          label="Messenger"
+          label={t('activity.messenger')}
           valueNode={a.messenger_active ? <LivePill /> : <InactivePill />}
         />
-        <Row icon={Clock} label="Uptime" value={humanizeUptime(a.uptime_seconds)} />
-        <Row icon={Cpu} label="Model" value={a.model || '—'} />
+        <Row icon={Clock} label={t('activity.uptime')} value={humanizeUptime(a.uptime_seconds)} />
+        <Row icon={Cpu} label={t('activity.model')} value={a.model || '—'} />
       </div>
     </section>
   );

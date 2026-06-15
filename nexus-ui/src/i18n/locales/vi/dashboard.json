@@ -1,0 +1,48 @@
+{
+  "telemetry": {
+    "title": "Đo lường trực tiếp",
+    "live": "Trực tiếp",
+    "subtitle": "Tình trạng kho lưu trữ, truy xuất và Messenger theo thời gian thực.",
+    "refresh": "Làm mới"
+  },
+  "kpi": {
+    "totalNotes": "Tổng số ghi chú",
+    "vectorChunks": "Khối vector",
+    "totalMessages": "Tổng tin nhắn",
+    "conversations": "Cuộc trò chuyện",
+    "activeIntegrations": "Tích hợp đang hoạt động",
+    "pendingInbox": "Hộp thư chờ",
+    "avgRetrieval": "Truy xuất trung bình"
+  },
+  "health": {
+    "title": "Tình trạng hệ thống",
+    "ok": "OK",
+    "down": "Lỗi",
+    "fileWatcher": "Trình theo dõi tệp"
+  },
+  "activity": {
+    "title": "Hoạt động trực tiếp",
+    "live": "Trực tiếp",
+    "inactive": "Không hoạt động",
+    "activeIntegrations": "Tích hợp đang hoạt động",
+    "messenger": "Messenger",
+    "uptime": "Thời gian hoạt động",
+    "model": "Mô hình"
+  },
+  "charts": {
+    "queryVolume": "Lượng truy vấn (7 ngày)",
+    "ingestion": "Nạp tài liệu (7 ngày)"
+  },
+  "recent": {
+    "title": "Hoạt động gần đây",
+    "when": "Thời điểm",
+    "file": "Tệp",
+    "folder": "Thư mục",
+    "status": "Trạng thái",
+    "empty": "Chưa có hoạt động gần đây.",
+    "justNow": "vừa xong",
+    "minutesAgo": "{{count}} phút trước",
+    "hoursAgo": "{{count}} giờ trước",
+    "daysAgo": "{{count}} ngày trước"
+  }
+}

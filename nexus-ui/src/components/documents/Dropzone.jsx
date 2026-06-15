@@ -1,17 +1,20 @@
 import { useRef, useState } from 'react';
 import { Upload, X, CheckCircle2, RotateCw, AlertCircle, FileText } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api, HTTPError } from '../../lib/api.js';
 
 const ALLOWED = ['.md', '.txt', '.pdf'];
 const MAX_BYTES = 50 * 1024 * 1024;
 
+// labelKey resolves against the `documents` namespace at render (see
+// upload.state.* in documents.json).
 const STATE_META = {
-  queued:  { label: 'Queued',                 icon: FileText,     cls: 'text-slate-500 dark:text-slate-400' },
-  running: { label: 'Uploading…',             icon: Upload,        cls: 'text-nexus-accent' },
-  created: { label: 'Indexed',                icon: CheckCircle2,  cls: 'text-emerald-600' },
-  updated: { label: 'Replaced',               icon: RotateCw,      cls: 'text-blue-600' },
-  skipped: { label: 'Identical — skipped',    icon: CheckCircle2,  cls: 'text-slate-500 dark:text-slate-400' },
-  error:   { label: 'Error',                  icon: AlertCircle,   cls: 'text-red-600' },
+  queued:  { labelKey: 'upload.state.queued',  icon: FileText,     cls: 'text-slate-500 dark:text-slate-400' },
+  running: { labelKey: 'upload.state.running',  icon: Upload,        cls: 'text-nexus-accent' },
+  created: { labelKey: 'upload.state.created',  icon: CheckCircle2,  cls: 'text-emerald-600' },
+  updated: { labelKey: 'upload.state.updated',  icon: RotateCw,      cls: 'text-blue-600' },
+  skipped: { labelKey: 'upload.state.skipped',  icon: CheckCircle2,  cls: 'text-slate-500 dark:text-slate-400' },
+  error:   { labelKey: 'upload.state.error',    icon: AlertCircle,   cls: 'text-red-600' },
 };
 
 function formatBytes(b) {
@@ -20,14 +23,15 @@ function formatBytes(b) {
   return `${(b / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function validate(file) {
+function validate(file, t) {
   const ext = (file.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
-  if (!ALLOWED.includes(ext)) return `Unsupported file type "${ext || file.name}". Allowed: .md, .txt, .pdf`;
-  if (file.size > MAX_BYTES) return `File exceeds 50 MB (${formatBytes(file.size)})`;
+  if (!ALLOWED.includes(ext)) return t('upload.unsupportedType', { ext: ext || file.name });
+  if (file.size > MAX_BYTES) return t('upload.tooLarge', { size: formatBytes(file.size) });
   return null;
 }
 
 export default function Dropzone({ onUploaded }) {
+  const { t } = useTranslation('documents');
   const inputRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
@@ -38,7 +42,7 @@ export default function Dropzone({ onUploaded }) {
     const errors = [];
     const next = [...items];
     for (const f of fileList) {
-      const err = validate(f);
+      const err = validate(f, t);
       if (err) { errors.push(`${f.name}: ${err}`); continue; }
       next.push({ file: f, state: 'queued', payload: null });
     }
@@ -53,7 +57,7 @@ export default function Dropzone({ onUploaded }) {
   async function submit() {
     const pending = items.map((it, i) => (it.state === 'queued' || it.state === 'error' ? i : -1)).filter((i) => i >= 0);
     if (pending.length === 0) return;
-    setStatus({ text: `Processing ${pending.length} file(s)…`, kind: null });
+    setStatus({ text: t('upload.processing', { count: pending.length }), kind: null });
 
     const summary = { created: 0, updated: 0, skipped: 0, error: 0 };
     const next = [...items];
@@ -68,7 +72,7 @@ export default function Dropzone({ onUploaded }) {
         next[i] = { ...next[i], state, payload: result };
         if (summary[state] !== undefined) summary[state] += 1;
       } catch (err) {
-        const msg = err instanceof HTTPError ? err.message : (err.message || 'Upload failed');
+        const msg = err instanceof HTTPError ? err.message : (err.message || t('upload.failed'));
         next[i] = { ...next[i], state: 'error', payload: { error: msg } };
         summary.error += 1;
       }
@@ -76,11 +80,11 @@ export default function Dropzone({ onUploaded }) {
     }
 
     const parts = [];
-    if (summary.created) parts.push(`${summary.created} created`);
-    if (summary.updated) parts.push(`${summary.updated} updated`);
-    if (summary.skipped) parts.push(`${summary.skipped} skipped`);
-    if (summary.error) parts.push(`${summary.error} failed`);
-    setStatus({ text: parts.join(' · ') || 'Done', kind: summary.error ? 'error' : 'success' });
+    if (summary.created) parts.push(t('upload.summaryCreated', { count: summary.created }));
+    if (summary.updated) parts.push(t('upload.summaryUpdated', { count: summary.updated }));
+    if (summary.skipped) parts.push(t('upload.summarySkipped', { count: summary.skipped }));
+    if (summary.error) parts.push(t('upload.summaryFailed', { count: summary.error }));
+    setStatus({ text: parts.join(' · ') || t('upload.done'), kind: summary.error ? 'error' : 'success' });
     onUploaded?.();
   }
 
@@ -96,7 +100,7 @@ export default function Dropzone({ onUploaded }) {
       >
         <span className="flex items-center gap-2">
           <Upload size={16} className="text-nexus-accent" />
-          Upload new document
+          {t('upload.toggle')}
         </span>
         <span className={`text-nexus-muted transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
       </button>
@@ -121,8 +125,8 @@ export default function Dropzone({ onUploaded }) {
             ].join(' ')}
           >
             <Upload size={20} />
-            <span className="mt-1">Drag files here or click to browse</span>
-            <span className="text-xs text-slate-400">.md, .txt, .pdf — max 50 MB each</span>
+            <span className="mt-1">{t('upload.dropPrompt')}</span>
+            <span className="text-xs text-slate-400">{t('upload.dropHint')}</span>
           </label>
           <input
             ref={inputRef}
@@ -142,11 +146,12 @@ export default function Dropzone({ onUploaded }) {
               {items.map((it, i) => {
                 const meta = STATE_META[it.state];
                 const Icon = meta.icon;
+                const metaLabel = t(meta.labelKey);
                 const subLabel = it.state === 'error'
-                  ? (it.payload?.error || meta.label)
+                  ? (it.payload?.error || metaLabel)
                   : it.state === 'created' || it.state === 'updated'
-                  ? `${meta.label} · ${it.payload?.chunks_indexed ?? 0} chunks`
-                  : meta.label;
+                  ? t('upload.chunksSuffix', { label: metaLabel, count: it.payload?.chunks_indexed ?? 0 })
+                  : metaLabel;
                 return (
                   <li
                     key={i}
@@ -164,7 +169,7 @@ export default function Dropzone({ onUploaded }) {
                           type="button"
                           onClick={() => removeItem(i)}
                           className="text-slate-400 hover:text-red-500"
-                          aria-label={`Remove ${it.file.name}`}
+                          aria-label={t('upload.remove', { name: it.file.name })}
                         >
                           <X size={14} />
                         </button>
@@ -191,7 +196,7 @@ export default function Dropzone({ onUploaded }) {
               onClick={submit}
               className="rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              Process & Index
+              {t('upload.process')}
             </button>
           </div>
         </div>

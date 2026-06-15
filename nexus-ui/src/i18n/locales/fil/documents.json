@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "totalNotes": "Kabuuang Tala",
+    "vectorChunks": "Vector Chunks",
+    "qdrantUnreachable": "Hindi maabot ang Qdrant",
+    "lastSync": "Huling Pag-sync"
+  },
+  "upload": {
+    "toggle": "Mag-upload ng bagong dokumento",
+    "dropPrompt": "I-drag ang mga file dito o i-click para mag-browse",
+    "dropHint": ".md, .txt, .pdf — hanggang 50 MB bawat isa",
+    "process": "Iproseso at I-index",
+    "processing": "Pinoproseso ang {{count}} (na) file…",
+    "done": "Tapos na",
+    "failed": "Nabigo ang pag-upload",
+    "remove": "Alisin ang {{name}}",
+    "chunksSuffix": "{{label}} · {{count}} chunks",
+    "unsupportedType": "Hindi suportadong uri ng file \"{{ext}}\". Pinapayagan: .md, .txt, .pdf",
+    "tooLarge": "Lumampas sa 50 MB ang file ({{size}})",
+    "summaryCreated": "{{count}} nalikha",
+    "summaryUpdated": "{{count}} na-update",
+    "summarySkipped": "{{count}} nilaktawan",
+    "summaryFailed": "{{count}} nabigo",
+    "state": {
+      "queued": "Naka-queue",
+      "running": "Ina-upload…",
+      "created": "Na-index",
+      "updated": "Napalitan",
+      "skipped": "Magkapareho — nilaktawan",
+      "error": "Error"
+    }
+  },
+  "table": {
+    "searchPlaceholder": "Maghanap ayon sa pamagat, folder, tag…",
+    "allFolders": "Lahat ng folder",
+    "allStatuses": "Lahat ng status",
+    "selectedTotal": "{{selected}} napili · {{total}} kabuuan",
+    "archiveSelected": "I-archive ang napili",
+    "vaultCleanup": "Paglilinis ng vault",
+    "selectAll": "Piliin lahat",
+    "selectRow": "Piliin ang {{title}}",
+    "loading": "Naglo-load…",
+    "empty": "Walang tumutugmang dokumento.",
+    "pageOf": "Pahina {{page}} ng {{pages}}",
+    "prevPage": "Nakaraang pahina",
+    "nextPage": "Susunod na pahina",
+    "col": {
+      "title": "Pamagat",
+      "folder": "Folder",
+      "tags": "Mga Tag",
+      "status": "Status",
+      "chunks": "Chunks",
+      "modified": "Binago"
+    },
+    "status": {
+      "indexed": "Na-index",
+      "pending": "Nakabinbin",
+      "unknown": "Hindi alam"
+    },
+    "confirmArchive": "I-archive ang {{count}} (na) dokumento? Lilipat ang mga file sa 04 - Archive at buburahin ang mga vector.",
+    "confirmReconcile": "Patakbuhin ang paglilinis ng vault? Hinahanap nito ang mga orphaned na Qdrant vector (mga file na wala na sa vault) at buburahin ang mga ito.",
+    "loadFailed": "Nabigo ang pag-load: {{error}}",
+    "archived": "Na-archive ang {{archived}} · binura ang {{purged}} chunks",
+    "archivedWithFailed": "Na-archive ang {{archived}} · binura ang {{purged}} chunks · {{failed}} nabigo",
+    "archiveFailed": "Nabigo ang pag-archive: {{error}}",
+    "reconcileComplete": "Tapos na ang reconcile · {{orphans}} orphans · {{purged}} chunks na binura",
+    "reconcileFailed": "Nabigo ang reconcile: {{error}}"
+  }
+}

@@ -10,30 +10,35 @@
 // language is written back to the same key (`caches: ['localStorage']`). For
 // signed-in users, `useLanguage` additionally syncs the choice to their backend
 // profile, and AuthProvider applies the saved profile language on login.
+//
+// Resources: every `locales/<lng>/<ns>.json` file is auto-discovered via Vite's
+// import.meta.glob, so adding a new feature namespace (e.g. dashboard.json) only
+// requires dropping the JSON files in — no edits here. `common` is the default
+// namespace (shell/nav/header). Per-feature namespaces are loaded by name via
+// useTranslation('<ns>').
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 import { LANGUAGES } from './languages.js';
-import en from './locales/en/common.json';
-import vi from './locales/vi/common.json';
-import fil from './locales/fil/common.json';
-import de from './locales/de/common.json';
-import fr from './locales/fr/common.json';
-import es from './locales/es/common.json';
-import ja from './locales/ja/common.json';
 
 export const SUPPORTED_LNGS = LANGUAGES.map((l) => l.code);
 
-const resources = {
-  en: { common: en },
-  vi: { common: vi },
-  fil: { common: fil },
-  de: { common: de },
-  fr: { common: fr },
-  es: { common: es },
-  ja: { common: ja },
-};
+// Eagerly bundle all locale JSON. Keys look like './locales/en/common.json'.
+const modules = import.meta.glob('./locales/*/*.json', { eager: true });
+
+const resources = {};
+const namespaceSet = new Set();
+for (const [path, mod] of Object.entries(modules)) {
+  const match = path.match(/\.\/locales\/([^/]+)\/([^/]+)\.json$/);
+  if (!match) continue;
+  const [, lng, ns] = match;
+  resources[lng] ??= {};
+  resources[lng][ns] = mod.default ?? mod;
+  namespaceSet.add(ns);
+}
+
+const namespaces = [...namespaceSet];
 
 i18n
   .use(LanguageDetector)
@@ -46,8 +51,9 @@ i18n
     // detection maps onto our base-code resources.
     load: 'languageOnly',
     nonExplicitSupportedLngs: true,
-    ns: ['common'],
+    ns: namespaces,
     defaultNS: 'common',
+    fallbackNS: 'common',
     detection: {
       order: ['localStorage', 'navigator'],
       lookupLocalStorage: 'nexus.language',

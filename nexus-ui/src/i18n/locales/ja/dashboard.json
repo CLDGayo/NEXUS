@@ -1,0 +1,48 @@
+{
+  "telemetry": {
+    "title": "ライブテレメトリ",
+    "live": "ライブ",
+    "subtitle": "Vault・検索・Messenger のリアルタイム状態。",
+    "refresh": "更新"
+  },
+  "kpi": {
+    "totalNotes": "ノート総数",
+    "vectorChunks": "ベクトルチャンク",
+    "totalMessages": "メッセージ総数",
+    "conversations": "会話数",
+    "activeIntegrations": "有効な連携",
+    "pendingInbox": "保留中の受信箱",
+    "avgRetrieval": "平均検索時間"
+  },
+  "health": {
+    "title": "システム状態",
+    "ok": "OK",
+    "down": "停止",
+    "fileWatcher": "ファイル監視"
+  },
+  "activity": {
+    "title": "ライブアクティビティ",
+    "live": "ライブ",
+    "inactive": "非アクティブ",
+    "activeIntegrations": "有効な連携",
+    "messenger": "Messenger",
+    "uptime": "稼働時間",
+    "model": "モデル"
+  },
+  "charts": {
+    "queryVolume": "クエリ量（7日間）",
+    "ingestion": "ドキュメント取り込み（7日間）"
+  },
+  "recent": {
+    "title": "最近のアクティビティ",
+    "when": "日時",
+    "file": "ファイル",
+    "folder": "フォルダ",
+    "status": "ステータス",
+    "empty": "最近のアクティビティはありません。",
+    "justNow": "たった今",
+    "minutesAgo": "{{count}}分前",
+    "hoursAgo": "{{count}}時間前",
+    "daysAgo": "{{count}}日前"
+  }
+}

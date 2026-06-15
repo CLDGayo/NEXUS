@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Trash2, Sparkles, ChevronLeft, ChevronRight, CheckCircle2, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api.js';
 
 const PARA_FOLDERS = [
@@ -7,10 +8,11 @@ const PARA_FOLDERS = [
   '04 - Archive', '05 - Daily Notes', '06 - Concepts', '07 - Entities',
 ];
 
+// labelKey resolves against the `documents` namespace (table.status.*).
 const STATUS_PILL = {
-  indexed: { cls: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2, label: 'Indexed' },
-  pending: { cls: 'bg-amber-100 text-amber-700',     icon: Clock,        label: 'Pending' },
-  unknown: { cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',     icon: Clock,        label: 'Unknown' },
+  indexed: { cls: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2, labelKey: 'table.status.indexed' },
+  pending: { cls: 'bg-amber-100 text-amber-700',     icon: Clock,        labelKey: 'table.status.pending' },
+  unknown: { cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400',     icon: Clock,        labelKey: 'table.status.unknown' },
 };
 
 function useDebounced(value, ms) {
@@ -23,6 +25,7 @@ function useDebounced(value, ms) {
 }
 
 export default function DocumentsTable({ refreshKey, onLoaded }) {
+  const { t } = useTranslation('documents');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search, 280);
   const [folder, setFolder] = useState('');
@@ -58,7 +61,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
       setIndexAvailable(avail);
       onLoaded?.({ totalNotes: data?.total || 0, totalChunks, chunksAvailable: avail });
     } catch (err) {
-      setBanner({ kind: 'error', text: `Load failed: ${err.message}` });
+      setBanner({ kind: 'error', text: t('table.loadFailed', { error: err.message }) });
     } finally {
       if (myReq === reqRef.current) setLoading(false);
     }
@@ -99,31 +102,35 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
 
   async function bulkArchive() {
     if (selected.size === 0) return;
-    if (!confirm(`Archive ${selected.size} document(s)? Files move to 04 - Archive and vectors are purged.`)) return;
+    if (!confirm(t('table.confirmArchive', { count: selected.size }))) return;
     try {
       const r = await api.post('/documents/archive', { paths: Array.from(selected) });
+      const archived = r.archived?.length || 0;
+      const purged = r.vectors_purged || 0;
       setBanner({
         kind: 'success',
-        text: `Archived ${r.archived?.length || 0} · purged ${r.vectors_purged || 0} chunks${r.failed?.length ? ` · ${r.failed.length} failed` : ''}`,
+        text: r.failed?.length
+          ? t('table.archivedWithFailed', { archived, purged, failed: r.failed.length })
+          : t('table.archived', { archived, purged }),
       });
       setSelected(new Set());
       load();
     } catch (err) {
-      setBanner({ kind: 'error', text: `Archive failed: ${err.message}` });
+      setBanner({ kind: 'error', text: t('table.archiveFailed', { error: err.message }) });
     }
   }
 
   async function reconcile() {
-    if (!confirm('Run vault cleanup? This finds orphaned Qdrant vectors (files no longer in the vault) and purges them.')) return;
+    if (!confirm(t('table.confirmReconcile'))) return;
     try {
       const r = await api.post('/documents/reconcile', {});
       setBanner({
         kind: 'success',
-        text: `Reconcile complete · ${r.orphans?.length || 0} orphans · ${r.purged || 0} chunks purged`,
+        text: t('table.reconcileComplete', { orphans: r.orphans?.length || 0, purged: r.purged || 0 }),
       });
       load();
     } catch (err) {
-      setBanner({ kind: 'error', text: `Reconcile failed: ${err.message}` });
+      setBanner({ kind: 'error', text: t('table.reconcileFailed', { error: err.message }) });
     }
   }
 
@@ -136,7 +143,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title, folder, tag…"
+            placeholder={t('table.searchPlaceholder')}
             className="w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:border-nexus-accent"
           />
         </div>
@@ -145,7 +152,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
           onChange={(e) => setFolder(e.target.value)}
           className="rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 text-sm shadow-sm focus:border-nexus-accent"
         >
-          <option value="">All folders</option>
+          <option value="">{t('table.allFolders')}</option>
           {PARA_FOLDERS.map((f) => <option key={f} value={f}>{f}</option>)}
         </select>
         <select
@@ -153,15 +160,15 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 text-sm shadow-sm focus:border-nexus-accent"
         >
-          <option value="">All statuses</option>
-          <option value="indexed">Indexed</option>
-          <option value="pending">Pending</option>
+          <option value="">{t('table.allStatuses')}</option>
+          <option value="indexed">{t('table.status.indexed')}</option>
+          <option value="pending">{t('table.status.pending')}</option>
         </select>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="font-medium text-nexus-muted">
-          {selected.size} selected · {total.toLocaleString()} total
+          {t('table.selectedTotal', { selected: selected.size, total: total.toLocaleString() })}
         </span>
         <button
           type="button"
@@ -169,14 +176,14 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
           disabled={selected.size === 0}
           className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-2.5 py-1.5 font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Trash2 size={12} /> Archive selected
+          <Trash2 size={12} /> {t('table.archiveSelected')}
         </button>
         <button
           type="button"
           onClick={reconcile}
           className="inline-flex items-center gap-1 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2.5 py-1.5 font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900"
         >
-          <Sparkles size={12} /> Vault cleanup
+          <Sparkles size={12} /> {t('table.vaultCleanup')}
         </button>
       </div>
 
@@ -202,23 +209,23 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
                   type="checkbox"
                   checked={filtered.length > 0 && selected.size === filtered.length}
                   onChange={toggleAll}
-                  aria-label="Select all"
+                  aria-label={t('table.selectAll')}
                 />
               </th>
-              <th className="px-3 py-2 text-left">Title</th>
-              <th className="px-3 py-2 text-left">Folder</th>
-              <th className="px-3 py-2 text-left">Tags</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-right">Chunks</th>
-              <th className="px-3 py-2 text-right">Modified</th>
+              <th className="px-3 py-2 text-left">{t('table.col.title')}</th>
+              <th className="px-3 py-2 text-left">{t('table.col.folder')}</th>
+              <th className="px-3 py-2 text-left">{t('table.col.tags')}</th>
+              <th className="px-3 py-2 text-left">{t('table.col.status')}</th>
+              <th className="px-3 py-2 text-right">{t('table.col.chunks')}</th>
+              <th className="px-3 py-2 text-right">{t('table.col.modified')}</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={7} className="px-3 py-6 text-center text-nexus-muted">Loading…</td></tr>
+              <tr><td colSpan={7} className="px-3 py-6 text-center text-nexus-muted">{t('table.loading')}</td></tr>
             )}
             {!loading && filtered.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-6 text-center text-nexus-muted">No documents match.</td></tr>
+              <tr><td colSpan={7} className="px-3 py-6 text-center text-nexus-muted">{t('table.empty')}</td></tr>
             )}
             {!loading && filtered.map((it) => {
               const status = docStatus(it.path);
@@ -232,7 +239,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
                       type="checkbox"
                       checked={selected.has(it.path)}
                       onChange={() => toggle(it.path)}
-                      aria-label={`Select ${it.title}`}
+                      aria-label={t('table.selectRow', { title: it.title })}
                     />
                   </td>
                   <td className="px-3 py-2 align-top">
@@ -251,7 +258,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
                   </td>
                   <td className="px-3 py-2 align-top">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${pill.cls}`}>
-                      <Icon size={11} /> {pill.label}
+                      <Icon size={11} /> {t(pill.labelKey)}
                     </span>
                   </td>
                   <td className="px-3 py-2 align-top text-right text-xs font-mono text-slate-600 dark:text-slate-400">{chunks}</td>
@@ -266,14 +273,14 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
       </div>
 
       <div className="flex items-center justify-between text-xs text-nexus-muted">
-        <span>Page {page} of {pages}</span>
+        <span>{t('table.pageOf', { page, pages })}</span>
         <div className="flex gap-1">
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
             className="inline-flex items-center rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 p-1.5 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
-            aria-label="Previous page"
+            aria-label={t('table.prevPage')}
           >
             <ChevronLeft size={14} />
           </button>
@@ -282,7 +289,7 @@ export default function DocumentsTable({ refreshKey, onLoaded }) {
             onClick={() => setPage((p) => Math.min(pages, p + 1))}
             disabled={page >= pages}
             className="inline-flex items-center rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 p-1.5 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
-            aria-label="Next page"
+            aria-label={t('table.nextPage')}
           >
             <ChevronRight size={14} />
           </button>

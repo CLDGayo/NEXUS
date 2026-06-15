@@ -1,15 +1,17 @@
 import ReactMarkdown from 'react-markdown';
 import { AlertTriangle, GitBranch } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { MARKDOWN_PLUGINS } from '../../lib/markdown.js';
 import ThinkingPanel from './ThinkingPanel.jsx';
 import SourceChip from './SourceChip.jsx';
 
+// labelKey resolves against the `chat` namespace (status.*).
 const STATUS_LABELS = {
-  streaming:    { label: 'Streaming…',    cls: 'text-nexus-accent' },
-  evaluating:   { label: 'Evaluating…',   cls: 'text-amber-600' },
-  completed:    { label: 'Completed',     cls: 'text-slate-500 dark:text-slate-400' },
-  handed_over:  { label: 'Handed over',   cls: 'text-violet-600' },
-  error:        { label: 'Error',         cls: 'text-red-600' },
+  streaming:    { labelKey: 'status.streaming',  cls: 'text-nexus-accent' },
+  evaluating:   { labelKey: 'status.evaluating', cls: 'text-amber-600' },
+  completed:    { labelKey: 'status.completed',  cls: 'text-slate-500 dark:text-slate-400' },
+  handed_over:  { labelKey: 'status.handedOver', cls: 'text-violet-600' },
+  error:        { labelKey: 'status.error',      cls: 'text-red-600' },
 };
 
 /**
@@ -38,6 +40,7 @@ export default function MessageBubble({
   onSourceClick,
   attachments = [],
 }) {
+  const { t } = useTranslation('chat');
   const isUser = role === 'user';
   const isAssistant = role === 'assistant';
   const statusInfo = STATUS_LABELS[status] || STATUS_LABELS.completed;
@@ -79,7 +82,7 @@ export default function MessageBubble({
           {status === 'error' ? (
             <div className="flex items-start gap-2 text-red-600">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-              <span>{error || 'Something went wrong.'}</span>
+              <span>{error || t('status.somethingWrong')}</span>
             </div>
           ) : (
             <div className={isUser ? 'prose-invert max-w-none' : 'max-w-none'}>
@@ -103,10 +106,10 @@ export default function MessageBubble({
 
         {isAssistant && (
           <div className="mt-1.5 flex items-center gap-3 text-[11px] text-slate-400">
-            <span className={statusInfo.cls}>{statusInfo.label}</span>
-            {isRetrying && <span className="text-amber-500">Regenerating…</span>}
+            <span className={statusInfo.cls}>{t(statusInfo.labelKey)}</span>
+            {isRetrying && <span className="text-amber-500">{t('status.regenerating')}</span>}
             {traceId && (
-              <span className="inline-flex items-center gap-1 font-mono text-slate-400" title="Langfuse trace ID">
+              <span className="inline-flex items-center gap-1 font-mono text-slate-400" title={t('status.traceTitle')}>
                 <GitBranch size={11} />
                 {String(traceId).slice(0, 8)}
               </span>

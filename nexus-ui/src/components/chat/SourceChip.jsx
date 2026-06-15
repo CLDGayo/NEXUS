@@ -1,4 +1,5 @@
 import { FileText } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const METHOD_BADGE = {
   dense:  { bg: 'bg-blue-100',   text: 'text-blue-700',   label: 'dense' },
@@ -14,6 +15,7 @@ const METHOD_BADGE = {
 // Today's SSE payload doesn't ship these yet — they're rendered if
 // present, hidden if undefined, so no schema change blocks display.
 export default function SourceChip({ source, onClick }) {
+  const { t } = useTranslation('chat');
   const display =
     source.display || (source.file || '').split('/').pop().replace(/\.md$/i, '') || 'source';
 
@@ -26,7 +28,7 @@ export default function SourceChip({ source, onClick }) {
   const methodBadge = method ? METHOD_BADGE[method] : null;
 
   const tipParts = [];
-  if (topScore) tipParts.push(`${Math.round(topScore * 100)}% match`);
+  if (topScore) tipParts.push(t('source.match', { pct: Math.round(topScore * 100) }));
   if (typeof rrfScore === 'number') tipParts.push(`RRF ${rrfScore.toFixed(3)}`);
   if (method) tipParts.push(method);
 

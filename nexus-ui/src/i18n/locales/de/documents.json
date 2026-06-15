@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "totalNotes": "Notizen gesamt",
+    "vectorChunks": "Vektor-Chunks",
+    "qdrantUnreachable": "Qdrant nicht erreichbar",
+    "lastSync": "Letzte Synchronisierung"
+  },
+  "upload": {
+    "toggle": "Neues Dokument hochladen",
+    "dropPrompt": "Dateien hierher ziehen oder zum Durchsuchen klicken",
+    "dropHint": ".md, .txt, .pdf — max. 50 MB pro Datei",
+    "process": "Verarbeiten & indizieren",
+    "processing": "{{count}} Datei(en) werden verarbeitet…",
+    "done": "Fertig",
+    "failed": "Upload fehlgeschlagen",
+    "remove": "{{name}} entfernen",
+    "chunksSuffix": "{{label}} · {{count}} Chunks",
+    "unsupportedType": "Nicht unterstützter Dateityp \"{{ext}}\". Erlaubt: .md, .txt, .pdf",
+    "tooLarge": "Datei überschreitet 50 MB ({{size}})",
+    "summaryCreated": "{{count}} erstellt",
+    "summaryUpdated": "{{count}} aktualisiert",
+    "summarySkipped": "{{count}} übersprungen",
+    "summaryFailed": "{{count}} fehlgeschlagen",
+    "state": {
+      "queued": "In Warteschlange",
+      "running": "Wird hochgeladen…",
+      "created": "Indiziert",
+      "updated": "Ersetzt",
+      "skipped": "Identisch — übersprungen",
+      "error": "Fehler"
+    }
+  },
+  "table": {
+    "searchPlaceholder": "Nach Titel, Ordner, Tag suchen…",
+    "allFolders": "Alle Ordner",
+    "allStatuses": "Alle Status",
+    "selectedTotal": "{{selected}} ausgewählt · {{total}} gesamt",
+    "archiveSelected": "Auswahl archivieren",
+    "vaultCleanup": "Vault bereinigen",
+    "selectAll": "Alle auswählen",
+    "selectRow": "{{title}} auswählen",
+    "loading": "Wird geladen…",
+    "empty": "Keine passenden Dokumente.",
+    "pageOf": "Seite {{page}} von {{pages}}",
+    "prevPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite",
+    "col": {
+      "title": "Titel",
+      "folder": "Ordner",
+      "tags": "Tags",
+      "status": "Status",
+      "chunks": "Chunks",
+      "modified": "Geändert"
+    },
+    "status": {
+      "indexed": "Indiziert",
+      "pending": "Ausstehend",
+      "unknown": "Unbekannt"
+    },
+    "confirmArchive": "{{count}} Dokument(e) archivieren? Dateien werden nach 04 - Archive verschoben und Vektoren gelöscht.",
+    "confirmReconcile": "Vault-Bereinigung ausführen? Findet verwaiste Qdrant-Vektoren (Dateien, die nicht mehr im Vault sind) und löscht sie.",
+    "loadFailed": "Laden fehlgeschlagen: {{error}}",
+    "archived": "{{archived}} archiviert · {{purged}} Chunks gelöscht",
+    "archivedWithFailed": "{{archived}} archiviert · {{purged}} Chunks gelöscht · {{failed}} fehlgeschlagen",
+    "archiveFailed": "Archivieren fehlgeschlagen: {{error}}",
+    "reconcileComplete": "Bereinigung abgeschlossen · {{orphans}} verwaist · {{purged}} Chunks gelöscht",
+    "reconcileFailed": "Bereinigung fehlgeschlagen: {{error}}"
+  }
+}

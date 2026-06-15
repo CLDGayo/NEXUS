@@ -7,6 +7,7 @@ import {
   MessagesSquare,
   Plug,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function Card({ icon: Icon, label, value, sub, accent }) {
   const ring = accent ?? 'bg-blue-50 text-nexus-accent';
@@ -27,33 +28,34 @@ function Card({ icon: Icon, label, value, sub, accent }) {
 const fmt = (n) => (n ?? 0).toLocaleString();
 
 export default function KpiCards({ kpis }) {
+  const { t } = useTranslation('dashboard');
   const k = kpis || {};
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-7">
-      <Card icon={FileText} label="Total Notes" value={fmt(k.total_notes)} />
-      <Card icon={Layers} label="Vector Chunks" value={fmt(k.total_chunks)} />
+      <Card icon={FileText} label={t('kpi.totalNotes')} value={fmt(k.total_notes)} />
+      <Card icon={Layers} label={t('kpi.vectorChunks')} value={fmt(k.total_chunks)} />
       <Card
         icon={MessageSquare}
-        label="Total Messages"
+        label={t('kpi.totalMessages')}
         value={fmt(k.total_messages)}
         accent="bg-emerald-50 text-emerald-700"
       />
       <Card
         icon={MessagesSquare}
-        label="Conversations"
+        label={t('kpi.conversations')}
         value={fmt(k.total_conversations)}
         accent="bg-violet-50 text-violet-700"
       />
       <Card
         icon={Plug}
-        label="Active Integrations"
+        label={t('kpi.activeIntegrations')}
         value={fmt(k.active_integrations)}
         accent="bg-amber-50 text-amber-700"
       />
-      <Card icon={Inbox} label="Pending Inbox" value={fmt(k.pending_inbox)} />
+      <Card icon={Inbox} label={t('kpi.pendingInbox')} value={fmt(k.pending_inbox)} />
       <Card
         icon={Timer}
-        label="Avg Retrieval"
+        label={t('kpi.avgRetrieval')}
         value={
           k.avg_retrieval_latency_s != null
             ? `${k.avg_retrieval_latency_s.toFixed(2)}s`

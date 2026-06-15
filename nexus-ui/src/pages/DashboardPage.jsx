@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api.js';
 import KpiCards from '../components/dashboard/KpiCards.jsx';
 import HealthPanel from '../components/dashboard/HealthPanel.jsx';
@@ -34,6 +35,7 @@ function SkeletonGrid() {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslation('dashboard');
   const pageRef = usePageMountTimeline();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,19 +59,19 @@ export default function DashboardPage() {
         <div data-animate className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Live Telemetry</h2>
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('telemetry.title')}</h2>
               {!loading && !error && stats && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   </span>
-                  Live
+                  {t('telemetry.live')}
                 </span>
               )}
             </div>
             <p className="text-xs text-nexus-muted">
-              Real-time vault, retrieval, and Messenger health.
+              {t('telemetry.subtitle')}
             </p>
           </div>
           <button
@@ -79,7 +81,7 @@ export default function DashboardPage() {
             className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 shadow-sm hover:text-nexus-accent disabled:opacity-50"
           >
             <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
-            Refresh
+            {t('telemetry.refresh')}
           </button>
         </div>
 

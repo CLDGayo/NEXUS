@@ -1,4 +1,5 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 function formatDate(iso) {
   if (!iso) return '';
@@ -7,10 +8,11 @@ function formatDate(iso) {
 }
 
 export default function IngestionChart({ data }) {
+  const { t } = useTranslation('dashboard');
   const series = Array.isArray(data) ? data : [];
   return (
     <section className="glass-card p-4">
-      <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Document Ingestion (7d)</div>
+      <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">{t('charts.ingestion')}</div>
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={series} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>

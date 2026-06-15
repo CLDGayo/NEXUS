@@ -1,0 +1,51 @@
+{
+  "input": {
+    "placeholder": "Vault について質問してください…",
+    "defaultImagePrompt": "この画像について何がわかりますか？",
+    "imageTooLarge": "画像は 5 MB 以下にしてください。",
+    "uploadFailed": "アップロードに失敗しました。",
+    "uploadingImage": "画像をアップロード中…",
+    "removeImage": "画像を削除",
+    "attachImage": "画像を添付",
+    "stop": "停止",
+    "send": "送信",
+    "hint": "Enter で送信 · Shift+Enter で改行"
+  },
+  "header": {
+    "subtitle": "ナレッジベースについて質問する",
+    "clear": "クリア",
+    "clearTitle": "会話をクリア"
+  },
+  "empty": {
+    "title": "Vault に何でも質問",
+    "subtitle": "ノート・概念・プロジェクトを検索できます。LangGraph オーケストレーター経由でストリーミングします。"
+  },
+  "status": {
+    "streaming": "ストリーミング中…",
+    "evaluating": "評価中…",
+    "completed": "完了",
+    "handedOver": "引き継ぎ済み",
+    "error": "エラー",
+    "somethingWrong": "問題が発生しました。",
+    "regenerating": "再生成中…",
+    "traceTitle": "Langfuse トレース ID"
+  },
+  "source": {
+    "match": "{{pct}}% 一致"
+  },
+  "thinking": {
+    "searching": "Nexus Vault を検索中…",
+    "retrieved": "関連ノートを取得しました",
+    "generating": "回答を生成中…",
+    "complete": "思考完了",
+    "inProgress": "思考中…",
+    "retrievedCount_one": "{{count}} 件の関連ノートを取得",
+    "retrievedCount_other": "{{count}} 件の関連ノートを取得"
+  },
+  "actions": {
+    "copy": "回答をコピー",
+    "regenerate": "再生成",
+    "helpful": "役に立った",
+    "notHelpful": "役に立たなかった"
+  }
+}

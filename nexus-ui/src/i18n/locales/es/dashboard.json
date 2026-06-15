@@ -1,0 +1,48 @@
+{
+  "telemetry": {
+    "title": "Telemetría en vivo",
+    "live": "En vivo",
+    "subtitle": "Estado en tiempo real del repositorio, la recuperación y Messenger.",
+    "refresh": "Actualizar"
+  },
+  "kpi": {
+    "totalNotes": "Notas totales",
+    "vectorChunks": "Fragmentos vectoriales",
+    "totalMessages": "Mensajes totales",
+    "conversations": "Conversaciones",
+    "activeIntegrations": "Integraciones activas",
+    "pendingInbox": "Bandeja pendiente",
+    "avgRetrieval": "Recuperación prom."
+  },
+  "health": {
+    "title": "Estado del sistema",
+    "ok": "OK",
+    "down": "Caído",
+    "fileWatcher": "Monitor de archivos"
+  },
+  "activity": {
+    "title": "Actividad en vivo",
+    "live": "En vivo",
+    "inactive": "Inactivo",
+    "activeIntegrations": "Integraciones activas",
+    "messenger": "Messenger",
+    "uptime": "Tiempo activo",
+    "model": "Modelo"
+  },
+  "charts": {
+    "queryVolume": "Volumen de consultas (7 d)",
+    "ingestion": "Ingesta de documentos (7 d)"
+  },
+  "recent": {
+    "title": "Actividad reciente",
+    "when": "Cuándo",
+    "file": "Archivo",
+    "folder": "Carpeta",
+    "status": "Estado",
+    "empty": "Sin actividad reciente.",
+    "justNow": "ahora mismo",
+    "minutesAgo": "hace {{count}} min",
+    "hoursAgo": "hace {{count}} h",
+    "daysAgo": "hace {{count}} d"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "totalNotes": "Tổng số ghi chú",
+    "vectorChunks": "Khối vector",
+    "qdrantUnreachable": "Không kết nối được Qdrant",
+    "lastSync": "Đồng bộ lần cuối"
+  },
+  "upload": {
+    "toggle": "Tải lên tài liệu mới",
+    "dropPrompt": "Kéo tệp vào đây hoặc nhấp để duyệt",
+    "dropHint": ".md, .txt, .pdf — tối đa 50 MB mỗi tệp",
+    "process": "Xử lý & Lập chỉ mục",
+    "processing": "Đang xử lý {{count}} tệp…",
+    "done": "Hoàn tất",
+    "failed": "Tải lên thất bại",
+    "remove": "Xóa {{name}}",
+    "chunksSuffix": "{{label}} · {{count}} khối",
+    "unsupportedType": "Loại tệp không được hỗ trợ \"{{ext}}\". Cho phép: .md, .txt, .pdf",
+    "tooLarge": "Tệp vượt quá 50 MB ({{size}})",
+    "summaryCreated": "{{count}} đã tạo",
+    "summaryUpdated": "{{count}} đã cập nhật",
+    "summarySkipped": "{{count}} đã bỏ qua",
+    "summaryFailed": "{{count}} thất bại",
+    "state": {
+      "queued": "Trong hàng đợi",
+      "running": "Đang tải lên…",
+      "created": "Đã lập chỉ mục",
+      "updated": "Đã thay thế",
+      "skipped": "Giống hệt — đã bỏ qua",
+      "error": "Lỗi"
+    }
+  },
+  "table": {
+    "searchPlaceholder": "Tìm theo tiêu đề, thư mục, thẻ…",
+    "allFolders": "Tất cả thư mục",
+    "allStatuses": "Tất cả trạng thái",
+    "selectedTotal": "Đã chọn {{selected}} · tổng {{total}}",
+    "archiveSelected": "Lưu trữ mục đã chọn",
+    "vaultCleanup": "Dọn dẹp kho",
+    "selectAll": "Chọn tất cả",
+    "selectRow": "Chọn {{title}}",
+    "loading": "Đang tải…",
+    "empty": "Không có tài liệu phù hợp.",
+    "pageOf": "Trang {{page}} / {{pages}}",
+    "prevPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "col": {
+      "title": "Tiêu đề",
+      "folder": "Thư mục",
+      "tags": "Thẻ",
+      "status": "Trạng thái",
+      "chunks": "Khối",
+      "modified": "Đã sửa"
+    },
+    "status": {
+      "indexed": "Đã lập chỉ mục",
+      "pending": "Đang chờ",
+      "unknown": "Không rõ"
+    },
+    "confirmArchive": "Lưu trữ {{count}} tài liệu? Tệp sẽ chuyển vào 04 - Archive và vector bị xóa.",
+    "confirmReconcile": "Chạy dọn dẹp kho? Thao tác này tìm các vector Qdrant mồ côi (tệp không còn trong kho) và xóa chúng.",
+    "loadFailed": "Tải thất bại: {{error}}",
+    "archived": "Đã lưu trữ {{archived}} · đã xóa {{purged}} khối",
+    "archivedWithFailed": "Đã lưu trữ {{archived}} · đã xóa {{purged}} khối · {{failed}} thất bại",
+    "archiveFailed": "Lưu trữ thất bại: {{error}}",
+    "reconcileComplete": "Hoàn tất dọn dẹp · {{orphans}} mồ côi · {{purged}} khối đã xóa",
+    "reconcileFailed": "Dọn dẹp thất bại: {{error}}"
+  }
+}

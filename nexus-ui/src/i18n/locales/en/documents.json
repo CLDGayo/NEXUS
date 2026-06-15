@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "totalNotes": "Total Notes",
+    "vectorChunks": "Vector Chunks",
+    "qdrantUnreachable": "Qdrant unreachable",
+    "lastSync": "Last Sync"
+  },
+  "upload": {
+    "toggle": "Upload new document",
+    "dropPrompt": "Drag files here or click to browse",
+    "dropHint": ".md, .txt, .pdf — max 50 MB each",
+    "process": "Process & Index",
+    "processing": "Processing {{count}} file(s)…",
+    "done": "Done",
+    "failed": "Upload failed",
+    "remove": "Remove {{name}}",
+    "chunksSuffix": "{{label}} · {{count}} chunks",
+    "unsupportedType": "Unsupported file type \"{{ext}}\". Allowed: .md, .txt, .pdf",
+    "tooLarge": "File exceeds 50 MB ({{size}})",
+    "summaryCreated": "{{count}} created",
+    "summaryUpdated": "{{count}} updated",
+    "summarySkipped": "{{count}} skipped",
+    "summaryFailed": "{{count}} failed",
+    "state": {
+      "queued": "Queued",
+      "running": "Uploading…",
+      "created": "Indexed",
+      "updated": "Replaced",
+      "skipped": "Identical — skipped",
+      "error": "Error"
+    }
+  },
+  "table": {
+    "searchPlaceholder": "Search by title, folder, tag…",
+    "allFolders": "All folders",
+    "allStatuses": "All statuses",
+    "selectedTotal": "{{selected}} selected · {{total}} total",
+    "archiveSelected": "Archive selected",
+    "vaultCleanup": "Vault cleanup",
+    "selectAll": "Select all",
+    "selectRow": "Select {{title}}",
+    "loading": "Loading…",
+    "empty": "No documents match.",
+    "pageOf": "Page {{page}} of {{pages}}",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "col": {
+      "title": "Title",
+      "folder": "Folder",
+      "tags": "Tags",
+      "status": "Status",
+      "chunks": "Chunks",
+      "modified": "Modified"
+    },
+    "status": {
+      "indexed": "Indexed",
+      "pending": "Pending",
+      "unknown": "Unknown"
+    },
+    "confirmArchive": "Archive {{count}} document(s)? Files move to 04 - Archive and vectors are purged.",
+    "confirmReconcile": "Run vault cleanup? This finds orphaned Qdrant vectors (files no longer in the vault) and purges them.",
+    "loadFailed": "Load failed: {{error}}",
+    "archived": "Archived {{archived}} · purged {{purged}} chunks",
+    "archivedWithFailed": "Archived {{archived}} · purged {{purged}} chunks · {{failed}} failed",
+    "archiveFailed": "Archive failed: {{error}}",
+    "reconcileComplete": "Reconcile complete · {{orphans}} orphans · {{purged}} chunks purged",
+    "reconcileFailed": "Reconcile failed: {{error}}"
+  }
+}

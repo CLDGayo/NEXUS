@@ -1,0 +1,69 @@
+{
+  "summary": {
+    "totalNotes": "ノート総数",
+    "vectorChunks": "ベクトルチャンク",
+    "qdrantUnreachable": "Qdrant に接続できません",
+    "lastSync": "最終同期"
+  },
+  "upload": {
+    "toggle": "新しいドキュメントをアップロード",
+    "dropPrompt": "ファイルをここにドラッグするかクリックして選択",
+    "dropHint": ".md, .txt, .pdf — 各最大 50 MB",
+    "process": "処理してインデックス化",
+    "processing": "{{count}} 件のファイルを処理中…",
+    "done": "完了",
+    "failed": "アップロードに失敗しました",
+    "remove": "{{name}} を削除",
+    "chunksSuffix": "{{label}} · {{count}} チャンク",
+    "unsupportedType": "サポートされていないファイル形式 \"{{ext}}\"。許可: .md, .txt, .pdf",
+    "tooLarge": "ファイルが 50 MB を超えています ({{size}})",
+    "summaryCreated": "{{count}} 件作成",
+    "summaryUpdated": "{{count}} 件更新",
+    "summarySkipped": "{{count}} 件スキップ",
+    "summaryFailed": "{{count}} 件失敗",
+    "state": {
+      "queued": "待機中",
+      "running": "アップロード中…",
+      "created": "インデックス済み",
+      "updated": "置換済み",
+      "skipped": "同一 — スキップ",
+      "error": "エラー"
+    }
+  },
+  "table": {
+    "searchPlaceholder": "タイトル・フォルダ・タグで検索…",
+    "allFolders": "すべてのフォルダ",
+    "allStatuses": "すべてのステータス",
+    "selectedTotal": "{{selected}} 件選択 · 合計 {{total}}",
+    "archiveSelected": "選択をアーカイブ",
+    "vaultCleanup": "Vault のクリーンアップ",
+    "selectAll": "すべて選択",
+    "selectRow": "{{title}} を選択",
+    "loading": "読み込み中…",
+    "empty": "一致するドキュメントがありません。",
+    "pageOf": "{{pages}} ページ中 {{page}} ページ",
+    "prevPage": "前のページ",
+    "nextPage": "次のページ",
+    "col": {
+      "title": "タイトル",
+      "folder": "フォルダ",
+      "tags": "タグ",
+      "status": "ステータス",
+      "chunks": "チャンク",
+      "modified": "更新日"
+    },
+    "status": {
+      "indexed": "インデックス済み",
+      "pending": "保留中",
+      "unknown": "不明"
+    },
+    "confirmArchive": "{{count}} 件のドキュメントをアーカイブしますか？ファイルは 04 - Archive に移動し、ベクトルは削除されます。",
+    "confirmReconcile": "Vault のクリーンアップを実行しますか？Vault に存在しないファイルの孤立した Qdrant ベクトルを検出して削除します。",
+    "loadFailed": "読み込みに失敗しました: {{error}}",
+    "archived": "{{archived}} 件アーカイブ · {{purged}} チャンク削除",
+    "archivedWithFailed": "{{archived}} 件アーカイブ · {{purged}} チャンク削除 · {{failed}} 件失敗",
+    "archiveFailed": "アーカイブに失敗しました: {{error}}",
+    "reconcileComplete": "整合処理完了 · {{orphans}} 件の孤立 · {{purged}} チャンク削除",
+    "reconcileFailed": "整合処理に失敗しました: {{error}}"
+  }
+}

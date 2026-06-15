@@ -1,0 +1,51 @@
+{
+  "input": {
+    "placeholder": "Đặt câu hỏi về kho của bạn…",
+    "defaultImagePrompt": "Bạn có thể cho tôi biết gì về hình ảnh này?",
+    "imageTooLarge": "Hình ảnh phải nhỏ hơn hoặc bằng 5 MB.",
+    "uploadFailed": "Tải lên thất bại.",
+    "uploadingImage": "Đang tải hình ảnh…",
+    "removeImage": "Xóa hình ảnh",
+    "attachImage": "Đính kèm hình ảnh",
+    "stop": "Dừng",
+    "send": "Gửi",
+    "hint": "Enter để gửi · Shift+Enter để xuống dòng"
+  },
+  "header": {
+    "subtitle": "Đặt câu hỏi về cơ sở tri thức của bạn",
+    "clear": "Xóa",
+    "clearTitle": "Xóa cuộc trò chuyện"
+  },
+  "empty": {
+    "title": "Hỏi kho của bạn bất cứ điều gì",
+    "subtitle": "Ghi chú, khái niệm và dự án đều có thể tìm kiếm. Truyền phát qua trình điều phối LangGraph."
+  },
+  "status": {
+    "streaming": "Đang truyền…",
+    "evaluating": "Đang đánh giá…",
+    "completed": "Hoàn tất",
+    "handedOver": "Đã chuyển giao",
+    "error": "Lỗi",
+    "somethingWrong": "Đã xảy ra lỗi.",
+    "regenerating": "Đang tạo lại…",
+    "traceTitle": "ID truy vết Langfuse"
+  },
+  "source": {
+    "match": "khớp {{pct}}%"
+  },
+  "thinking": {
+    "searching": "Đang tìm trong Nexus Vault…",
+    "retrieved": "Đã truy xuất ghi chú liên quan",
+    "generating": "Đang tạo câu trả lời…",
+    "complete": "Đã suy nghĩ xong",
+    "inProgress": "Đang suy nghĩ…",
+    "retrievedCount_one": "Đã truy xuất {{count}} ghi chú liên quan",
+    "retrievedCount_other": "Đã truy xuất {{count}} ghi chú liên quan"
+  },
+  "actions": {
+    "copy": "Sao chép câu trả lời",
+    "regenerate": "Tạo lại",
+    "helpful": "Hữu ích",
+    "notHelpful": "Không hữu ích"
+  }
+}

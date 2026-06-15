@@ -1,6 +1,8 @@
 import { ShieldCheck, ShieldAlert } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function Row({ label, ok, hint }) {
+  const { t } = useTranslation('dashboard');
   const Icon = ok ? ShieldCheck : ShieldAlert;
   const cls = ok
     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
@@ -12,13 +14,14 @@ function Row({ label, ok, hint }) {
         {hint && <div className="mt-0.5 text-[11px] text-nexus-muted">{hint}</div>}
       </div>
       <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${cls}`}>
-        <Icon size={11} /> {ok ? 'OK' : 'Down'}
+        <Icon size={11} /> {ok ? t('health.ok') : t('health.down')}
       </span>
     </div>
   );
 }
 
 export default function HealthPanel({ health }) {
+  const { t } = useTranslation('dashboard');
   const h = health || {};
   const qdrant = h.qdrant || {};
   const groq = h.groq || {};
@@ -26,12 +29,12 @@ export default function HealthPanel({ health }) {
   const watcher = h.watcher || {};
   return (
     <section className="glass-card p-4">
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">System Health</div>
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">{t('health.title')}</div>
       <div className="divide-y divide-nexus-border">
         <Row label="Qdrant" ok={!!qdrant.ok} hint={qdrant.ok ? null : qdrant.hint} />
         <Row label="Groq API" ok={!!groq.ok} hint={groq.ok ? null : (groq.hint || 'GROQ_API_KEY not set')} />
         <Row label="Messenger" ok={!!messenger.ok} hint={messenger.ok ? null : messenger.hint} />
-        <Row label="File Watcher" ok={!!watcher.ok} hint={null} />
+        <Row label={t('health.fileWatcher')} ok={!!watcher.ok} hint={null} />
       </div>
     </section>
   );

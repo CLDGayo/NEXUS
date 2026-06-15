@@ -1,15 +1,16 @@
 import { CheckCircle2, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-function relativeTime(iso) {
+function relativeTime(iso, t) {
   if (!iso) return '—';
-  const t = new Date(iso).getTime();
-  const diff = Math.max(0, Date.now() - t);
+  const ts = new Date(iso).getTime();
+  const diff = Math.max(0, Date.now() - ts);
   const min = Math.floor(diff / 60000);
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min}m ago`;
+  if (min < 1) return t('recent.justNow');
+  if (min < 60) return t('recent.minutesAgo', { count: min });
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  return `${Math.floor(hr / 24)}d ago`;
+  if (hr < 24) return t('recent.hoursAgo', { count: hr });
+  return t('recent.daysAgo', { count: Math.floor(hr / 24) });
 }
 
 function StatusBadge({ status }) {
@@ -27,31 +28,32 @@ function StatusBadge({ status }) {
 }
 
 export default function RecentActivityTable({ items }) {
+  const { t } = useTranslation('dashboard');
   const rows = Array.isArray(items) ? items : [];
   return (
     <section className="glass-card">
       <div className="border-b border-nexus-border px-4 py-2.5">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Recent Activity</div>
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">{t('recent.title')}</div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wide text-nexus-muted">
-              <th className="px-4 py-2 font-medium">When</th>
-              <th className="px-4 py-2 font-medium">File</th>
-              <th className="px-4 py-2 font-medium">Folder</th>
-              <th className="px-4 py-2 font-medium">Status</th>
+              <th className="px-4 py-2 font-medium">{t('recent.when')}</th>
+              <th className="px-4 py-2 font-medium">{t('recent.file')}</th>
+              <th className="px-4 py-2 font-medium">{t('recent.folder')}</th>
+              <th className="px-4 py-2 font-medium">{t('recent.status')}</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-nexus-muted">No recent activity.</td>
+                <td colSpan={4} className="px-4 py-6 text-center text-nexus-muted">{t('recent.empty')}</td>
               </tr>
             )}
             {rows.map((r, i) => (
               <tr key={i} className="border-t border-nexus-border">
-                <td className="whitespace-nowrap px-4 py-2 text-nexus-muted">{relativeTime(r.timestamp)}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-nexus-muted">{relativeTime(r.timestamp, t)}</td>
                 <td className="px-4 py-2 font-medium text-slate-800 dark:text-slate-100">{r.file}</td>
                 <td className="px-4 py-2 font-mono text-[11px] text-nexus-muted">{r.folder}</td>
                 <td className="px-4 py-2"><StatusBadge status={r.status} /></td>

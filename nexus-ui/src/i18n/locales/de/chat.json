@@ -1,0 +1,51 @@
+{
+  "input": {
+    "placeholder": "Stellen Sie eine Frage zu Ihrem Vault…",
+    "defaultImagePrompt": "Was können Sie mir über dieses Bild sagen?",
+    "imageTooLarge": "Das Bild darf höchstens 5 MB groß sein.",
+    "uploadFailed": "Upload fehlgeschlagen.",
+    "uploadingImage": "Bild wird hochgeladen…",
+    "removeImage": "Bild entfernen",
+    "attachImage": "Bild anhängen",
+    "stop": "Stopp",
+    "send": "Senden",
+    "hint": "Enter zum Senden · Shift+Enter für neue Zeile"
+  },
+  "header": {
+    "subtitle": "Stellen Sie Fragen zu Ihrer Wissensdatenbank",
+    "clear": "Löschen",
+    "clearTitle": "Unterhaltung löschen"
+  },
+  "empty": {
+    "title": "Fragen Sie Ihren Vault alles",
+    "subtitle": "Notizen, Konzepte und Projekte sind durchsuchbar. Streaming über den LangGraph-Orchestrator."
+  },
+  "status": {
+    "streaming": "Streaming…",
+    "evaluating": "Wird ausgewertet…",
+    "completed": "Abgeschlossen",
+    "handedOver": "Übergeben",
+    "error": "Fehler",
+    "somethingWrong": "Etwas ist schiefgelaufen.",
+    "regenerating": "Wird neu generiert…",
+    "traceTitle": "Langfuse-Trace-ID"
+  },
+  "source": {
+    "match": "{{pct}} % Übereinstimmung"
+  },
+  "thinking": {
+    "searching": "Nexus Vault wird durchsucht…",
+    "retrieved": "Relevante Notizen abgerufen",
+    "generating": "Antwort wird generiert…",
+    "complete": "Denken abgeschlossen",
+    "inProgress": "Denkt nach…",
+    "retrievedCount_one": "{{count}} relevante Notiz abgerufen",
+    "retrievedCount_other": "{{count}} relevante Notizen abgerufen"
+  },
+  "actions": {
+    "copy": "Antwort kopieren",
+    "regenerate": "Neu generieren",
+    "helpful": "Hilfreich",
+    "notHelpful": "Nicht hilfreich"
+  }
+}

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Copy, RefreshCcw, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api.js';
 import { stripCitations } from '../../lib/markdown.js';
 
 export default function UtilityBar({ message, question, sessionId, onRegenerate, disabled }) {
+  const { t } = useTranslation('chat');
   const [copied, setCopied] = useState(false);
   const [rating, setRating] = useState(null);
 
@@ -37,14 +39,14 @@ export default function UtilityBar({ message, question, sessionId, onRegenerate,
 
   return (
     <div className="mt-2 flex items-center gap-1">
-      <button type="button" onClick={copyAnswer} title="Copy answer" className={btn}>
+      <button type="button" onClick={copyAnswer} title={t('actions.copy')} className={btn}>
         {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
       </button>
       <button
         type="button"
         onClick={onRegenerate}
         disabled={disabled}
-        title="Regenerate"
+        title={t('actions.regenerate')}
         className={btn}
       >
         <RefreshCcw size={14} />
@@ -53,7 +55,7 @@ export default function UtilityBar({ message, question, sessionId, onRegenerate,
         type="button"
         onClick={() => rate('up')}
         disabled={!!rating}
-        title="Helpful"
+        title={t('actions.helpful')}
         className={`${btn} ${rating === 'up' ? 'text-green-600 bg-green-50' : ''}`}
       >
         <ThumbsUp size={14} />
@@ -62,7 +64,7 @@ export default function UtilityBar({ message, question, sessionId, onRegenerate,
         type="button"
         onClick={() => rate('down')}
         disabled={!!rating}
-        title="Not helpful"
+        title={t('actions.notHelpful')}
         className={`${btn} ${rating === 'down' ? 'text-red-600 bg-red-50' : ''}`}
       >
         <ThumbsDown size={14} />

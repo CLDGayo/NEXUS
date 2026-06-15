@@ -1,0 +1,48 @@
+{
+  "telemetry": {
+    "title": "Télémétrie en direct",
+    "live": "En direct",
+    "subtitle": "État en temps réel du coffre, de la récupération et de Messenger.",
+    "refresh": "Actualiser"
+  },
+  "kpi": {
+    "totalNotes": "Total des notes",
+    "vectorChunks": "Fragments vectoriels",
+    "totalMessages": "Total des messages",
+    "conversations": "Conversations",
+    "activeIntegrations": "Intégrations actives",
+    "pendingInbox": "Boîte de réception en attente",
+    "avgRetrieval": "Récupération moy."
+  },
+  "health": {
+    "title": "État du système",
+    "ok": "OK",
+    "down": "Hors service",
+    "fileWatcher": "Surveillance des fichiers"
+  },
+  "activity": {
+    "title": "Activité en direct",
+    "live": "En direct",
+    "inactive": "Inactif",
+    "activeIntegrations": "Intégrations actives",
+    "messenger": "Messenger",
+    "uptime": "Disponibilité",
+    "model": "Modèle"
+  },
+  "charts": {
+    "queryVolume": "Volume de requêtes (7 j)",
+    "ingestion": "Ingestion de documents (7 j)"
+  },
+  "recent": {
+    "title": "Activité récente",
+    "when": "Quand",
+    "file": "Fichier",
+    "folder": "Dossier",
+    "status": "Statut",
+    "empty": "Aucune activité récente.",
+    "justNow": "à l'instant",
+    "minutesAgo": "il y a {{count}} min",
+    "hoursAgo": "il y a {{count}} h",
+    "daysAgo": "il y a {{count}} j"
+  }
+}

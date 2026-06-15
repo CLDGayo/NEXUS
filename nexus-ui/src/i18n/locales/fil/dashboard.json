@@ -1,0 +1,48 @@
+{
+  "telemetry": {
+    "title": "Live na Telemetry",
+    "live": "Live",
+    "subtitle": "Real-time na kalusugan ng vault, retrieval, at Messenger.",
+    "refresh": "I-refresh"
+  },
+  "kpi": {
+    "totalNotes": "Kabuuang Tala",
+    "vectorChunks": "Vector Chunks",
+    "totalMessages": "Kabuuang Mensahe",
+    "conversations": "Mga Usapan",
+    "activeIntegrations": "Aktibong Integrasyon",
+    "pendingInbox": "Naghihintay na Inbox",
+    "avgRetrieval": "Karaniwang Retrieval"
+  },
+  "health": {
+    "title": "Kalusugan ng Sistema",
+    "ok": "OK",
+    "down": "Down",
+    "fileWatcher": "File Watcher"
+  },
+  "activity": {
+    "title": "Live na Aktibidad",
+    "live": "Live",
+    "inactive": "Hindi aktibo",
+    "activeIntegrations": "Aktibong integrasyon",
+    "messenger": "Messenger",
+    "uptime": "Uptime",
+    "model": "Model"
+  },
+  "charts": {
+    "queryVolume": "Dami ng Query (7d)",
+    "ingestion": "Pag-ingest ng Dokumento (7d)"
+  },
+  "recent": {
+    "title": "Kamakailang Aktibidad",
+    "when": "Kailan",
+    "file": "File",
+    "folder": "Folder",
+    "status": "Status",
+    "empty": "Walang kamakailang aktibidad.",
+    "justNow": "ngayon lang",
+    "minutesAgo": "{{count}}m ang nakalipas",
+    "hoursAgo": "{{count}}h ang nakalipas",
+    "daysAgo": "{{count}}d ang nakalipas"
+  }
+}

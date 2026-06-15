@@ -1,0 +1,51 @@
+{
+  "input": {
+    "placeholder": "Posez une question sur votre coffre…",
+    "defaultImagePrompt": "Que pouvez-vous me dire sur cette image ?",
+    "imageTooLarge": "L'image doit faire 5 Mo ou moins.",
+    "uploadFailed": "Échec du téléversement.",
+    "uploadingImage": "Téléversement de l'image…",
+    "removeImage": "Retirer l'image",
+    "attachImage": "Joindre une image",
+    "stop": "Arrêter",
+    "send": "Envoyer",
+    "hint": "Entrée pour envoyer · Maj+Entrée pour un saut de ligne"
+  },
+  "header": {
+    "subtitle": "Posez des questions sur votre base de connaissances",
+    "clear": "Effacer",
+    "clearTitle": "Effacer la conversation"
+  },
+  "empty": {
+    "title": "Demandez n'importe quoi à votre coffre",
+    "subtitle": "Les notes, concepts et projets sont consultables. Diffusion via l'orchestrateur LangGraph."
+  },
+  "status": {
+    "streaming": "Diffusion…",
+    "evaluating": "Évaluation…",
+    "completed": "Terminé",
+    "handedOver": "Transféré",
+    "error": "Erreur",
+    "somethingWrong": "Une erreur s'est produite.",
+    "regenerating": "Régénération…",
+    "traceTitle": "ID de trace Langfuse"
+  },
+  "source": {
+    "match": "{{pct}} % de correspondance"
+  },
+  "thinking": {
+    "searching": "Recherche dans Nexus Vault…",
+    "retrieved": "Notes pertinentes récupérées",
+    "generating": "Génération de la réponse…",
+    "complete": "Réflexion terminée",
+    "inProgress": "Réflexion…",
+    "retrievedCount_one": "{{count}} note pertinente récupérée",
+    "retrievedCount_other": "{{count}} notes pertinentes récupérées"
+  },
+  "actions": {
+    "copy": "Copier la réponse",
+    "regenerate": "Régénérer",
+    "helpful": "Utile",
+    "notHelpful": "Pas utile"
+  }
+}
