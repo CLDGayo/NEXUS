@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "dashboard": "Übersicht",
+    "documents": "Dokumente",
+    "chat": "Chat",
+    "conversations": "Unterhaltungen",
+    "logs": "Protokolle",
+    "integrations": "Integrationen",
+    "resources": "Ressourcen",
+    "graph": "Graph",
+    "products": "Produkte",
+    "settings": "Einstellungen",
+    "aiStudio": "AI Studio",
+    "workspaces": "Arbeitsbereiche",
+    "documentation": "Dokumentation",
+    "whatsNew": "Neuigkeiten",
+    "changelog": "Änderungsprotokoll",
+    "admin": "Administration"
+  },
+  "title": {
+    "newProduct": "Neues Produkt",
+    "product": "Produkt",
+    "profile": "Profil",
+    "adminUsers": "Administration · Benutzer"
+  },
+  "header": {
+    "openMenu": "Menü öffnen",
+    "toggleSidebar": "Seitenleiste umschalten",
+    "search": "Suchen",
+    "searchShortcut": "Suchen ⌘K",
+    "openCommandPalette": "Befehlspalette öffnen"
+  },
+  "sidebar": {
+    "tagline": "Wissensdatenbank",
+    "account": "Konto",
+    "profile": "Profil",
+    "logOut": "Abmelden",
+    "closeMenu": "Menü schließen",
+    "role": {
+      "admin": "Administrator",
+      "owner": "Eigentümer",
+      "workspaceAdmin": "Arbeitsbereich-Admin",
+      "member": "Mitglied"
+    }
+  },
+  "command": {
+    "placeholder": "Befehl eingeben oder suchen…",
+    "noResults": "Keine passenden Befehle",
+    "title": "Befehlspalette",
+    "signOut": "Abmelden"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "subtitle": "Parameter, Umgebung, Authentifizierung.",
+    "languageRegion": "Sprache & Region",
+    "languageRegionDesc": "Wählen Sie die Sprache für die Oberfläche. Wird in Ihrem Profil und auf diesem Gerät gespeichert.",
+    "languageLabel": "Sprache"
+  }
+}

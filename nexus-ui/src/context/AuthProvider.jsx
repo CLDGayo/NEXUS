@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { getToken, saveToken, clearToken } from '../lib/auth.js';
 import { setUnauthorizedHandler, api } from '../lib/api.js';
+import i18n from '../i18n/index.js';
 
 export const AuthContext = createContext(null);
 
@@ -48,6 +49,13 @@ export function AuthProvider({ children }) {
     try {
       const me = await api.get('/users/me');
       setUser(me);
+      // Apply the user's saved language preference (synced from any device).
+      // changeLanguage also writes it to the localStorage cache, so a later
+      // logged-out reload keeps the same language.
+      const current = (i18n.resolvedLanguage || i18n.language || 'en').split('-')[0];
+      if (me?.language && me.language !== current) {
+        i18n.changeLanguage(me.language);
+      }
       return me;
     } catch (err) {
       // 401s already clear state via the unauthorized handler. For any

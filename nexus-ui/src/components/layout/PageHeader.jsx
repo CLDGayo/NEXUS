@@ -1,8 +1,10 @@
 import { Menu, PanelLeft, Search } from 'lucide-react';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import { useTranslation } from 'react-i18next';
 import HealthBadge from './HealthBadge.jsx';
 import WorkspaceSwitcher from '../tenant/WorkspaceSwitcher.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
+import LanguageSwitcher from './LanguageSwitcher.jsx';
 import { useSidebar } from '../../hooks/useSidebar.js';
 
 // Glass tooltip for bare icon buttons (no visible text label). The root
@@ -26,6 +28,7 @@ function IconTooltip({ label, children }) {
 }
 
 export default function PageHeader({ title, right, onOpenCommand }) {
+  const { t } = useTranslation();
   const { toggle, toggleMobile } = useSidebar();
 
   return (
@@ -36,16 +39,16 @@ export default function PageHeader({ title, right, onOpenCommand }) {
         <button
           onClick={toggleMobile}
           className="flex md:hidden items-center justify-center rounded-md p-1 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100"
-          aria-label="Open menu"
+          aria-label={t('header.openMenu')}
         >
           <Menu size={18} />
         </button>
         {/* Desktop: collapse the rail */}
-        <IconTooltip label="Toggle sidebar">
+        <IconTooltip label={t('header.toggleSidebar')}>
           <button
             onClick={toggle}
             className="hidden md:flex items-center justify-center rounded-md p-1 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100"
-            aria-label="Toggle sidebar"
+            aria-label={t('header.toggleSidebar')}
           >
             <PanelLeft size={18} />
           </button>
@@ -58,25 +61,26 @@ export default function PageHeader({ title, right, onOpenCommand }) {
         <button
           onClick={onOpenCommand}
           className="glass-pressable hidden sm:flex items-center gap-1.5 rounded-xl border border-white/60 bg-white/50 px-2.5 py-1.5 text-xs text-slate-500 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)] backdrop-blur-glass hover:bg-white/80 hover:text-slate-700 transition-colors dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-200"
-          aria-label="Open command palette"
+          aria-label={t('header.openCommandPalette')}
         >
           <Search size={13} />
-          <span>Search</span>
+          <span>{t('header.search')}</span>
           <kbd className="ml-1 rounded border border-slate-200 bg-white/60 px-1 py-0.5 text-[10px] font-mono dark:border-white/10 dark:bg-slate-900/60">
             ⌘K
           </kbd>
         </button>
         {/* Mobile: icon-only trigger */}
-        <IconTooltip label="Search ⌘K">
+        <IconTooltip label={t('header.searchShortcut')}>
           <button
             onClick={onOpenCommand}
             className="flex sm:hidden items-center justify-center rounded-md p-1 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100"
-            aria-label="Open command palette"
+            aria-label={t('header.openCommandPalette')}
           >
             <Search size={18} />
           </button>
         </IconTooltip>
         <ThemeToggle />
+        <LanguageSwitcher />
         {right}
         <WorkspaceSwitcher />
         <HealthBadge />

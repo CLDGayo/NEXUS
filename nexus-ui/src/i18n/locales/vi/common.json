@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "dashboard": "Bảng điều khiển",
+    "documents": "Tài liệu",
+    "chat": "Trò chuyện",
+    "conversations": "Cuộc trò chuyện",
+    "logs": "Nhật ký",
+    "integrations": "Tích hợp",
+    "resources": "Tài nguyên",
+    "graph": "Sơ đồ",
+    "products": "Sản phẩm",
+    "settings": "Cài đặt",
+    "aiStudio": "AI Studio",
+    "workspaces": "Không gian làm việc",
+    "documentation": "Tài liệu hướng dẫn",
+    "whatsNew": "Có gì mới",
+    "changelog": "Nhật ký thay đổi",
+    "admin": "Quản trị"
+  },
+  "title": {
+    "newProduct": "Sản phẩm mới",
+    "product": "Sản phẩm",
+    "profile": "Hồ sơ",
+    "adminUsers": "Quản trị · Người dùng"
+  },
+  "header": {
+    "openMenu": "Mở menu",
+    "toggleSidebar": "Bật/tắt thanh bên",
+    "search": "Tìm kiếm",
+    "searchShortcut": "Tìm kiếm ⌘K",
+    "openCommandPalette": "Mở bảng lệnh"
+  },
+  "sidebar": {
+    "tagline": "Cơ sở tri thức",
+    "account": "Tài khoản",
+    "profile": "Hồ sơ",
+    "logOut": "Đăng xuất",
+    "closeMenu": "Đóng menu",
+    "role": {
+      "admin": "Quản trị viên",
+      "owner": "Chủ sở hữu",
+      "workspaceAdmin": "Quản trị không gian",
+      "member": "Thành viên"
+    }
+  },
+  "command": {
+    "placeholder": "Nhập lệnh hoặc tìm kiếm…",
+    "noResults": "Không có lệnh phù hợp",
+    "title": "Bảng lệnh",
+    "signOut": "Đăng xuất"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "subtitle": "Tinh chỉnh, môi trường, xác thực.",
+    "languageRegion": "Ngôn ngữ & Khu vực",
+    "languageRegionDesc": "Chọn ngôn ngữ cho giao diện. Được lưu vào hồ sơ và thiết bị này.",
+    "languageLabel": "Ngôn ngữ"
+  }
+}

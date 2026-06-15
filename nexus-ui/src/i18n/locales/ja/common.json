@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "documents": "ドキュメント",
+    "chat": "チャット",
+    "conversations": "会話",
+    "logs": "ログ",
+    "integrations": "連携",
+    "resources": "リソース",
+    "graph": "グラフ",
+    "products": "製品",
+    "settings": "設定",
+    "aiStudio": "AI Studio",
+    "workspaces": "ワークスペース",
+    "documentation": "ドキュメント",
+    "whatsNew": "新着情報",
+    "changelog": "変更履歴",
+    "admin": "管理"
+  },
+  "title": {
+    "newProduct": "新規製品",
+    "product": "製品",
+    "profile": "プロフィール",
+    "adminUsers": "管理 · ユーザー"
+  },
+  "header": {
+    "openMenu": "メニューを開く",
+    "toggleSidebar": "サイドバーの切り替え",
+    "search": "検索",
+    "searchShortcut": "検索 ⌘K",
+    "openCommandPalette": "コマンドパレットを開く"
+  },
+  "sidebar": {
+    "tagline": "ナレッジベース",
+    "account": "アカウント",
+    "profile": "プロフィール",
+    "logOut": "ログアウト",
+    "closeMenu": "メニューを閉じる",
+    "role": {
+      "admin": "管理者",
+      "owner": "オーナー",
+      "workspaceAdmin": "ワークスペース管理者",
+      "member": "メンバー"
+    }
+  },
+  "command": {
+    "placeholder": "コマンドを入力または検索…",
+    "noResults": "一致するコマンドがありません",
+    "title": "コマンドパレット",
+    "signOut": "サインアウト"
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "チューニング、環境、認証。",
+    "languageRegion": "言語と地域",
+    "languageRegionDesc": "インターフェースの言語を選択します。プロフィールとこのデバイスに保存されます。",
+    "languageLabel": "言語"
+  }
+}

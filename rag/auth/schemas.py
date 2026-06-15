@@ -9,10 +9,17 @@ from datetime import datetime
 from fastapi_users import schemas
 from pydantic import BaseModel, Field, field_validator
 
+# Phase 54 — supported UI languages. Mirror of nexus-ui/src/i18n/languages.js;
+# keep both lists in sync. English is the default fallback.
+SUPPORTED_LANGUAGES: frozenset[str] = frozenset(
+    {"en", "vi", "fil", "de", "fr", "es", "ja"}
+)
+
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
     display_name: str | None = None
     profile_image_url: str | None = None
+    language: str = "en"
 
 
 class UserCreate(schemas.BaseUserCreate):
@@ -22,6 +29,18 @@ class UserCreate(schemas.BaseUserCreate):
 class UserUpdate(schemas.BaseUserUpdate):
     display_name: str | None = None
     profile_image_url: str | None = None
+    language: str | None = None
+
+    @field_validator("language")
+    @classmethod
+    def language_must_be_supported(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if v not in SUPPORTED_LANGUAGES:
+            raise ValueError(
+                "language must be one of: " + ", ".join(sorted(SUPPORTED_LANGUAGES))
+            )
+        return v
 
 
 # --------------------------------------------------------------------------

@@ -1,17 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useTenant } from '../../hooks/useTenant.js';
 import { buildCommands } from './commands.js';
 
 export default function CommandPalette({ open, onOpenChange }) {
+  const { t } = useTranslation();
   const { isSuperuser, logout } = useAuth();
   const { activeTenantRole, canManage } = useTenant();
   const navigate = useNavigate();
 
   const isOwner = activeTenantRole === 'owner';
-  const allCommands = buildCommands({ isOwner, canManage, isSuperuser });
+  // Resolve each command's i18n key to its label up front so both the filter
+  // and the rendered row use the localized text.
+  const allCommands = buildCommands({ isOwner, canManage, isSuperuser }).map((cmd) => ({
+    ...cmd,
+    label: t(cmd.labelKey),
+  }));
 
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -70,7 +77,7 @@ export default function CommandPalette({ open, onOpenChange }) {
             inputRef.current?.focus();
           }}
         >
-          <Dialog.Title className="sr-only">Command palette</Dialog.Title>
+          <Dialog.Title className="sr-only">{t('command.title')}</Dialog.Title>
 
           {/* Search input */}
           <div className="flex items-center border-b border-white/40 px-4">
@@ -78,7 +85,7 @@ export default function CommandPalette({ open, onOpenChange }) {
               ref={inputRef}
               type="text"
               className="flex-1 bg-transparent py-4 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none"
-              placeholder="Type a command or search…"
+              placeholder={t('command.placeholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -92,7 +99,7 @@ export default function CommandPalette({ open, onOpenChange }) {
           <div className="max-h-72 overflow-y-auto p-2">
             {filtered.length === 0 ? (
               <div className="px-3 py-6 text-center text-sm text-slate-400">
-                No matching commands
+                {t('command.noResults')}
               </div>
             ) : (
               filtered.map((cmd, idx) => {

@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "documents": "Documents",
+    "chat": "Discussion",
+    "conversations": "Conversations",
+    "logs": "Journaux",
+    "integrations": "Intégrations",
+    "resources": "Ressources",
+    "graph": "Graphe",
+    "products": "Produits",
+    "settings": "Paramètres",
+    "aiStudio": "AI Studio",
+    "workspaces": "Espaces de travail",
+    "documentation": "Documentation",
+    "whatsNew": "Nouveautés",
+    "changelog": "Journal des modifications",
+    "admin": "Administration"
+  },
+  "title": {
+    "newProduct": "Nouveau produit",
+    "product": "Produit",
+    "profile": "Profil",
+    "adminUsers": "Administration · Utilisateurs"
+  },
+  "header": {
+    "openMenu": "Ouvrir le menu",
+    "toggleSidebar": "Basculer la barre latérale",
+    "search": "Rechercher",
+    "searchShortcut": "Rechercher ⌘K",
+    "openCommandPalette": "Ouvrir la palette de commandes"
+  },
+  "sidebar": {
+    "tagline": "Base de connaissances",
+    "account": "Compte",
+    "profile": "Profil",
+    "logOut": "Se déconnecter",
+    "closeMenu": "Fermer le menu",
+    "role": {
+      "admin": "Administrateur",
+      "owner": "Propriétaire",
+      "workspaceAdmin": "Admin de l'espace",
+      "member": "Membre"
+    }
+  },
+  "command": {
+    "placeholder": "Tapez une commande ou recherchez…",
+    "noResults": "Aucune commande correspondante",
+    "title": "Palette de commandes",
+    "signOut": "Se déconnecter"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Réglages, environnement, authentification.",
+    "languageRegion": "Langue et région",
+    "languageRegionDesc": "Choisissez la langue de l'interface. Enregistrée dans votre profil et sur cet appareil.",
+    "languageLabel": "Langue"
+  }
+}

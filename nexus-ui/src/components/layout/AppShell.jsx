@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Sidebar, { MobileSidebar } from './Sidebar.jsx';
 import PageHeader from './PageHeader.jsx';
 import { SidebarProvider } from '../../context/SidebarProvider.jsx';
@@ -10,41 +11,48 @@ import BackgroundBoundary from '../background/BackgroundBoundary.jsx';
 // Lazy so three.js lands in its own chunk and never blocks first paint.
 const LiquidBackground = lazy(() => import('../background/LiquidBackground.jsx'));
 
-const TITLES = {
-  '/dashboard':           'Dashboard',
-  '/documents':           'Documents',
-  '/chat':                'Chat',
-  '/conversations':       'Conversations',
-  '/logs':                'Logs',
-  '/integrations':        'Integrations',
-  '/resources':           'Resources',
-  '/products':            'Products',
-  '/products/new':        'New product',
-  '/settings':            'Settings',
-  '/settings/workspaces': 'Workspaces',
-  '/changelog':           "What's New",
-  '/profile':             'Profile',
-  '/admin/users':         'Admin · Users',
+// Route → i18n key (resolved via t() at render so the header title follows the
+// active language). Most reuse the `nav.*` keys; routes without a nav item use
+// dedicated `title.*` keys.
+const TITLE_KEYS = {
+  '/dashboard':           'nav.dashboard',
+  '/documents':           'nav.documents',
+  '/chat':                'nav.chat',
+  '/conversations':       'nav.conversations',
+  '/logs':                'nav.logs',
+  '/integrations':        'nav.integrations',
+  '/resources':           'nav.resources',
+  '/products':            'nav.products',
+  '/products/new':        'title.newProduct',
+  '/settings':            'nav.settings',
+  '/settings/workspaces': 'nav.workspaces',
+  '/changelog':           'nav.whatsNew',
+  '/docs':                'nav.documentation',
+  '/profile':             'title.profile',
+  '/admin/users':         'title.adminUsers',
 };
 
 // Phase 32.1 — regex fallbacks for parametric routes that exact-match
-// can't cover. First match wins; falls through to "NEXUS" when nothing
-// hits.
+// can't cover. First match wins; falls through to the "NEXUS" brand when
+// nothing hits.
 const MATCHERS = [
-  [/^\/products\/[^/]+$/, 'Product'],
+  [/^\/products\/[^/]+$/, 'title.product'],
 ];
 
-function resolveTitle(pathname) {
-  if (TITLES[pathname]) return TITLES[pathname];
-  for (const [re, title] of MATCHERS) {
-    if (re.test(pathname)) return title;
+function resolveTitleKey(pathname) {
+  if (TITLE_KEYS[pathname]) return TITLE_KEYS[pathname];
+  for (const [re, key] of MATCHERS) {
+    if (re.test(pathname)) return key;
   }
-  return 'NEXUS';
+  return null;
 }
 
 function ShellInner() {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
-  const title = resolveTitle(pathname);
+  const titleKey = resolveTitleKey(pathname);
+  // No mapped route → show the brand name (not translated).
+  const title = titleKey ? t(titleKey) : 'NEXUS';
   const { open, setOpen } = useCommandPalette();
 
   return (

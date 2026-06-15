@@ -7,8 +7,11 @@ import { CORE_NAV, OWNER_NAV, MANAGER_NAV, TRAILING_NAV, ADMIN_NAV_ITEM } from '
  * (owner or admin, Phase 50); ADMIN_NAV_ITEM only if isSuperuser.
  * /graph is auto-derived from CORE_NAV (added Phase 43).
  *
+ * `labelKey` is an i18n key (common namespace); CommandPalette resolves it via
+ * t() at render so the palette follows the active language.
+ *
  * @param {{ isOwner: boolean, canManage: boolean, isSuperuser: boolean }} flags
- * @returns {{ id: string, label: string, Icon: React.ComponentType, kind: string, to?: string }[]}
+ * @returns {{ id: string, labelKey: string, Icon: React.ComponentType, kind: string, to?: string }[]}
  */
 export function buildCommands({ isOwner, canManage, isSuperuser }) {
   const navCommands = [
@@ -19,14 +22,14 @@ export function buildCommands({ isOwner, canManage, isSuperuser }) {
     ...(isSuperuser ? [ADMIN_NAV_ITEM] : []),
   ].map((item) => ({
     id: item.to,
-    label: item.label,
+    labelKey: item.labelKey,
     Icon: item.Icon,
     kind: 'nav',
     to: item.to,
   }));
 
   const actionCommands = [
-    { id: 'logout', label: 'Sign out', Icon: LogOut, kind: 'action' },
+    { id: 'logout', labelKey: 'command.signOut', Icon: LogOut, kind: 'action' },
   ];
 
   return [...navCommands, ...actionCommands];

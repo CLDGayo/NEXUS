@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "documents": "Documents",
+    "chat": "Chat",
+    "conversations": "Conversations",
+    "logs": "Logs",
+    "integrations": "Integrations",
+    "resources": "Resources",
+    "graph": "Graph",
+    "products": "Products",
+    "settings": "Settings",
+    "aiStudio": "AI Studio",
+    "workspaces": "Workspaces",
+    "documentation": "Documentation",
+    "whatsNew": "What's New",
+    "changelog": "Changelog",
+    "admin": "Admin"
+  },
+  "title": {
+    "newProduct": "New product",
+    "product": "Product",
+    "profile": "Profile",
+    "adminUsers": "Admin · Users"
+  },
+  "header": {
+    "openMenu": "Open menu",
+    "toggleSidebar": "Toggle sidebar",
+    "search": "Search",
+    "searchShortcut": "Search ⌘K",
+    "openCommandPalette": "Open command palette"
+  },
+  "sidebar": {
+    "tagline": "Knowledge Base",
+    "account": "Account",
+    "profile": "Profile",
+    "logOut": "Log out",
+    "closeMenu": "Close menu",
+    "role": {
+      "admin": "Admin",
+      "owner": "Owner",
+      "workspaceAdmin": "Workspace Admin",
+      "member": "Member"
+    }
+  },
+  "command": {
+    "placeholder": "Type a command or search…",
+    "noResults": "No matching commands",
+    "title": "Command palette",
+    "signOut": "Sign out"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Tunables, environment, auth.",
+    "languageRegion": "Language & Region",
+    "languageRegionDesc": "Choose the language for the interface. Saved to your profile and this device.",
+    "languageLabel": "Language"
+  }
+}

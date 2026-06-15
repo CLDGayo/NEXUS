@@ -70,6 +70,11 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 
     display_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     profile_image_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    # Phase 54 — per-user UI language (BCP-47 base code, e.g. "en", "ja",
+    # "fil"). Validated against the supported set in auth/schemas.py.
+    language: Mapped[str] = mapped_column(
+        String(8), nullable=False, server_default="en"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

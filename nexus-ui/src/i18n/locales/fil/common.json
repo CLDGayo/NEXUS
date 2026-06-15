@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "documents": "Mga Dokumento",
+    "chat": "Chat",
+    "conversations": "Mga Usapan",
+    "logs": "Mga Log",
+    "integrations": "Mga Integrasyon",
+    "resources": "Mga Mapagkukunan",
+    "graph": "Graph",
+    "products": "Mga Produkto",
+    "settings": "Mga Setting",
+    "aiStudio": "AI Studio",
+    "workspaces": "Mga Workspace",
+    "documentation": "Dokumentasyon",
+    "whatsNew": "Bago Ngayon",
+    "changelog": "Talaan ng Pagbabago",
+    "admin": "Admin"
+  },
+  "title": {
+    "newProduct": "Bagong produkto",
+    "product": "Produkto",
+    "profile": "Profile",
+    "adminUsers": "Admin · Mga User"
+  },
+  "header": {
+    "openMenu": "Buksan ang menu",
+    "toggleSidebar": "I-toggle ang sidebar",
+    "search": "Maghanap",
+    "searchShortcut": "Maghanap ⌘K",
+    "openCommandPalette": "Buksan ang command palette"
+  },
+  "sidebar": {
+    "tagline": "Knowledge Base",
+    "account": "Account",
+    "profile": "Profile",
+    "logOut": "Mag-log out",
+    "closeMenu": "Isara ang menu",
+    "role": {
+      "admin": "Admin",
+      "owner": "May-ari",
+      "workspaceAdmin": "Admin ng Workspace",
+      "member": "Miyembro"
+    }
+  },
+  "command": {
+    "placeholder": "Mag-type ng command o maghanap…",
+    "noResults": "Walang tugmang command",
+    "title": "Command palette",
+    "signOut": "Mag-sign out"
+  },
+  "settings": {
+    "title": "Mga Setting",
+    "subtitle": "Mga tunable, environment, auth.",
+    "languageRegion": "Wika at Rehiyon",
+    "languageRegionDesc": "Piliin ang wika para sa interface. Naka-save sa iyong profile at sa device na ito.",
+    "languageLabel": "Wika"
+  }
+}

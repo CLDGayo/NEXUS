@@ -2,6 +2,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ChevronsUpDown, LogOut, User, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useTenant } from '../../hooks/useTenant.js';
 import { useSidebar } from '../../hooks/useSidebar.js';
@@ -40,6 +41,7 @@ function isNavActive(pathname, item) {
 // Shared inner content for both the desktop rail and the mobile drawer.
 // `collapsed` controls the narrow icon-only rail; the drawer passes false.
 function SidebarContent({ collapsed, onNavigate }) {
+  const { t } = useTranslation();
   const { user, isSuperuser, logout } = useAuth();
   const { activeTenantRole, canManage } = useTenant();
   const { pathname } = useLocation();
@@ -52,14 +54,14 @@ function SidebarContent({ collapsed, onNavigate }) {
     ...TRAILING_NAV,
     ...(isSuperuser ? [ADMIN_NAV_ITEM] : []),
   ];
-  const displayName = user?.display_name || user?.email || 'Account';
+  const displayName = user?.display_name || user?.email || t('sidebar.account');
   const roleLabel = isSuperuser
-    ? 'Admin'
+    ? t('sidebar.role.admin')
     : isOwner
-      ? 'Owner'
+      ? t('sidebar.role.owner')
       : activeTenantRole === 'admin'
-        ? 'Workspace Admin'
-        : 'Member';
+        ? t('sidebar.role.workspaceAdmin')
+        : t('sidebar.role.member');
 
   const linkClass = (active) =>
     [
@@ -84,7 +86,7 @@ function SidebarContent({ collapsed, onNavigate }) {
         ) : (
           <>
             <div className="text-lg font-bold tracking-tight">NEXUS</div>
-            <div className="text-xs text-nexus-muted">Knowledge Base</div>
+            <div className="text-xs text-nexus-muted">{t('sidebar.tagline')}</div>
           </>
         )}
       </div>
@@ -92,7 +94,8 @@ function SidebarContent({ collapsed, onNavigate }) {
       {/* Nav — tooltips use the root Tooltip.Provider in App.jsx */}
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
         {nav.map((item) => {
-          const { to, label, Icon } = item;
+          const { to, labelKey, Icon } = item;
+          const label = t(labelKey);
           const active = isNavActive(pathname, item);
 
           if (collapsed) {
@@ -138,7 +141,7 @@ function SidebarContent({ collapsed, onNavigate }) {
             {collapsed ? (
               <button
                 className="rounded-full transition-shadow hover:ring-2 hover:ring-nexus-accent/30 focus:outline-none"
-                title="Account"
+                title={t('sidebar.account')}
               >
                 <Avatar user={user} />
               </button>
@@ -166,7 +169,7 @@ function SidebarContent({ collapsed, onNavigate }) {
                   onClick={onNavigate}
                   className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 outline-none data-[highlighted]:bg-slate-100/70 dark:data-[highlighted]:bg-slate-800/70"
                 >
-                  <User size={14} /> Profile
+                  <User size={14} /> {t('sidebar.profile')}
                 </Link>
               </DropdownMenu.Item>
               <DropdownMenu.Separator className="my-1 h-px bg-nexus-border/60 dark:bg-white/10" />
@@ -174,7 +177,7 @@ function SidebarContent({ collapsed, onNavigate }) {
                 onSelect={() => logout()}
                 className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-red-600 outline-none data-[highlighted]:bg-red-50 dark:data-[highlighted]:bg-red-950/40"
               >
-                <LogOut size={14} /> Log out
+                <LogOut size={14} /> {t('sidebar.logOut')}
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
@@ -202,6 +205,7 @@ export default function Sidebar() {
 
 // Mobile off-canvas drawer — overlay + sliding panel, always expanded.
 export function MobileSidebar() {
+  const { t } = useTranslation();
   const { mobileOpen, setMobileOpen } = useSidebar();
   if (!mobileOpen) return null;
 
@@ -218,7 +222,7 @@ export function MobileSidebar() {
         <div className="flex items-center justify-end p-2">
           <button
             onClick={close}
-            aria-label="Close menu"
+            aria-label={t('sidebar.closeMenu')}
             className="flex items-center justify-center rounded-md p-1.5 text-slate-500 hover:bg-slate-100/70 hover:text-slate-800 transition-colors dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100"
           >
             <X size={18} />
