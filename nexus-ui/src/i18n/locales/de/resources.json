@@ -1,0 +1,38 @@
+{
+  "title": "Prompt-Bibliothek",
+  "subtitle": "Verfassen Sie die System-Prompts, die den Chat steuern.",
+  "seedDefaults": "Standardwerte anlegen",
+  "newPrompt": "Neuer Prompt",
+  "confirmSeed": "Die Standard-Prompt-Bibliothek anlegen? Vorhandene Prompts werden nicht überschrieben.",
+  "seeded_one": "{{count}} Prompt angelegt.",
+  "seeded_other": "{{count}} Prompts angelegt.",
+  "activated": "\"{{name}}\" aktiviert.",
+  "deactivated": "Aktiver Prompt entfernt.",
+  "confirmDelete": "Prompt \"{{name}}\" löschen? Dies kann nicht rückgängig gemacht werden.",
+  "deleted": "\"{{name}}\" gelöscht.",
+  "saved": "Prompt gespeichert.",
+  "loading": "Prompts werden geladen…",
+  "empty": "Noch keine Prompts. Klicken Sie auf \"Standardwerte anlegen\" oder \"Neuer Prompt\", um einen zu verfassen.",
+  "card": {
+    "active": "Aktiv",
+    "edit": "Bearbeiten",
+    "deactivate": "Deaktivieren",
+    "activate": "Aktivieren",
+    "delete": "Löschen"
+  },
+  "editor": {
+    "editTitle": "Prompt bearbeiten — {{slug}}",
+    "newTitle": "Neuer Prompt",
+    "cancel": "Abbrechen",
+    "loading": "Prompt wird geladen…",
+    "name": "Name",
+    "namePlaceholder": "Anzeigename",
+    "slugPreview": "Slug: {{slug}}",
+    "body": "Inhalt (Markdown)",
+    "bodyPlaceholder": "Du bist ein hilfreicher Assistent...",
+    "required": "Name und Inhalt sind erforderlich.",
+    "slugError": "Slug konnte nicht aus dem Namen abgeleitet werden.",
+    "saving": "Wird gespeichert…",
+    "save": "Prompt speichern"
+  }
+}

@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api.js';
 import PromptList from '../components/resources/PromptList.jsx';
 import PromptEditor from '../components/resources/PromptEditor.jsx';
 
 export default function ResourcesPage() {
+  const { t } = useTranslation('resources');
   const [items, setItems] = useState([]);
   const [active, setActive] = useState('');
   const [loading, setLoading] = useState(true);
@@ -35,11 +37,11 @@ export default function ResourcesPage() {
   }
 
   async function handleSeed() {
-    if (!window.confirm('Seed the default prompt library? Existing prompts will not be overwritten.')) return;
+    if (!window.confirm(t('confirmSeed'))) return;
     setBusy(true);
     try {
       const d = await api.post('/resources/prompts/seed', {});
-      flash('success', `Seeded ${d.count} prompt${d.count === 1 ? '' : 's'}.`);
+      flash('success', t('seeded', { count: d.count }));
       await load();
     } catch (err) {
       flash('error', err.message);
@@ -53,7 +55,7 @@ export default function ResourcesPage() {
     try {
       await api.post(`/resources/prompts/${prompt.slug}/activate`, {});
       setActive(prompt.slug);
-      flash('success', `Activated "${prompt.name}".`);
+      flash('success', t('activated', { name: prompt.name }));
     } catch (err) {
       flash('error', err.message);
     } finally {
@@ -66,7 +68,7 @@ export default function ResourcesPage() {
     try {
       await api.post('/resources/prompts/deactivate', {});
       setActive('');
-      flash('success', 'Active prompt cleared.');
+      flash('success', t('deactivated'));
     } catch (err) {
       flash('error', err.message);
     } finally {
@@ -75,11 +77,11 @@ export default function ResourcesPage() {
   }
 
   async function handleDelete(prompt) {
-    if (!window.confirm(`Delete prompt "${prompt.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(t('confirmDelete', { name: prompt.name }))) return;
     setBusy(true);
     try {
       await api.del(`/resources/prompts/${prompt.slug}`);
-      flash('success', `Deleted "${prompt.name}".`);
+      flash('success', t('deleted', { name: prompt.name }));
       await load();
     } catch (err) {
       flash('error', err.message);
@@ -98,7 +100,7 @@ export default function ResourcesPage() {
 
   async function handleSaved() {
     setEditor(null);
-    flash('success', 'Prompt saved.');
+    flash('success', t('saved'));
     await load();
   }
 
@@ -107,8 +109,8 @@ export default function ResourcesPage() {
       <div className="mx-auto max-w-4xl space-y-3 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Prompt Library</h2>
-            <p className="text-xs text-nexus-muted">Author the system prompts that drive chat.</p>
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('title')}</h2>
+            <p className="text-xs text-nexus-muted">{t('subtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -117,7 +119,7 @@ export default function ResourcesPage() {
               disabled={busy || loading}
               className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 shadow-sm hover:text-nexus-accent disabled:opacity-50"
             >
-              <Sparkles size={12} /> Seed defaults
+              <Sparkles size={12} /> {t('seedDefaults')}
             </button>
             <button
               type="button"
@@ -125,7 +127,7 @@ export default function ResourcesPage() {
               disabled={busy || loading || !!editor}
               className="inline-flex items-center gap-1.5 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              <Plus size={12} /> New prompt
+              <Plus size={12} /> {t('newPrompt')}
             </button>
           </div>
         </div>
@@ -153,7 +155,7 @@ export default function ResourcesPage() {
 
         {loading && (
           <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
-            Loading prompts…
+            {t('loading')}
           </div>
         )}
         {error && (

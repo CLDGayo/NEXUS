@@ -1,0 +1,8 @@
+{
+  "title": "Mga Application Log",
+  "entries_one": "{{count}} entry",
+  "entries_other": "{{count}} entries",
+  "refresh": "I-refresh",
+  "loading": "Niloload ang logs…",
+  "empty": "Wala pang log entry."
+}

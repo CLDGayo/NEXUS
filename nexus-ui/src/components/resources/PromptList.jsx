@@ -1,12 +1,14 @@
 import { BookOpen } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import PromptCard from './PromptCard.jsx';
 
 export default function PromptList({ items, active, busy, onEdit, onActivate, onDeactivate, onDelete }) {
+  const { t } = useTranslation('resources');
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 glass-card p-10 text-center text-sm text-nexus-muted shadow-sm">
         <BookOpen size={20} />
-        No prompts yet. Click "Seed defaults" to scaffold, or "New prompt" to author one.
+        {t('empty')}
       </div>
     );
   }

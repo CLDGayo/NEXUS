@@ -1,0 +1,38 @@
+{
+  "title": "プロンプトライブラリ",
+  "subtitle": "チャットを駆動するシステムプロンプトを作成します。",
+  "seedDefaults": "デフォルトを生成",
+  "newPrompt": "新しいプロンプト",
+  "confirmSeed": "デフォルトのプロンプトライブラリを生成しますか？既存のプロンプトは上書きされません。",
+  "seeded_one": "{{count}} 件のプロンプトを生成しました。",
+  "seeded_other": "{{count}} 件のプロンプトを生成しました。",
+  "activated": "「{{name}}」を有効化しました。",
+  "deactivated": "アクティブなプロンプトをクリアしました。",
+  "confirmDelete": "プロンプト「{{name}}」を削除しますか？元に戻せません。",
+  "deleted": "「{{name}}」を削除しました。",
+  "saved": "プロンプトを保存しました。",
+  "loading": "プロンプトを読み込み中…",
+  "empty": "まだプロンプトがありません。「デフォルトを生成」でひな形を作るか、「新しいプロンプト」で作成してください。",
+  "card": {
+    "active": "アクティブ",
+    "edit": "編集",
+    "deactivate": "無効化",
+    "activate": "有効化",
+    "delete": "削除"
+  },
+  "editor": {
+    "editTitle": "プロンプトを編集 — {{slug}}",
+    "newTitle": "新しいプロンプト",
+    "cancel": "キャンセル",
+    "loading": "プロンプトを読み込み中…",
+    "name": "名前",
+    "namePlaceholder": "表示名",
+    "slugPreview": "slug: {{slug}}",
+    "body": "本文 (Markdown)",
+    "bodyPlaceholder": "あなたは役に立つアシスタントです...",
+    "required": "名前と本文は必須です。",
+    "slugError": "名前から slug を導出できませんでした。",
+    "saving": "保存中…",
+    "save": "プロンプトを保存"
+  }
+}

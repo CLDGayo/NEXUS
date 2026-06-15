@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api.js';
 import ConversationList from '../components/conversations/ConversationList.jsx';
 import ConversationDetail from '../components/conversations/ConversationDetail.jsx';
 
 export default function ConversationsPage() {
+  const { t } = useTranslation('conversations');
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -31,7 +33,7 @@ export default function ConversationsPage() {
           />
         ) : loading ? (
           <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
-            Loading…
+            {t('loading')}
           </div>
         ) : error ? (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -39,10 +41,10 @@ export default function ConversationsPage() {
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Recent conversations
+                {t('title')}
               </h2>
               <span className="text-xs text-nexus-muted">
-                {items.length} {items.length === 1 ? 'thread' : 'threads'}
+                {t('threads', { count: items.length })}
               </span>
             </div>
             <ConversationList items={items} onSelect={setSelected} />

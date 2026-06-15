@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Save, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api.js';
 
 function slugify(value) {
@@ -11,6 +12,7 @@ function slugify(value) {
 }
 
 export default function PromptEditor({ mode, slug, onSaved, onCancel }) {
+  const { t } = useTranslation('resources');
   const [name, setName] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(mode === 'edit');
@@ -37,12 +39,12 @@ export default function PromptEditor({ mode, slug, onSaved, onCancel }) {
     e.preventDefault();
     setError(null);
     if (!name.trim() || !body.trim()) {
-      setError('Name and body are required.');
+      setError(t('editor.required'));
       return;
     }
     const targetSlug = mode === 'edit' ? slug : slugify(name);
     if (!targetSlug) {
-      setError('Could not derive slug from name.');
+      setError(t('editor.slugError'));
       return;
     }
     setSaving(true);
@@ -63,51 +65,51 @@ export default function PromptEditor({ mode, slug, onSaved, onCancel }) {
     >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {mode === 'edit' ? `Edit prompt — ${slug}` : 'New prompt'}
+          {mode === 'edit' ? t('editor.editTitle', { slug }) : t('editor.newTitle')}
         </h3>
         <button
           type="button"
           onClick={onCancel}
           className="inline-flex items-center gap-1 text-xs font-medium text-nexus-muted hover:text-slate-700 hover:dark:text-slate-300"
         >
-          <X size={12} /> Cancel
+          <X size={12} /> {t('editor.cancel')}
         </button>
       </div>
 
       {loading ? (
-        <div className="text-sm text-nexus-muted">Loading prompt…</div>
+        <div className="text-sm text-nexus-muted">{t('editor.loading')}</div>
       ) : (
         <>
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">
-              Name
+              {t('editor.name')}
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Display name"
+              placeholder={t('editor.namePlaceholder')}
               maxLength={120}
               required
               className="w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 text-sm outline-none focus:border-nexus-accent"
             />
             {mode === 'new' && name && (
               <div className="mt-1 font-mono text-[11px] text-nexus-muted">
-                slug: {slugify(name)}
+                {t('editor.slugPreview', { slug: slugify(name) })}
               </div>
             )}
           </div>
 
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">
-              Body (Markdown)
+              {t('editor.body')}
             </label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={14}
               required
-              placeholder="You are a helpful assistant..."
+              placeholder={t('editor.bodyPlaceholder')}
               className="w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
             />
           </div>
@@ -123,7 +125,7 @@ export default function PromptEditor({ mode, slug, onSaved, onCancel }) {
               className="inline-flex items-center gap-1.5 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               <Save size={12} />
-              {saving ? 'Saving…' : 'Save prompt'}
+              {saving ? t('editor.saving') : t('editor.save')}
             </button>
           </div>
         </>

@@ -1,0 +1,14 @@
+{
+  "loading": "Chargement…",
+  "title": "Conversations récentes",
+  "threads_one": "{{count}} fil",
+  "threads_other": "{{count}} fils",
+  "empty": "Aucune conversation pour l'instant. Démarrez une discussion pour enregistrer l'historique.",
+  "messages_one": "{{count}} message",
+  "messages_other": "{{count}} messages",
+  "back": "Retour",
+  "delete": "Supprimer",
+  "confirmDelete": "Supprimer cette conversation ? Cette action est irréversible.",
+  "deleteFailed": "Échec de la suppression : {{error}}",
+  "noMessages": "Aucun message."
+}

@@ -1,0 +1,14 @@
+{
+  "loading": "Wird geladen…",
+  "title": "Letzte Unterhaltungen",
+  "threads_one": "{{count}} Thread",
+  "threads_other": "{{count}} Threads",
+  "empty": "Noch keine Unterhaltungen. Starten Sie einen Chat, um den Verlauf zu speichern.",
+  "messages_one": "{{count}} Nachricht",
+  "messages_other": "{{count}} Nachrichten",
+  "back": "Zurück",
+  "delete": "Löschen",
+  "confirmDelete": "Diese Unterhaltung löschen? Dies kann nicht rückgängig gemacht werden.",
+  "deleteFailed": "Löschen fehlgeschlagen: {{error}}",
+  "noMessages": "Keine Nachrichten."
+}

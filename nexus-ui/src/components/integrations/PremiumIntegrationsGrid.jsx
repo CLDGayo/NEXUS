@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api.js';
 import IntegrationCard from './IntegrationCard.jsx';
 import PremiumConnectModal from './PremiumConnectModal.jsx';
@@ -50,6 +51,7 @@ function CardSkeleton() {
 }
 
 export default function PremiumIntegrationsGrid() {
+  const { t } = useTranslation('integrations');
   const [connectors, setConnectors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalConnector, setModalConnector] = useState(null);
@@ -84,10 +86,10 @@ export default function PremiumIntegrationsGrid() {
         <div>
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
             <Sparkles size={14} className="text-nexus-accent" />
-            Premium integrations
+            {t('premium.title')}
           </h3>
           <p className="text-xs text-nexus-muted">
-            Enterprise-tier connectors available on upgrade.
+            {t('premium.subtitle')}
           </p>
         </div>
       </div>

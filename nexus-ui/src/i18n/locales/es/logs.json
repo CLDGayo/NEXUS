@@ -1,0 +1,8 @@
+{
+  "title": "Registros de la aplicación",
+  "entries_one": "{{count}} entrada",
+  "entries_other": "{{count}} entradas",
+  "refresh": "Actualizar",
+  "loading": "Cargando registros…",
+  "empty": "Aún no hay entradas de registro."
+}

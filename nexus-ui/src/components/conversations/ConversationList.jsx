@@ -1,4 +1,5 @@
 import { MessageSquare, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function fmtDate(iso) {
   if (!iso) return '—';
@@ -10,11 +11,12 @@ function fmtDate(iso) {
 }
 
 export default function ConversationList({ items, onSelect }) {
+  const { t } = useTranslation('conversations');
   if (!items?.length) {
     return (
       <div className="glass-card p-8 text-center text-sm text-nexus-muted shadow-sm">
         <MessageSquare className="mx-auto mb-2 text-slate-300" size={32} />
-        No conversations yet. Start a chat to save history.
+        {t('empty')}
       </div>
     );
   }
@@ -34,7 +36,7 @@ export default function ConversationList({ items, onSelect }) {
                 <span>{fmtDate(c.updated_at || c.created_at)}</span>
                 <span>·</span>
                 <span>
-                  {c.message_count} {c.message_count === 1 ? 'message' : 'messages'}
+                  {t('messages', { count: c.message_count })}
                 </span>
               </div>
             </div>

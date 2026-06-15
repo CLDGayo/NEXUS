@@ -1,0 +1,8 @@
+{
+  "title": "Nhật ký ứng dụng",
+  "entries_one": "{{count}} mục",
+  "entries_other": "{{count}} mục",
+  "refresh": "Làm mới",
+  "loading": "Đang tải nhật ký…",
+  "empty": "Chưa có mục nhật ký nào."
+}

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Send, Power } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api.js';
 
 const EMPTY_FORM = { type: '', name: '', config: '', events: [] };
 
 export default function WebhookIntegrationsList() {
+  const { t } = useTranslation('integrations');
   const [items, setItems] = useState([]);
   const [meta, setMeta] = useState({ events: [], types: [] });
   const [loading, setLoading] = useState(true);
@@ -38,16 +40,16 @@ export default function WebhookIntegrationsList() {
     setBusy(true);
     try {
       const r = await api.post(`/integrations/${id}/test`, {});
-      alert(`Test status ${r.status}\n${r.ok ? 'OK' : 'FAILED'}\n\n${JSON.stringify(r.body, null, 2)}`);
+      alert(`${r.ok ? t('webhooks.ok') : t('webhooks.failed')} (${r.status})\n\n${JSON.stringify(r.body, null, 2)}`);
     } catch (err) {
-      alert(`Test failed: ${err.message}`);
+      alert(t('webhooks.testFailed', { error: err.message }));
     } finally {
       setBusy(false);
     }
   }
 
   async function remove(id) {
-    if (!confirm('Delete this integration?')) return;
+    if (!confirm(t('webhooks.confirmDelete'))) return;
     await api.del(`/integrations/${id}`);
     load();
   }
@@ -59,7 +61,7 @@ export default function WebhookIntegrationsList() {
     try {
       config = form.config.trim() ? JSON.parse(form.config) : {};
     } catch {
-      setFormError('Config must be valid JSON');
+      setFormError(t('webhooks.configInvalid'));
       return;
     }
     setBusy(true);
@@ -92,15 +94,15 @@ export default function WebhookIntegrationsList() {
     <section className="space-y-3 glass-card p-5">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Webhook integrations</h3>
-          <p className="text-xs text-nexus-muted">Fire system events out to n8n, Make, Slack, or your own service.</p>
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('webhooks.title')}</h3>
+          <p className="text-xs text-nexus-muted">{t('webhooks.subtitle')}</p>
         </div>
         <button
           type="button"
           onClick={() => { setShowForm((v) => !v); setForm({ ...EMPTY_FORM, type: meta.types[0] || '' }); setFormError(null); }}
           className="inline-flex items-center gap-1 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
         >
-          <Plus size={12} /> {showForm ? 'Close' : 'Add'}
+          <Plus size={12} /> {showForm ? t('webhooks.close') : t('webhooks.add')}
         </button>
       </div>
 
@@ -108,19 +110,19 @@ export default function WebhookIntegrationsList() {
         <form onSubmit={submit} className="space-y-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 p-3">
           <div className="grid gap-2 sm:grid-cols-2">
             <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Type</label>
+              <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">{t('webhooks.type')}</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
                 required
                 className="mt-1 w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-1.5 text-sm focus:border-nexus-accent"
               >
-                <option value="">Choose…</option>
+                <option value="">{t('webhooks.choose')}</option>
                 {meta.types.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Name</label>
+              <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">{t('webhooks.name')}</label>
               <input
                 type="text"
                 value={form.name}
@@ -131,7 +133,7 @@ export default function WebhookIntegrationsList() {
             </div>
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Config (JSON)</label>
+            <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">{t('webhooks.configJson')}</label>
             <textarea
               rows={3}
               value={form.config}
@@ -141,7 +143,7 @@ export default function WebhookIntegrationsList() {
             />
           </div>
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">Subscribe events</label>
+            <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">{t('webhooks.subscribeEvents')}</label>
             <div className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-3">
               {meta.events.map((ev) => (
                 <label key={ev} className="inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
@@ -162,17 +164,17 @@ export default function WebhookIntegrationsList() {
               disabled={busy}
               className="rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
             >
-              Create
+              {t('webhooks.create')}
             </button>
           </div>
         </form>
       )}
 
       {loading ? (
-        <p className="text-sm text-nexus-muted">Loading…</p>
+        <p className="text-sm text-nexus-muted">{t('webhooks.loading')}</p>
       ) : items.length === 0 ? (
         <p className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 px-3 py-4 text-center text-xs text-nexus-muted">
-          No integrations yet.
+          {t('webhooks.empty')}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -188,7 +190,7 @@ export default function WebhookIntegrationsList() {
                       : 'bg-slate-200 text-slate-600 dark:text-slate-400'
                   }`}
                 >
-                  {it.enabled ? 'enabled' : 'disabled'}
+                  {it.enabled ? t('webhooks.enabledBadge') : t('webhooks.disabledBadge')}
                 </span>
                 <div className="ml-auto flex items-center gap-1">
                   <button
@@ -197,14 +199,14 @@ export default function WebhookIntegrationsList() {
                     disabled={busy}
                     className="inline-flex items-center gap-1 rounded border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800 disabled:opacity-50"
                   >
-                    <Send size={11} /> Test
+                    <Send size={11} /> {t('webhooks.test')}
                   </button>
                   <button
                     type="button"
                     onClick={() => toggle(it)}
                     className="inline-flex items-center gap-1 rounded border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:dark:bg-slate-800"
                   >
-                    <Power size={11} /> {it.enabled ? 'Disable' : 'Enable'}
+                    <Power size={11} /> {it.enabled ? t('webhooks.disable') : t('webhooks.enable')}
                   </button>
                   <button
                     type="button"
@@ -217,18 +219,18 @@ export default function WebhookIntegrationsList() {
               </div>
               <div className="mt-2 grid gap-1 text-[11px] text-slate-600 dark:text-slate-400">
                 <div>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">events:</span>{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">{t('webhooks.eventsLabel')}</span>{' '}
                   {it.events?.length
                     ? it.events.map((e) => <code key={e} className="mr-1 font-mono text-[10px] text-slate-600 dark:text-slate-400">{e}</code>)
                     : '—'}
                 </div>
                 <div className="truncate">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">config:</span>{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">{t('webhooks.configLabel')}</span>{' '}
                   <code className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{JSON.stringify(it.config)}</code>
                 </div>
                 {(it.last_fired_at || it.last_status) && (
                   <div className="text-slate-500 dark:text-slate-400">
-                    last fired {it.last_fired_at || '—'}{' '}
+                    {t('webhooks.lastFired', { time: it.last_fired_at || '—' })}{' '}
                     {it.last_status && <span className="font-mono text-[10px]">({it.last_status})</span>}
                   </div>
                 )}

@@ -1,0 +1,38 @@
+{
+  "title": "Thư viện Prompt",
+  "subtitle": "Soạn các system prompt điều khiển chat.",
+  "seedDefaults": "Tạo mặc định",
+  "newPrompt": "Prompt mới",
+  "confirmSeed": "Tạo thư viện prompt mặc định? Các prompt hiện có sẽ không bị ghi đè.",
+  "seeded_one": "Đã tạo {{count}} prompt.",
+  "seeded_other": "Đã tạo {{count}} prompt.",
+  "activated": "Đã kích hoạt \"{{name}}\".",
+  "deactivated": "Đã xóa prompt đang hoạt động.",
+  "confirmDelete": "Xóa prompt \"{{name}}\"? Không thể hoàn tác.",
+  "deleted": "Đã xóa \"{{name}}\".",
+  "saved": "Đã lưu prompt.",
+  "loading": "Đang tải prompt…",
+  "empty": "Chưa có prompt nào. Nhấp \"Tạo mặc định\" để tạo khung, hoặc \"Prompt mới\" để tự soạn.",
+  "card": {
+    "active": "Đang hoạt động",
+    "edit": "Sửa",
+    "deactivate": "Hủy kích hoạt",
+    "activate": "Kích hoạt",
+    "delete": "Xóa"
+  },
+  "editor": {
+    "editTitle": "Sửa prompt — {{slug}}",
+    "newTitle": "Prompt mới",
+    "cancel": "Hủy",
+    "loading": "Đang tải prompt…",
+    "name": "Tên",
+    "namePlaceholder": "Tên hiển thị",
+    "slugPreview": "slug: {{slug}}",
+    "body": "Nội dung (Markdown)",
+    "bodyPlaceholder": "Bạn là một trợ lý hữu ích...",
+    "required": "Tên và nội dung là bắt buộc.",
+    "slugError": "Không thể tạo slug từ tên.",
+    "saving": "Đang lưu…",
+    "save": "Lưu prompt"
+  }
+}

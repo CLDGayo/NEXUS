@@ -1,0 +1,8 @@
+{
+  "title": "Journaux de l'application",
+  "entries_one": "{{count}} entrée",
+  "entries_other": "{{count}} entrées",
+  "refresh": "Actualiser",
+  "loading": "Chargement des journaux…",
+  "empty": "Aucune entrée de journal."
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { ArrowLeft, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api.js';
 import { MARKDOWN_PLUGINS } from '../../lib/markdown.js';
 import SourceChip from '../chat/SourceChip.jsx';
@@ -40,6 +41,7 @@ const MD_COMPONENTS = {
 };
 
 export default function ConversationDetail({ id, title, onBack, onDeleted }) {
+  const { t } = useTranslation('conversations');
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -55,12 +57,12 @@ export default function ConversationDetail({ id, title, onBack, onDeleted }) {
   }, [id]);
 
   async function handleDelete() {
-    if (!confirm('Delete this conversation? This cannot be undone.')) return;
+    if (!confirm(t('confirmDelete'))) return;
     try {
       await api.del(`/conversations/${id}`);
       onDeleted?.();
     } catch (err) {
-      alert(`Delete failed: ${err.message}`);
+      alert(t('deleteFailed', { error: err.message }));
     }
   }
 
@@ -72,7 +74,7 @@ export default function ConversationDetail({ id, title, onBack, onDeleted }) {
           onClick={onBack}
           className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-nexus-accent"
         >
-          <ArrowLeft size={14} /> Back
+          <ArrowLeft size={14} /> {t('back')}
         </button>
         <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</div>
         <button
@@ -80,13 +82,13 @@ export default function ConversationDetail({ id, title, onBack, onDeleted }) {
           onClick={handleDelete}
           className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
         >
-          <Trash2 size={12} /> Delete
+          <Trash2 size={12} /> {t('delete')}
         </button>
       </div>
 
       {loading && (
         <div className="glass-card p-6 text-center text-sm text-nexus-muted shadow-sm">
-          Loading…
+          {t('loading')}
         </div>
       )}
       {error && (
@@ -97,7 +99,7 @@ export default function ConversationDetail({ id, title, onBack, onDeleted }) {
         <div className="space-y-3">
           {(data.messages || []).length === 0 && (
             <div className="glass-card p-6 text-center text-sm text-nexus-muted shadow-sm">
-              No messages.
+              {t('noMessages')}
             </div>
           )}
           {(data.messages || []).map((m) => {

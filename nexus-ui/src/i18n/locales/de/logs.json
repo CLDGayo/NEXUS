@@ -1,0 +1,8 @@
+{
+  "title": "Anwendungsprotokolle",
+  "entries_one": "{{count}} Eintrag",
+  "entries_other": "{{count}} Einträge",
+  "refresh": "Aktualisieren",
+  "loading": "Protokolle werden geladen…",
+  "empty": "Noch keine Protokolleinträge."
+}

@@ -1,0 +1,14 @@
+{
+  "loading": "読み込み中…",
+  "title": "最近の会話",
+  "threads_one": "{{count}} 件のスレッド",
+  "threads_other": "{{count}} 件のスレッド",
+  "empty": "まだ会話がありません。チャットを開始すると履歴が保存されます。",
+  "messages_one": "{{count}} 件のメッセージ",
+  "messages_other": "{{count}} 件のメッセージ",
+  "back": "戻る",
+  "delete": "削除",
+  "confirmDelete": "この会話を削除しますか？元に戻せません。",
+  "deleteFailed": "削除に失敗しました: {{error}}",
+  "noMessages": "メッセージがありません。"
+}

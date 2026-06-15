@@ -1,0 +1,14 @@
+{
+  "loading": "Naglo-load…",
+  "title": "Kamakailang usapan",
+  "threads_one": "{{count}} thread",
+  "threads_other": "{{count}} threads",
+  "empty": "Wala pang usapan. Magsimula ng chat para i-save ang history.",
+  "messages_one": "{{count}} mensahe",
+  "messages_other": "{{count}} mensahe",
+  "back": "Bumalik",
+  "delete": "Burahin",
+  "confirmDelete": "Burahin ang usapang ito? Hindi na ito mababawi.",
+  "deleteFailed": "Nabigo ang pagbura: {{error}}",
+  "noMessages": "Walang mensahe."
+}

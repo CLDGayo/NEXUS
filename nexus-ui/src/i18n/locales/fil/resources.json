@@ -1,0 +1,38 @@
+{
+  "title": "Prompt Library",
+  "subtitle": "Mag-author ng system prompts na nagpapagana sa chat.",
+  "seedDefaults": "I-seed ang defaults",
+  "newPrompt": "Bagong prompt",
+  "confirmSeed": "I-seed ang default prompt library? Hindi mao-overwrite ang mga umiiral na prompt.",
+  "seeded_one": "Na-seed ang {{count}} prompt.",
+  "seeded_other": "Na-seed ang {{count}} prompts.",
+  "activated": "Na-activate ang \"{{name}}\".",
+  "deactivated": "Na-clear ang aktibong prompt.",
+  "confirmDelete": "Burahin ang prompt na \"{{name}}\"? Hindi na ito mababawi.",
+  "deleted": "Binura ang \"{{name}}\".",
+  "saved": "Na-save ang prompt.",
+  "loading": "Niloload ang mga prompt…",
+  "empty": "Wala pang prompt. I-click ang \"I-seed ang defaults\" para mag-scaffold, o \"Bagong prompt\" para mag-author.",
+  "card": {
+    "active": "Aktibo",
+    "edit": "I-edit",
+    "deactivate": "I-deactivate",
+    "activate": "I-activate",
+    "delete": "Burahin"
+  },
+  "editor": {
+    "editTitle": "I-edit ang prompt — {{slug}}",
+    "newTitle": "Bagong prompt",
+    "cancel": "Kanselahin",
+    "loading": "Niloload ang prompt…",
+    "name": "Pangalan",
+    "namePlaceholder": "Display name",
+    "slugPreview": "slug: {{slug}}",
+    "body": "Body (Markdown)",
+    "bodyPlaceholder": "Ikaw ay isang matulonging assistant...",
+    "required": "Kailangan ang pangalan at body.",
+    "slugError": "Hindi makakuha ng slug mula sa pangalan.",
+    "saving": "Sine-save…",
+    "save": "I-save ang prompt"
+  }
+}

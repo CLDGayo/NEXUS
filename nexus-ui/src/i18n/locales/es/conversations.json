@@ -1,0 +1,14 @@
+{
+  "loading": "Cargando…",
+  "title": "Conversaciones recientes",
+  "threads_one": "{{count}} hilo",
+  "threads_other": "{{count}} hilos",
+  "empty": "Aún no hay conversaciones. Inicia un chat para guardar el historial.",
+  "messages_one": "{{count}} mensaje",
+  "messages_other": "{{count}} mensajes",
+  "back": "Atrás",
+  "delete": "Eliminar",
+  "confirmDelete": "¿Eliminar esta conversación? No se puede deshacer.",
+  "deleteFailed": "Error al eliminar: {{error}}",
+  "noMessages": "Sin mensajes."
+}

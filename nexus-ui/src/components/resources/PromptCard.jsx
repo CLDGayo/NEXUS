@@ -1,6 +1,8 @@
 import { CheckCircle2, Edit3, Power, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDeactivate, onDelete, busy }) {
+  const { t } = useTranslation('resources');
   return (
     <div className="glass-card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -9,7 +11,7 @@ export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDea
             <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{prompt.name}</div>
             {isActive && (
               <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                <CheckCircle2 size={10} /> Active
+                <CheckCircle2 size={10} /> {t('card.active')}
               </span>
             )}
           </div>
@@ -22,7 +24,7 @@ export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDea
             disabled={busy}
             className="inline-flex items-center gap-1 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-nexus-accent disabled:opacity-50"
           >
-            <Edit3 size={11} /> Edit
+            <Edit3 size={11} /> {t('card.edit')}
           </button>
           {isActive ? (
             <button
@@ -31,7 +33,7 @@ export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDea
               disabled={busy}
               className="inline-flex items-center gap-1 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-nexus-accent disabled:opacity-50"
             >
-              <Power size={11} /> Deactivate
+              <Power size={11} /> {t('card.deactivate')}
             </button>
           ) : (
             <button
@@ -40,7 +42,7 @@ export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDea
               disabled={busy}
               className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
             >
-              <Power size={11} /> Activate
+              <Power size={11} /> {t('card.activate')}
             </button>
           )}
           <button
@@ -49,7 +51,7 @@ export default function PromptCard({ prompt, isActive, onEdit, onActivate, onDea
             disabled={busy}
             className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
           >
-            <Trash2 size={11} /> Delete
+            <Trash2 size={11} /> {t('card.delete')}
           </button>
         </div>
       </div>

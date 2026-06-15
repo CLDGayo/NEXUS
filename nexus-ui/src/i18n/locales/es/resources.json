@@ -1,0 +1,38 @@
+{
+  "title": "Biblioteca de prompts",
+  "subtitle": "Redacta los prompts del sistema que impulsan el chat.",
+  "seedDefaults": "Crear predeterminados",
+  "newPrompt": "Nuevo prompt",
+  "confirmSeed": "¿Crear la biblioteca de prompts predeterminada? Los prompts existentes no se sobrescribirán.",
+  "seeded_one": "Se creó {{count}} prompt.",
+  "seeded_other": "Se crearon {{count}} prompts.",
+  "activated": "Se activó \"{{name}}\".",
+  "deactivated": "Prompt activo eliminado.",
+  "confirmDelete": "¿Eliminar el prompt \"{{name}}\"? No se puede deshacer.",
+  "deleted": "Se eliminó \"{{name}}\".",
+  "saved": "Prompt guardado.",
+  "loading": "Cargando prompts…",
+  "empty": "Aún no hay prompts. Haz clic en \"Crear predeterminados\" o en \"Nuevo prompt\" para redactar uno.",
+  "card": {
+    "active": "Activo",
+    "edit": "Editar",
+    "deactivate": "Desactivar",
+    "activate": "Activar",
+    "delete": "Eliminar"
+  },
+  "editor": {
+    "editTitle": "Editar prompt — {{slug}}",
+    "newTitle": "Nuevo prompt",
+    "cancel": "Cancelar",
+    "loading": "Cargando prompt…",
+    "name": "Nombre",
+    "namePlaceholder": "Nombre visible",
+    "slugPreview": "slug: {{slug}}",
+    "body": "Cuerpo (Markdown)",
+    "bodyPlaceholder": "Eres un asistente útil...",
+    "required": "El nombre y el cuerpo son obligatorios.",
+    "slugError": "No se pudo derivar el slug del nombre.",
+    "saving": "Guardando…",
+    "save": "Guardar prompt"
+  }
+}

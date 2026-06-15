@@ -1,0 +1,38 @@
+{
+  "title": "Bibliothèque de prompts",
+  "subtitle": "Rédigez les prompts système qui pilotent le chat.",
+  "seedDefaults": "Créer les valeurs par défaut",
+  "newPrompt": "Nouveau prompt",
+  "confirmSeed": "Créer la bibliothèque de prompts par défaut ? Les prompts existants ne seront pas écrasés.",
+  "seeded_one": "{{count}} prompt créé.",
+  "seeded_other": "{{count}} prompts créés.",
+  "activated": "« {{name}} » activé.",
+  "deactivated": "Prompt actif effacé.",
+  "confirmDelete": "Supprimer le prompt « {{name}} » ? Cette action est irréversible.",
+  "deleted": "« {{name}} » supprimé.",
+  "saved": "Prompt enregistré.",
+  "loading": "Chargement des prompts…",
+  "empty": "Aucun prompt pour l'instant. Cliquez sur « Créer les valeurs par défaut » ou « Nouveau prompt » pour en rédiger un.",
+  "card": {
+    "active": "Actif",
+    "edit": "Modifier",
+    "deactivate": "Désactiver",
+    "activate": "Activer",
+    "delete": "Supprimer"
+  },
+  "editor": {
+    "editTitle": "Modifier le prompt — {{slug}}",
+    "newTitle": "Nouveau prompt",
+    "cancel": "Annuler",
+    "loading": "Chargement du prompt…",
+    "name": "Nom",
+    "namePlaceholder": "Nom d'affichage",
+    "slugPreview": "slug : {{slug}}",
+    "body": "Corps (Markdown)",
+    "bodyPlaceholder": "Vous êtes un assistant utile...",
+    "required": "Le nom et le corps sont requis.",
+    "slugError": "Impossible de dériver le slug à partir du nom.",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer le prompt"
+  }
+}

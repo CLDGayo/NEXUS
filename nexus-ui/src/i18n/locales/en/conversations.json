@@ -1,0 +1,14 @@
+{
+  "loading": "Loading…",
+  "title": "Recent conversations",
+  "threads_one": "{{count}} thread",
+  "threads_other": "{{count}} threads",
+  "empty": "No conversations yet. Start a chat to save history.",
+  "messages_one": "{{count}} message",
+  "messages_other": "{{count}} messages",
+  "back": "Back",
+  "delete": "Delete",
+  "confirmDelete": "Delete this conversation? This cannot be undone.",
+  "deleteFailed": "Delete failed: {{error}}",
+  "noMessages": "No messages."
+}

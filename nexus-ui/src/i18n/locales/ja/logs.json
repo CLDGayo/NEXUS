@@ -1,0 +1,8 @@
+{
+  "title": "アプリケーションログ",
+  "entries_one": "{{count}} 件",
+  "entries_other": "{{count}} 件",
+  "refresh": "更新",
+  "loading": "ログを読み込み中…",
+  "empty": "ログエントリがまだありません。"
+}

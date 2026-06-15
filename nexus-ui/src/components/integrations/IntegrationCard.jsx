@@ -1,4 +1,5 @@
 import { ShieldCheck, BarChart3, Plug, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTactilePress } from '../../hooks/useTactilePress.js';
 
 // Icon per known connector key; falls back to a generic plug so an
@@ -18,6 +19,7 @@ export function isConnectorConnected(c) {
 }
 
 export default function IntegrationCard({ connector, onConnect }) {
+  const { t } = useTranslation('integrations');
   const Icon = ICONS[connector?.key] || Plug;
   const connected = isConnectorConnected(connector);
   // Called unconditionally to keep hook order stable; the ref simply stays
@@ -50,16 +52,16 @@ export default function IntegrationCard({ connector, onConnect }) {
               : 'bg-slate-200 text-slate-600 dark:text-slate-400',
           ].join(' ')}
         >
-          {connected ? 'available' : 'inactive'}
+          {connected ? t('premium.available') : t('premium.inactive')}
         </span>
       </div>
 
       <div className="mt-3">
         <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {connector?.name || 'Integration'}
+          {connector?.name || t('premium.fallbackName')}
         </div>
         <div className="text-[11px] font-medium uppercase tracking-wide text-nexus-muted">
-          {connector?.category || 'Premium connector'}
+          {connector?.category || t('premium.fallbackCategory')}
         </div>
       </div>
 
@@ -70,7 +72,7 @@ export default function IntegrationCard({ connector, onConnect }) {
       <div className="mt-3">
         {connected ? (
           <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
-            <ShieldCheck size={13} /> Connected
+            <ShieldCheck size={13} /> {t('premium.connected')}
           </span>
         ) : (
           <button
@@ -82,7 +84,7 @@ export default function IntegrationCard({ connector, onConnect }) {
             }}
             className="inline-flex items-center gap-1.5 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
           >
-            <Lock size={12} /> Connect Account
+            <Lock size={12} /> {t('premium.connect')}
           </button>
         )}
       </div>

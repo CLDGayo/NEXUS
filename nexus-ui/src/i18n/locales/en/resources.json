@@ -1,0 +1,38 @@
+{
+  "title": "Prompt Library",
+  "subtitle": "Author the system prompts that drive chat.",
+  "seedDefaults": "Seed defaults",
+  "newPrompt": "New prompt",
+  "confirmSeed": "Seed the default prompt library? Existing prompts will not be overwritten.",
+  "seeded_one": "Seeded {{count}} prompt.",
+  "seeded_other": "Seeded {{count}} prompts.",
+  "activated": "Activated \"{{name}}\".",
+  "deactivated": "Active prompt cleared.",
+  "confirmDelete": "Delete prompt \"{{name}}\"? This cannot be undone.",
+  "deleted": "Deleted \"{{name}}\".",
+  "saved": "Prompt saved.",
+  "loading": "Loading prompts…",
+  "empty": "No prompts yet. Click \"Seed defaults\" to scaffold, or \"New prompt\" to author one.",
+  "card": {
+    "active": "Active",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "delete": "Delete"
+  },
+  "editor": {
+    "editTitle": "Edit prompt — {{slug}}",
+    "newTitle": "New prompt",
+    "cancel": "Cancel",
+    "loading": "Loading prompt…",
+    "name": "Name",
+    "namePlaceholder": "Display name",
+    "slugPreview": "slug: {{slug}}",
+    "body": "Body (Markdown)",
+    "bodyPlaceholder": "You are a helpful assistant...",
+    "required": "Name and body are required.",
+    "slugError": "Could not derive slug from name.",
+    "saving": "Saving…",
+    "save": "Save prompt"
+  }
+}

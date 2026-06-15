@@ -1,0 +1,8 @@
+{
+  "title": "Application Logs",
+  "entries_one": "{{count}} entry",
+  "entries_other": "{{count}} entries",
+  "refresh": "Refresh",
+  "loading": "Loading logs…",
+  "empty": "No log entries yet."
+}
