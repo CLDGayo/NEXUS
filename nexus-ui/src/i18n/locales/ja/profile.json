@@ -1,0 +1,34 @@
+{
+  "title": "プロフィール",
+  "accountFor": "{{email}} のアカウント設定。",
+  "displayName": {
+    "title": "表示名",
+    "desc": "サイドバーや共有アクティビティに表示されます。",
+    "placeholderFallback": "あなたの名前",
+    "updated": "表示名を更新しました。",
+    "updateFailed": "更新に失敗しました。",
+    "saving": "保存中…",
+    "save": "保存"
+  },
+  "password": {
+    "title": "パスワードを変更",
+    "desc": "現在のパスワードが必要です。"
+  },
+  "avatar": {
+    "title": "アバター",
+    "useFormats": "JPG、PNG、または WEBP を使用してください。",
+    "tooLarge": "ファイルが {{mb}} MB を超えています。",
+    "updated": "アバターを更新しました。",
+    "uploadFailed": "アップロードに失敗しました。",
+    "confirmRemove": "アバターを削除しますか？",
+    "removed": "アバターを削除しました。",
+    "removeFailed": "削除に失敗しました。",
+    "altText": "あなたのアバター",
+    "formatHint": "JPG、PNG、または WEBP。最大 {{mb}} MB。",
+    "cropHint": "サーバー上で {{size}} の正方形に切り抜かれます。",
+    "remove": "削除",
+    "uploading": "アップロード中…",
+    "replace": "置き換え",
+    "upload": "アップロード"
+  }
+}

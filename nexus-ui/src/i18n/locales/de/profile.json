@@ -1,0 +1,34 @@
+{
+  "title": "Profil",
+  "accountFor": "Kontoeinstellungen für {{email}}.",
+  "displayName": {
+    "title": "Anzeigename",
+    "desc": "Wird in der Seitenleiste und bei geteilten Aktivitäten angezeigt.",
+    "placeholderFallback": "Ihr Name",
+    "updated": "Anzeigename aktualisiert.",
+    "updateFailed": "Aktualisierung fehlgeschlagen.",
+    "saving": "Wird gespeichert…",
+    "save": "Speichern"
+  },
+  "password": {
+    "title": "Passwort ändern",
+    "desc": "Erfordert Ihr aktuelles Passwort."
+  },
+  "avatar": {
+    "title": "Avatar",
+    "useFormats": "Verwenden Sie JPG, PNG oder WEBP.",
+    "tooLarge": "Datei überschreitet {{mb}} MB.",
+    "updated": "Avatar aktualisiert.",
+    "uploadFailed": "Upload fehlgeschlagen.",
+    "confirmRemove": "Ihren Avatar entfernen?",
+    "removed": "Avatar entfernt.",
+    "removeFailed": "Entfernen fehlgeschlagen.",
+    "altText": "Ihr Avatar",
+    "formatHint": "JPG, PNG oder WEBP. Bis zu {{mb}} MB.",
+    "cropHint": "Serverseitig auf ein {{size}}-Quadrat zugeschnitten.",
+    "remove": "Entfernen",
+    "uploading": "Wird hochgeladen…",
+    "replace": "Ersetzen",
+    "upload": "Hochladen"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "title": "Profile",
+  "accountFor": "Account settings for {{email}}.",
+  "displayName": {
+    "title": "Display Name",
+    "desc": "Shown in the sidebar and on shared activity.",
+    "placeholderFallback": "Your name",
+    "updated": "Display name updated.",
+    "updateFailed": "Update failed.",
+    "saving": "Saving…",
+    "save": "Save"
+  },
+  "password": {
+    "title": "Change Password",
+    "desc": "Requires your current password."
+  },
+  "avatar": {
+    "title": "Avatar",
+    "useFormats": "Use JPG, PNG, or WEBP.",
+    "tooLarge": "File exceeds {{mb}} MB.",
+    "updated": "Avatar updated.",
+    "uploadFailed": "Upload failed.",
+    "confirmRemove": "Remove your avatar?",
+    "removed": "Avatar removed.",
+    "removeFailed": "Remove failed.",
+    "altText": "Your avatar",
+    "formatHint": "JPG, PNG, or WEBP. Up to {{mb}} MB.",
+    "cropHint": "Cropped to a {{size}} square on the server.",
+    "remove": "Remove",
+    "uploading": "Uploading…",
+    "replace": "Replace",
+    "upload": "Upload"
+  }
+}

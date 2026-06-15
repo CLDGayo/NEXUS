@@ -1,0 +1,34 @@
+{
+  "title": "Hồ sơ",
+  "accountFor": "Cài đặt tài khoản cho {{email}}.",
+  "displayName": {
+    "title": "Tên hiển thị",
+    "desc": "Hiển thị ở thanh bên và trong hoạt động được chia sẻ.",
+    "placeholderFallback": "Tên của bạn",
+    "updated": "Đã cập nhật tên hiển thị.",
+    "updateFailed": "Cập nhật thất bại.",
+    "saving": "Đang lưu…",
+    "save": "Lưu"
+  },
+  "password": {
+    "title": "Đổi mật khẩu",
+    "desc": "Yêu cầu mật khẩu hiện tại của bạn."
+  },
+  "avatar": {
+    "title": "Ảnh đại diện",
+    "useFormats": "Dùng JPG, PNG hoặc WEBP.",
+    "tooLarge": "Tệp vượt quá {{mb}} MB.",
+    "updated": "Đã cập nhật ảnh đại diện.",
+    "uploadFailed": "Tải lên thất bại.",
+    "confirmRemove": "Xóa ảnh đại diện của bạn?",
+    "removed": "Đã xóa ảnh đại diện.",
+    "removeFailed": "Xóa thất bại.",
+    "altText": "Ảnh đại diện của bạn",
+    "formatHint": "JPG, PNG hoặc WEBP. Tối đa {{mb}} MB.",
+    "cropHint": "Được cắt thành hình vuông {{size}} trên máy chủ.",
+    "remove": "Xóa",
+    "uploading": "Đang tải lên…",
+    "replace": "Thay thế",
+    "upload": "Tải lên"
+  }
+}

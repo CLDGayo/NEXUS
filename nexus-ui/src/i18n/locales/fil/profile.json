@@ -1,0 +1,34 @@
+{
+  "title": "Profile",
+  "accountFor": "Mga setting ng account para sa {{email}}.",
+  "displayName": {
+    "title": "Display Name",
+    "desc": "Ipinapakita sa sidebar at sa shared na aktibidad.",
+    "placeholderFallback": "Iyong pangalan",
+    "updated": "Na-update ang display name.",
+    "updateFailed": "Nabigo ang pag-update.",
+    "saving": "Sine-save…",
+    "save": "I-save"
+  },
+  "password": {
+    "title": "Palitan ang Password",
+    "desc": "Kailangan ang iyong kasalukuyang password."
+  },
+  "avatar": {
+    "title": "Avatar",
+    "useFormats": "Gumamit ng JPG, PNG, o WEBP.",
+    "tooLarge": "Lumampas ang file sa {{mb}} MB.",
+    "updated": "Na-update ang avatar.",
+    "uploadFailed": "Nabigo ang pag-upload.",
+    "confirmRemove": "Alisin ang iyong avatar?",
+    "removed": "Inalis ang avatar.",
+    "removeFailed": "Nabigo ang pag-alis.",
+    "altText": "Ang iyong avatar",
+    "formatHint": "JPG, PNG, o WEBP. Hanggang {{mb}} MB.",
+    "cropHint": "Ki-crop sa {{size}} square sa server.",
+    "remove": "Alisin",
+    "uploading": "Ina-upload…",
+    "replace": "Palitan",
+    "upload": "Mag-upload"
+  }
+}

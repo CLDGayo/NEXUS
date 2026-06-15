@@ -1,0 +1,34 @@
+{
+  "title": "Profil",
+  "accountFor": "Paramètres du compte pour {{email}}.",
+  "displayName": {
+    "title": "Nom d'affichage",
+    "desc": "Affiché dans la barre latérale et sur l'activité partagée.",
+    "placeholderFallback": "Votre nom",
+    "updated": "Nom d'affichage mis à jour.",
+    "updateFailed": "Échec de la mise à jour.",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer"
+  },
+  "password": {
+    "title": "Changer le mot de passe",
+    "desc": "Nécessite votre mot de passe actuel."
+  },
+  "avatar": {
+    "title": "Avatar",
+    "useFormats": "Utilisez JPG, PNG ou WEBP.",
+    "tooLarge": "Le fichier dépasse {{mb}} Mo.",
+    "updated": "Avatar mis à jour.",
+    "uploadFailed": "Échec du téléversement.",
+    "confirmRemove": "Supprimer votre avatar ?",
+    "removed": "Avatar supprimé.",
+    "removeFailed": "Échec de la suppression.",
+    "altText": "Votre avatar",
+    "formatHint": "JPG, PNG ou WEBP. Jusqu'à {{mb}} Mo.",
+    "cropHint": "Recadré en carré {{size}} sur le serveur.",
+    "remove": "Supprimer",
+    "uploading": "Téléversement…",
+    "replace": "Remplacer",
+    "upload": "Téléverser"
+  }
+}

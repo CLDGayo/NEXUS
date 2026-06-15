@@ -1,12 +1,14 @@
 import { useState, lazy, Suspense } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LockKeyhole, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.js';
 import BackgroundBoundary from '../background/BackgroundBoundary.jsx';
 
 const LiquidBackground = lazy(() => import('../background/LiquidBackground.jsx'));
 
 export default function LoginScreen() {
+  const { t } = useTranslation('auth');
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,7 +29,7 @@ export default function LoginScreen() {
       const target = location.state?.from?.pathname || '/chat';
       navigate(target, { replace: true });
     } catch (err) {
-      setError(err.message || 'Login failed.');
+      setError(err.message || t('loginFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -54,9 +56,9 @@ export default function LoginScreen() {
             NEXUS
           </span>
         </div>
-        <h1 className="text-xl font-bold mb-1">Knowledge Base</h1>
+        <h1 className="text-xl font-bold mb-1">{t('tagline')}</h1>
         <p className="text-sm text-nexus-muted mb-6">
-          Enter your credentials to continue.
+          {t('subtitle')}
         </p>
 
         <form onSubmit={onSubmit} className="space-y-3">
@@ -67,7 +69,7 @@ export default function LoginScreen() {
             autoComplete="username"
             autoFocus
             required
-            placeholder="Email"
+            placeholder={t('email')}
             className="w-full rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-sm shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)] backdrop-blur-glass focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent dark:border-white/10 dark:bg-white/5"
             disabled={submitting}
           />
@@ -77,7 +79,7 @@ export default function LoginScreen() {
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"
             required
-            placeholder="Password"
+            placeholder={t('password')}
             className="w-full rounded-xl border border-white/60 bg-white/60 px-3 py-2 text-sm shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)] backdrop-blur-glass focus:outline-none focus:ring-2 focus:ring-nexus-accent/40 focus:border-nexus-accent dark:border-white/10 dark:bg-white/5"
             disabled={submitting}
           />
@@ -87,7 +89,7 @@ export default function LoginScreen() {
             className="glass-pressable w-full rounded-xl bg-nexus-accent text-white text-sm font-medium py-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)] hover:bg-nexus-accent/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {submitting && <Loader2 size={14} className="animate-spin" />}
-            {submitting ? 'Signing in…' : 'Sign In'}
+            {submitting ? t('signingIn') : t('signIn')}
           </button>
           {error && (
             <p className="text-sm text-red-600 mt-2" role="alert">
