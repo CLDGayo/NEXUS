@@ -1,0 +1,64 @@
+{
+  "title": "Admin · Users",
+  "subtitle": "Create, promote, or deactivate accounts. Superuser-only.",
+  "inviteUser": "Invite user",
+  "searchPlaceholder": "Search by email…",
+  "search": "Search",
+  "requestFailed": "Request failed.",
+  "role": { "admin": "Admin", "user": "User" },
+  "status": { "active": "Active", "disabled": "Disabled" },
+  "table": {
+    "email": "Email",
+    "displayName": "Display name",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions",
+    "loading": "Loading…",
+    "empty": "No users match.",
+    "you": "you"
+  },
+  "actions": {
+    "promote": "Promote",
+    "demote": "Demote",
+    "deactivate": "Deactivate",
+    "delete": "Delete",
+    "promoteTitle": "Promote to admin",
+    "demoteTitle": "Demote to user",
+    "demoteSelf": "You cannot demote yourself",
+    "deactivateTitle": "Deactivate",
+    "deactivateSelf": "You cannot deactivate yourself",
+    "alreadyDeactivated": "Already deactivated",
+    "hardDeleteTitle": "Hard delete",
+    "deleteSelf": "You cannot delete yourself"
+  },
+  "pagination": { "range": "{{start}}–{{end}} of {{total}}", "previous": "Previous", "next": "Next" },
+  "banner": {
+    "loadFailed": "Load failed: {{error}}",
+    "promoted": "{{email}} promoted to admin.",
+    "promoteFailed": "Promote failed: {{error}}",
+    "demoted": "{{email}} demoted to user.",
+    "demoteFailed": "Demote failed: {{error}}",
+    "deactivated": "{{email}} deactivated.",
+    "deactivateFailed": "Deactivate failed: {{error}}",
+    "deleted": "{{email}} permanently deleted.",
+    "deleteFailed": "Delete failed: {{error}}"
+  },
+  "confirm": {
+    "demote": "Remove admin access from {{email}}?",
+    "deactivate": "Deactivate {{email}}? They will be unable to sign in.",
+    "hardDelete": "HARD DELETE {{email}}? This removes the row and cascades to their chat sessions. This cannot be undone."
+  },
+  "invite": {
+    "title": "Invite user",
+    "close": "Close",
+    "email": "Email",
+    "displayName": "Display name (optional)",
+    "password": "Temporary password (min 8 chars)",
+    "passwordHint": "Share with the user out of band. They can rotate it from /profile.",
+    "grantSuperuser": "Grant superuser (admin) access",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "cancel": "Cancel",
+    "creating": "Creating…",
+    "create": "Create user"
+  }
+}

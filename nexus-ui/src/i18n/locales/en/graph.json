@@ -1,0 +1,21 @@
+{
+  "legendTitle": "Node state",
+  "state": {
+    "healthy": "Healthy",
+    "active": "Active",
+    "paused": "Paused",
+    "abstain": "Abstain",
+    "stub": "Stub"
+  },
+  "meaning": {
+    "healthy": "Operational node",
+    "active": "On the hot path (particles)",
+    "paused": "HITL / suspended",
+    "abstain": "Guardrail rejection path",
+    "stub": "Planned / not yet live"
+  },
+  "close": "Close node detail",
+  "out": "Out ({{count}})",
+  "in": "In ({{count}})",
+  "noEdges": "No edges for this node."
+}

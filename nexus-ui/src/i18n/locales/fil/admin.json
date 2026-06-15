@@ -1,0 +1,64 @@
+{
+  "title": "Admin · Mga User",
+  "subtitle": "Gumawa, mag-promote, o mag-deactivate ng account. Superuser lang.",
+  "inviteUser": "Mag-imbita ng user",
+  "searchPlaceholder": "Maghanap ayon sa email…",
+  "search": "Maghanap",
+  "requestFailed": "Nabigo ang request.",
+  "role": { "admin": "Admin", "user": "User" },
+  "status": { "active": "Aktibo", "disabled": "Naka-disable" },
+  "table": {
+    "email": "Email",
+    "displayName": "Display name",
+    "role": "Tungkulin",
+    "status": "Status",
+    "actions": "Mga Aksyon",
+    "loading": "Naglo-load…",
+    "empty": "Walang tumutugmang user.",
+    "you": "ikaw"
+  },
+  "actions": {
+    "promote": "I-promote",
+    "demote": "I-demote",
+    "deactivate": "I-deactivate",
+    "delete": "Burahin",
+    "promoteTitle": "I-promote sa admin",
+    "demoteTitle": "I-demote sa user",
+    "demoteSelf": "Hindi mo pwedeng i-demote ang sarili mo",
+    "deactivateTitle": "I-deactivate",
+    "deactivateSelf": "Hindi mo pwedeng i-deactivate ang sarili mo",
+    "alreadyDeactivated": "Naka-deactivate na",
+    "hardDeleteTitle": "Hard delete",
+    "deleteSelf": "Hindi mo pwedeng burahin ang sarili mo"
+  },
+  "pagination": { "range": "{{start}}–{{end}} ng {{total}}", "previous": "Nakaraan", "next": "Susunod" },
+  "banner": {
+    "loadFailed": "Nabigo ang pag-load: {{error}}",
+    "promoted": "Na-promote ang {{email}} sa admin.",
+    "promoteFailed": "Nabigo ang pag-promote: {{error}}",
+    "demoted": "Na-demote ang {{email}} sa user.",
+    "demoteFailed": "Nabigo ang pag-demote: {{error}}",
+    "deactivated": "Na-deactivate ang {{email}}.",
+    "deactivateFailed": "Nabigo ang pag-deactivate: {{error}}",
+    "deleted": "Permanenteng binura ang {{email}}.",
+    "deleteFailed": "Nabigo ang pagbura: {{error}}"
+  },
+  "confirm": {
+    "demote": "Alisin ang admin access kay {{email}}?",
+    "deactivate": "I-deactivate si {{email}}? Hindi na sila makakapag-sign in.",
+    "hardDelete": "HARD DELETE si {{email}}? Aalisin nito ang row at kakaskas sa kanilang mga chat session. Hindi na ito mababawi."
+  },
+  "invite": {
+    "title": "Mag-imbita ng user",
+    "close": "Isara",
+    "email": "Email",
+    "displayName": "Display name (opsyonal)",
+    "password": "Pansamantalang password (min 8 char)",
+    "passwordHint": "Ibahagi sa user sa labas ng sistema. Pwede nila itong palitan sa /profile.",
+    "grantSuperuser": "Bigyan ng superuser (admin) access",
+    "passwordTooShort": "Dapat hindi bababa sa 8 karakter ang password.",
+    "cancel": "Kanselahin",
+    "creating": "Ginagawa…",
+    "create": "Gumawa ng user"
+  }
+}

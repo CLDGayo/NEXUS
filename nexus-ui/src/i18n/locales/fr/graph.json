@@ -1,0 +1,21 @@
+{
+  "legendTitle": "État du nœud",
+  "state": {
+    "healthy": "Sain",
+    "active": "Actif",
+    "paused": "En pause",
+    "abstain": "Abstention",
+    "stub": "Ébauche"
+  },
+  "meaning": {
+    "healthy": "Nœud opérationnel",
+    "active": "Sur le chemin actif (particules)",
+    "paused": "HITL / suspendu",
+    "abstain": "Chemin de rejet du garde-fou",
+    "stub": "Prévu / pas encore actif"
+  },
+  "close": "Fermer le détail du nœud",
+  "out": "Sortant ({{count}})",
+  "in": "Entrant ({{count}})",
+  "noEdges": "Aucune arête pour ce nœud."
+}

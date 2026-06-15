@@ -1,0 +1,21 @@
+{
+  "legendTitle": "Estado del nodo",
+  "state": {
+    "healthy": "Saludable",
+    "active": "Activo",
+    "paused": "En pausa",
+    "abstain": "Abstención",
+    "stub": "Esbozo"
+  },
+  "meaning": {
+    "healthy": "Nodo operativo",
+    "active": "En la ruta activa (partículas)",
+    "paused": "HITL / suspendido",
+    "abstain": "Ruta de rechazo del guardarraíl",
+    "stub": "Planificado / aún no activo"
+  },
+  "close": "Cerrar detalle del nodo",
+  "out": "Salida ({{count}})",
+  "in": "Entrada ({{count}})",
+  "noEdges": "Sin aristas para este nodo."
+}

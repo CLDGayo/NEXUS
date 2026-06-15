@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "searchPlaceholder": "Name oder Beschreibung suchen…",
+    "activeOnly": "Nur aktive",
+    "count_one": "{{count}} Produkt",
+    "count_other": "{{count}} Produkte",
+    "new": "Neu",
+    "loadFailed": "Laden fehlgeschlagen.",
+    "confirmDelete": "\"{{name}}\" löschen? Dies kann nicht rückgängig gemacht werden.",
+    "deleteFailed": "Löschen fehlgeschlagen."
+  },
+  "edit": {
+    "loadFailed": "Produkt konnte nicht geladen werden.",
+    "confirmDelete": "Dieses Produkt löschen? Dies kann nicht rückgängig gemacht werden.",
+    "deleteFailed": "Löschen fehlgeschlagen.",
+    "back": "Zurück zu Produkten",
+    "newProduct": "Neues Produkt"
+  },
+  "table": {
+    "empty": "Noch keine Produkte. Klicken Sie auf + Neues Produkt, um Ihr erstes Angebot hinzuzufügen.",
+    "editTitle": "Produkt bearbeiten",
+    "outOfStock": "Ausverkauft",
+    "stockImages_one": "{{qty}} auf Lager · {{count}} Bild",
+    "stockImages_other": "{{qty}} auf Lager · {{count}} Bilder",
+    "edit": "Bearbeiten",
+    "delete": "Löschen"
+  },
+  "form": {
+    "name": "Name",
+    "description": "Beschreibung",
+    "descriptionPlaceholder": "Was ist es? Für wen? Warum ist es wichtig?",
+    "price": "Preis",
+    "currency": "Währung",
+    "quantity": "Menge",
+    "url": "Produkt-URL (optional)",
+    "urlPlaceholder": "https://shop.example.com/product/abc",
+    "urlHint": "Wird als Ziel der \"Ansehen\"-Schaltfläche in Messenger-Karussells verwendet.",
+    "active": "Aktiv (im Katalog + Karussell sichtbar)",
+    "stagedHint": "Bilder jetzt ablegen — sie werden hochgeladen, nachdem Sie auf \"Produkt erstellen\" klicken.",
+    "saving": "Wird gespeichert…",
+    "saveChanges": "Änderungen speichern",
+    "createProduct": "Produkt erstellen",
+    "deleteProduct": "Produkt löschen",
+    "saved": "Gespeichert.",
+    "created": "Erstellt.",
+    "createdImageFailed": "Produkt erstellt, aber Bild-Upload fehlgeschlagen: {{detail}}",
+    "imageUploadFailed": "Bild-Upload fehlgeschlagen.",
+    "saveFailed": "Speichern fehlgeschlagen."
+  },
+  "images": {
+    "label": "Bilder ({{count}}/{{max}})",
+    "add": "Bild hinzufügen",
+    "working": "Wird bearbeitet…",
+    "loading": "wird geladen…",
+    "dragReorder": "Zum Umsortieren ziehen",
+    "deleteImage": "Bild löschen",
+    "maxReached": "Max. {{max}} Bilder pro Produkt.",
+    "skipped": "{{name}} übersprungen — nur JPG/PNG/WEBP erlaubt.",
+    "uploadFailed": "Upload fehlgeschlagen.",
+    "deleteFailed": "Löschen fehlgeschlagen.",
+    "reorderFailed": "Umsortieren fehlgeschlagen."
+  }
+}

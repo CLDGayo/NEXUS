@@ -6,11 +6,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTenant } from '../hooks/useTenant.js';
 import ProductsTable from '../components/products/ProductsTable.jsx';
 import { deleteProduct, listProducts } from '../lib/products.js';
 
 export default function ProductsDashboardPage() {
+  const { t } = useTranslation('products');
   const { cacheVersion } = useTenant();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -27,7 +29,7 @@ export default function ProductsDashboardPage() {
       setItems(res.items || []);
       setTotal(res.total || 0);
     } catch (err) {
-      setError(err?.body || err?.message || 'Failed to load.');
+      setError(err?.body || err?.message || t('dashboard.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -38,14 +40,14 @@ export default function ProductsDashboardPage() {
   }, [fetchPage, cacheVersion]);
 
   async function handleDelete(product) {
-    const ok = window.confirm(`Delete "${product.name}"? This cannot be undone.`);
+    const ok = window.confirm(t('dashboard.confirmDelete', { name: product.name }));
     if (!ok) return;
     try {
       await deleteProduct(product.id);
       setItems((curr) => curr.filter((p) => p.id !== product.id));
       setTotal((n) => Math.max(0, n - 1));
     } catch (err) {
-      setError(err?.body || err?.message || 'Delete failed.');
+      setError(err?.body || err?.message || t('dashboard.deleteFailed'));
     }
   }
 
@@ -57,7 +59,7 @@ export default function ProductsDashboardPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name or description…"
+            placeholder={t('dashboard.searchPlaceholder')}
             className="w-full rounded-md border border-nexus-border bg-white dark:bg-slate-900 pl-9 pr-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
           />
         </div>
@@ -67,17 +69,17 @@ export default function ProductsDashboardPage() {
             checked={activeOnly}
             onChange={(e) => setActiveOnly(e.target.checked)}
           />
-          Active only
+          {t('dashboard.activeOnly')}
         </label>
         <div className="text-sm text-slate-500 dark:text-slate-400">
-          {total} product{total === 1 ? '' : 's'}
+          {t('dashboard.count', { count: total })}
         </div>
         <Link
           to="/products/new"
           className="inline-flex items-center gap-2 rounded-md bg-nexus-accent px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:opacity-95"
         >
           <Plus size={14} />
-          New
+          {t('dashboard.new')}
         </Link>
       </div>
 

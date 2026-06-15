@@ -1,0 +1,21 @@
+{
+  "legendTitle": "ノードの状態",
+  "state": {
+    "healthy": "正常",
+    "active": "アクティブ",
+    "paused": "一時停止",
+    "abstain": "棄権",
+    "stub": "スタブ"
+  },
+  "meaning": {
+    "healthy": "稼働中のノード",
+    "active": "ホットパス上（パーティクル）",
+    "paused": "HITL / 一時停止中",
+    "abstain": "ガードレールの拒否パス",
+    "stub": "予定 / 未稼働"
+  },
+  "close": "ノード詳細を閉じる",
+  "out": "送信 ({{count}})",
+  "in": "受信 ({{count}})",
+  "noEdges": "このノードにはエッジがありません。"
+}

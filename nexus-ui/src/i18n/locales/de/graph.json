@@ -1,0 +1,21 @@
+{
+  "legendTitle": "Knotenstatus",
+  "state": {
+    "healthy": "Gesund",
+    "active": "Aktiv",
+    "paused": "Pausiert",
+    "abstain": "Enthaltung",
+    "stub": "Platzhalter"
+  },
+  "meaning": {
+    "healthy": "Betriebsbereiter Knoten",
+    "active": "Auf dem Hot Path (Partikel)",
+    "paused": "HITL / ausgesetzt",
+    "abstain": "Guardrail-Ablehnungspfad",
+    "stub": "Geplant / noch nicht aktiv"
+  },
+  "close": "Knotendetails schließen",
+  "out": "Ausgehend ({{count}})",
+  "in": "Eingehend ({{count}})",
+  "noEdges": "Keine Kanten für diesen Knoten."
+}

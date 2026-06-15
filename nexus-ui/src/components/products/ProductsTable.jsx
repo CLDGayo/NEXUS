@@ -1,6 +1,7 @@
 // Phase 32 — grid/list of product cards on the dashboard.
 import { Link } from 'react-router-dom';
 import { Package, PackageX } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { formatPrice } from '../../lib/products.js';
 
 function hero(images) {
@@ -9,10 +10,11 @@ function hero(images) {
 }
 
 export default function ProductsTable({ products = [], onDelete }) {
+  const { t } = useTranslation('products');
   if (!products.length) {
     return (
       <div className="rounded-lg border border-dashed border-nexus-border p-12 text-center text-sm text-slate-500 dark:text-slate-400">
-        No products yet. Click <strong>+ New product</strong> to add your first listing.
+        {t('table.empty')}
       </div>
     );
   }
@@ -29,7 +31,7 @@ export default function ProductsTable({ products = [], onDelete }) {
             <Link
               to={`/products/${p.id}`}
               className="block h-40 bg-slate-100 dark:bg-slate-800 relative"
-              title="Edit product"
+              title={t('table.editTitle')}
             >
               {img ? (
                 <img src={img} alt="" className="h-full w-full object-cover" />
@@ -40,7 +42,7 @@ export default function ProductsTable({ products = [], onDelete }) {
               )}
               {!inStock && (
                 <span className="absolute top-2 right-2 rounded bg-red-600/90 px-2 py-0.5 text-xs font-medium text-white flex items-center gap-1">
-                  <PackageX size={12} /> Out of stock
+                  <PackageX size={12} /> {t('table.outOfStock')}
                 </span>
               )}
             </Link>
@@ -55,20 +57,19 @@ export default function ProductsTable({ products = [], onDelete }) {
                 {formatPrice(p.price_cents, p.currency)}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                {p.quantity} in stock · {p.images?.length || 0} image
-                {(p.images?.length || 0) === 1 ? '' : 's'}
+                {t('table.stockImages', { qty: p.quantity, count: p.images?.length || 0 })}
               </div>
             </div>
             <div className="px-3 py-2 border-t border-nexus-border flex items-center justify-between text-xs">
               <Link to={`/products/${p.id}`} className="text-nexus-accent hover:underline">
-                Edit
+                {t('table.edit')}
               </Link>
               <button
                 type="button"
                 onClick={() => onDelete?.(p)}
                 className="text-red-600 hover:text-red-700"
               >
-                Delete
+                {t('table.delete')}
               </button>
             </div>
           </div>

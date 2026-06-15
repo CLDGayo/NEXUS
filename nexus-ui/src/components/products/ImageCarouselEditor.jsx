@@ -13,6 +13,7 @@ import { DndContext, PointerSensor, KeyboardSensor, useSensor, useSensors, close
 import { SortableContext, arrayMove, useSortable, sortableKeyboardCoordinates, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, ImagePlus, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { deleteProductImage, reorderProductImages, uploadProductImage } from '../../lib/products.js';
 
@@ -28,6 +29,7 @@ function nextStagedId() {
 }
 
 function SortableThumb({ image, onDelete, disabled }) {
+  const { t } = useTranslation('products');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: image.id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -44,7 +46,7 @@ function SortableThumb({ image, onDelete, disabled }) {
         <img src={image.image_url} alt="" className="h-full w-full object-cover" />
       ) : (
         <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">
-          loading…
+          {t('images.loading')}
         </div>
       )}
       <button
@@ -53,7 +55,7 @@ function SortableThumb({ image, onDelete, disabled }) {
         {...listeners}
         disabled={disabled}
         className="absolute top-1 left-1 rounded bg-white/80 p-1 text-slate-700 dark:text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-        title="Drag to reorder"
+        title={t('images.dragReorder')}
       >
         <GripVertical size={14} />
       </button>
@@ -62,7 +64,7 @@ function SortableThumb({ image, onDelete, disabled }) {
         onClick={() => onDelete(image.id)}
         disabled={disabled}
         className="absolute top-1 right-1 rounded bg-white/80 p-1 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-        title="Delete image"
+        title={t('images.deleteImage')}
       >
         <Trash2 size={14} />
       </button>
@@ -71,6 +73,7 @@ function SortableThumb({ image, onDelete, disabled }) {
 }
 
 export default function ImageCarouselEditor({ productId, images, onImagesChange, maxImages = 10 }) {
+  const { t } = useTranslation('products');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -106,7 +109,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
     if (!files.length) return;
     const room = maxImages - images.length;
     if (room <= 0) {
-      setError(`Max ${maxImages} images per product.`);
+      setError(t('images.maxReached', { max: maxImages }));
       return;
     }
     setBusy(true);
@@ -114,7 +117,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
       const next = [...images];
       for (const file of files.slice(0, room)) {
         if (!ACCEPT.split(',').includes(file.type)) {
-          setError(`Skipped ${file.name} — only JPG/PNG/WEBP allowed.`);
+          setError(t('images.skipped', { name: file.name }));
           continue;
         }
         if (staged) {
@@ -136,7 +139,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
       }
       onImagesChange(next);
     } catch (err) {
-      setError(err?.body || err?.message || 'Upload failed.');
+      setError(err?.body || err?.message || t('images.uploadFailed'));
     } finally {
       setBusy(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -162,7 +165,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
         onImagesChange(images.filter((im) => im.id !== imageId));
       }
     } catch (err) {
-      setError(err?.body || err?.message || 'Delete failed.');
+      setError(err?.body || err?.message || t('images.deleteFailed'));
     } finally {
       setBusy(false);
     }
@@ -182,7 +185,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
     try {
       await reorderProductImages(productId, next.map((im) => im.id));
     } catch (err) {
-      setError(err?.body || err?.message || 'Reorder failed.');
+      setError(err?.body || err?.message || t('images.reorderFailed'));
       onImagesChange(images);
     }
   }
@@ -196,7 +199,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium">
-        Images ({images.length}/{maxImages})
+        {t('images.label', { count: images.length, max: maxImages })}
       </label>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -218,7 +221,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
               ].join(' ')}
             >
               <ImagePlus size={18} />
-              <span className="mt-1">Add image</span>
+              <span className="mt-1">{t('images.add')}</span>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -233,7 +236,7 @@ export default function ImageCarouselEditor({ productId, images, onImagesChange,
         </SortableContext>
       </DndContext>
 
-      {busy && <p className="text-xs text-slate-500 dark:text-slate-400">Working…</p>}
+      {busy && <p className="text-xs text-slate-500 dark:text-slate-400">{t('images.working')}</p>}
       {error && (
         <div className="text-xs rounded border border-red-200 bg-red-50 text-red-700 px-2 py-1">
           {String(error)}

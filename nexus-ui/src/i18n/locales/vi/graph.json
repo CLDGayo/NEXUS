@@ -1,0 +1,21 @@
+{
+  "legendTitle": "Trạng thái nút",
+  "state": {
+    "healthy": "Khỏe mạnh",
+    "active": "Đang hoạt động",
+    "paused": "Tạm dừng",
+    "abstain": "Bỏ qua",
+    "stub": "Sơ khai"
+  },
+  "meaning": {
+    "healthy": "Nút đang vận hành",
+    "active": "Trên đường xử lý nóng (hạt)",
+    "paused": "HITL / đã tạm ngưng",
+    "abstain": "Đường từ chối của guardrail",
+    "stub": "Đã lên kế hoạch / chưa hoạt động"
+  },
+  "close": "Đóng chi tiết nút",
+  "out": "Ra ({{count}})",
+  "in": "Vào ({{count}})",
+  "noEdges": "Không có cạnh cho nút này."
+}

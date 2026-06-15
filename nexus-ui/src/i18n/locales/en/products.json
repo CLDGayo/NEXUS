@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "searchPlaceholder": "Search name or description…",
+    "activeOnly": "Active only",
+    "count_one": "{{count}} product",
+    "count_other": "{{count}} products",
+    "new": "New",
+    "loadFailed": "Failed to load.",
+    "confirmDelete": "Delete \"{{name}}\"? This cannot be undone.",
+    "deleteFailed": "Delete failed."
+  },
+  "edit": {
+    "loadFailed": "Failed to load product.",
+    "confirmDelete": "Delete this product? This cannot be undone.",
+    "deleteFailed": "Delete failed.",
+    "back": "Back to products",
+    "newProduct": "New product"
+  },
+  "table": {
+    "empty": "No products yet. Click + New product to add your first listing.",
+    "editTitle": "Edit product",
+    "outOfStock": "Out of stock",
+    "stockImages_one": "{{qty}} in stock · {{count}} image",
+    "stockImages_other": "{{qty}} in stock · {{count}} images",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "form": {
+    "name": "Name",
+    "description": "Description",
+    "descriptionPlaceholder": "What is it? Who's it for? Why does it matter?",
+    "price": "Price",
+    "currency": "Currency",
+    "quantity": "Quantity",
+    "url": "Product URL (optional)",
+    "urlPlaceholder": "https://shop.example.com/product/abc",
+    "urlHint": "Used as the \"View\" button target in Messenger carousels.",
+    "active": "Active (visible in catalogue + carousel)",
+    "stagedHint": "Drop images now — they upload after you click \"Create product.\"",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "createProduct": "Create product",
+    "deleteProduct": "Delete product",
+    "saved": "Saved.",
+    "created": "Created.",
+    "createdImageFailed": "Product created, but image upload failed: {{detail}}",
+    "imageUploadFailed": "Image upload failed.",
+    "saveFailed": "Save failed."
+  },
+  "images": {
+    "label": "Images ({{count}}/{{max}})",
+    "add": "Add image",
+    "working": "Working…",
+    "loading": "loading…",
+    "dragReorder": "Drag to reorder",
+    "deleteImage": "Delete image",
+    "maxReached": "Max {{max}} images per product.",
+    "skipped": "Skipped {{name}} — only JPG/PNG/WEBP allowed.",
+    "uploadFailed": "Upload failed.",
+    "deleteFailed": "Delete failed.",
+    "reorderFailed": "Reorder failed."
+  }
+}

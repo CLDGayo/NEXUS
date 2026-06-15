@@ -1,0 +1,21 @@
+{
+  "legendTitle": "Estado ng node",
+  "state": {
+    "healthy": "Malusog",
+    "active": "Aktibo",
+    "paused": "Naka-pause",
+    "abstain": "Umiwas",
+    "stub": "Stub"
+  },
+  "meaning": {
+    "healthy": "Gumaganang node",
+    "active": "Nasa hot path (mga particle)",
+    "paused": "HITL / nasuspinde",
+    "abstain": "Daan ng pagtanggi ng guardrail",
+    "stub": "Plano pa lang / hindi pa live"
+  },
+  "close": "Isara ang detalye ng node",
+  "out": "Palabas ({{count}})",
+  "in": "Papasok ({{count}})",
+  "noEdges": "Walang edge para sa node na ito."
+}

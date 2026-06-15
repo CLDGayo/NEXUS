@@ -1,0 +1,64 @@
+{
+  "title": "Quản trị · Người dùng",
+  "subtitle": "Tạo, thăng cấp hoặc vô hiệu hóa tài khoản. Chỉ dành cho superuser.",
+  "inviteUser": "Mời người dùng",
+  "searchPlaceholder": "Tìm theo email…",
+  "search": "Tìm kiếm",
+  "requestFailed": "Yêu cầu thất bại.",
+  "role": { "admin": "Quản trị", "user": "Người dùng" },
+  "status": { "active": "Hoạt động", "disabled": "Vô hiệu" },
+  "table": {
+    "email": "Email",
+    "displayName": "Tên hiển thị",
+    "role": "Vai trò",
+    "status": "Trạng thái",
+    "actions": "Hành động",
+    "loading": "Đang tải…",
+    "empty": "Không có người dùng phù hợp.",
+    "you": "bạn"
+  },
+  "actions": {
+    "promote": "Thăng cấp",
+    "demote": "Hạ cấp",
+    "deactivate": "Vô hiệu hóa",
+    "delete": "Xóa",
+    "promoteTitle": "Thăng cấp lên quản trị",
+    "demoteTitle": "Hạ cấp xuống người dùng",
+    "demoteSelf": "Bạn không thể tự hạ cấp",
+    "deactivateTitle": "Vô hiệu hóa",
+    "deactivateSelf": "Bạn không thể tự vô hiệu hóa",
+    "alreadyDeactivated": "Đã vô hiệu hóa",
+    "hardDeleteTitle": "Xóa vĩnh viễn",
+    "deleteSelf": "Bạn không thể tự xóa"
+  },
+  "pagination": { "range": "{{start}}–{{end}} trên {{total}}", "previous": "Trước", "next": "Sau" },
+  "banner": {
+    "loadFailed": "Tải thất bại: {{error}}",
+    "promoted": "Đã thăng cấp {{email}} lên quản trị.",
+    "promoteFailed": "Thăng cấp thất bại: {{error}}",
+    "demoted": "Đã hạ cấp {{email}} xuống người dùng.",
+    "demoteFailed": "Hạ cấp thất bại: {{error}}",
+    "deactivated": "Đã vô hiệu hóa {{email}}.",
+    "deactivateFailed": "Vô hiệu hóa thất bại: {{error}}",
+    "deleted": "Đã xóa vĩnh viễn {{email}}.",
+    "deleteFailed": "Xóa thất bại: {{error}}"
+  },
+  "confirm": {
+    "demote": "Gỡ quyền quản trị của {{email}}?",
+    "deactivate": "Vô hiệu hóa {{email}}? Họ sẽ không thể đăng nhập.",
+    "hardDelete": "XÓA VĨNH VIỄN {{email}}? Thao tác này xóa bản ghi và lan tới các phiên chat của họ. Không thể hoàn tác."
+  },
+  "invite": {
+    "title": "Mời người dùng",
+    "close": "Đóng",
+    "email": "Email",
+    "displayName": "Tên hiển thị (tùy chọn)",
+    "password": "Mật khẩu tạm (tối thiểu 8 ký tự)",
+    "passwordHint": "Chia sẻ với người dùng qua kênh riêng. Họ có thể đổi nó tại /profile.",
+    "grantSuperuser": "Cấp quyền superuser (quản trị)",
+    "passwordTooShort": "Mật khẩu phải có ít nhất 8 ký tự.",
+    "cancel": "Hủy",
+    "creating": "Đang tạo…",
+    "create": "Tạo người dùng"
+  }
+}

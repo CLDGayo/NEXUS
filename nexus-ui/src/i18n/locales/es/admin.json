@@ -1,0 +1,64 @@
+{
+  "title": "Administración · Usuarios",
+  "subtitle": "Crea, asciende o desactiva cuentas. Solo superusuarios.",
+  "inviteUser": "Invitar usuario",
+  "searchPlaceholder": "Buscar por correo…",
+  "search": "Buscar",
+  "requestFailed": "La solicitud falló.",
+  "role": { "admin": "Administrador", "user": "Usuario" },
+  "status": { "active": "Activo", "disabled": "Desactivado" },
+  "table": {
+    "email": "Correo",
+    "displayName": "Nombre visible",
+    "role": "Rol",
+    "status": "Estado",
+    "actions": "Acciones",
+    "loading": "Cargando…",
+    "empty": "Ningún usuario coincide.",
+    "you": "tú"
+  },
+  "actions": {
+    "promote": "Ascender",
+    "demote": "Degradar",
+    "deactivate": "Desactivar",
+    "delete": "Eliminar",
+    "promoteTitle": "Ascender a administrador",
+    "demoteTitle": "Degradar a usuario",
+    "demoteSelf": "No puedes degradarte a ti mismo",
+    "deactivateTitle": "Desactivar",
+    "deactivateSelf": "No puedes desactivarte a ti mismo",
+    "alreadyDeactivated": "Ya está desactivado",
+    "hardDeleteTitle": "Eliminación definitiva",
+    "deleteSelf": "No puedes eliminarte a ti mismo"
+  },
+  "pagination": { "range": "{{start}}–{{end}} de {{total}}", "previous": "Anterior", "next": "Siguiente" },
+  "banner": {
+    "loadFailed": "Error al cargar: {{error}}",
+    "promoted": "{{email}} ascendido a administrador.",
+    "promoteFailed": "Error al ascender: {{error}}",
+    "demoted": "{{email}} degradado a usuario.",
+    "demoteFailed": "Error al degradar: {{error}}",
+    "deactivated": "{{email}} desactivado.",
+    "deactivateFailed": "Error al desactivar: {{error}}",
+    "deleted": "{{email}} eliminado permanentemente.",
+    "deleteFailed": "Error al eliminar: {{error}}"
+  },
+  "confirm": {
+    "demote": "¿Quitar el acceso de administrador a {{email}}?",
+    "deactivate": "¿Desactivar a {{email}}? No podrá iniciar sesión.",
+    "hardDelete": "¿ELIMINAR DEFINITIVAMENTE a {{email}}? Esto elimina el registro y se propaga a sus sesiones de chat. No se puede deshacer."
+  },
+  "invite": {
+    "title": "Invitar usuario",
+    "close": "Cerrar",
+    "email": "Correo",
+    "displayName": "Nombre visible (opcional)",
+    "password": "Contraseña temporal (mín. 8 caracteres)",
+    "passwordHint": "Compártela con el usuario por otro medio. Puede cambiarla desde /profile.",
+    "grantSuperuser": "Conceder acceso de superusuario (admin)",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+    "cancel": "Cancelar",
+    "creating": "Creando…",
+    "create": "Crear usuario"
+  }
+}

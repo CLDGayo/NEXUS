@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "searchPlaceholder": "Rechercher par nom ou description…",
+    "activeOnly": "Actifs uniquement",
+    "count_one": "{{count}} produit",
+    "count_other": "{{count}} produits",
+    "new": "Nouveau",
+    "loadFailed": "Échec du chargement.",
+    "confirmDelete": "Supprimer « {{name}} » ? Cette action est irréversible.",
+    "deleteFailed": "Échec de la suppression."
+  },
+  "edit": {
+    "loadFailed": "Échec du chargement du produit.",
+    "confirmDelete": "Supprimer ce produit ? Cette action est irréversible.",
+    "deleteFailed": "Échec de la suppression.",
+    "back": "Retour aux produits",
+    "newProduct": "Nouveau produit"
+  },
+  "table": {
+    "empty": "Aucun produit pour l'instant. Cliquez sur + Nouveau produit pour ajouter votre première annonce.",
+    "editTitle": "Modifier le produit",
+    "outOfStock": "En rupture de stock",
+    "stockImages_one": "{{qty}} en stock · {{count}} image",
+    "stockImages_other": "{{qty}} en stock · {{count}} images",
+    "edit": "Modifier",
+    "delete": "Supprimer"
+  },
+  "form": {
+    "name": "Nom",
+    "description": "Description",
+    "descriptionPlaceholder": "Qu'est-ce que c'est ? Pour qui ? Pourquoi est-ce important ?",
+    "price": "Prix",
+    "currency": "Devise",
+    "quantity": "Quantité",
+    "url": "URL du produit (facultatif)",
+    "urlPlaceholder": "https://shop.example.com/product/abc",
+    "urlHint": "Utilisé comme cible du bouton « Voir » dans les carrousels Messenger.",
+    "active": "Actif (visible dans le catalogue + carrousel)",
+    "stagedHint": "Déposez les images maintenant — elles seront téléversées après avoir cliqué sur « Créer le produit ».",
+    "saving": "Enregistrement…",
+    "saveChanges": "Enregistrer les modifications",
+    "createProduct": "Créer le produit",
+    "deleteProduct": "Supprimer le produit",
+    "saved": "Enregistré.",
+    "created": "Créé.",
+    "createdImageFailed": "Produit créé, mais le téléversement de l'image a échoué : {{detail}}",
+    "imageUploadFailed": "Échec du téléversement de l'image.",
+    "saveFailed": "Échec de l'enregistrement."
+  },
+  "images": {
+    "label": "Images ({{count}}/{{max}})",
+    "add": "Ajouter une image",
+    "working": "Traitement…",
+    "loading": "chargement…",
+    "dragReorder": "Glisser pour réordonner",
+    "deleteImage": "Supprimer l'image",
+    "maxReached": "Max. {{max}} images par produit.",
+    "skipped": "{{name}} ignoré — uniquement JPG/PNG/WEBP autorisés.",
+    "uploadFailed": "Échec du téléversement.",
+    "deleteFailed": "Échec de la suppression.",
+    "reorderFailed": "Échec du réordonnancement."
+  }
+}

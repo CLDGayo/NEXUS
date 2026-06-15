@@ -8,6 +8,7 @@
 // via URL.createObjectURL); on create-submit we POST the product, then
 // drain the staged files through POST /products/{id}/images.
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createProduct, updateProduct, uploadProductImage } from '../../lib/products.js';
 import ImageCarouselEditor from './ImageCarouselEditor.jsx';
 
@@ -25,6 +26,7 @@ function centsToDollars(cents) {
 }
 
 export default function ProductForm({ product, onSaved, onDelete }) {
+  const { t } = useTranslation('products');
   const isEditing = Boolean(product?.id);
   const [name, setName] = useState(product?.name || '');
   const [description, setDescription] = useState(product?.description || '');
@@ -58,7 +60,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
 
       if (isEditing) {
         const saved = await updateProduct(product.id, body);
-        setStatus({ kind: 'ok', message: 'Saved.' });
+        setStatus({ kind: 'ok', message: t('form.saved') });
         onSaved?.(saved);
         return;
       }
@@ -97,17 +99,17 @@ export default function ProductForm({ product, onSaved, onDelete }) {
       setImages(finalProduct.images);
 
       if (uploadFailure) {
-        const detail = uploadFailure?.body || uploadFailure?.message || 'Image upload failed.';
+        const detail = uploadFailure?.body || uploadFailure?.message || t('form.imageUploadFailed');
         setStatus({
           kind: 'err',
-          message: `Product created, but image upload failed: ${detail}`,
+          message: t('form.createdImageFailed', { detail }),
         });
       } else {
-        setStatus({ kind: 'ok', message: 'Created.' });
+        setStatus({ kind: 'ok', message: t('form.created') });
       }
       onSaved?.(finalProduct);
     } catch (err) {
-      const detail = err?.body || err?.message || 'Save failed.';
+      const detail = err?.body || err?.message || t('form.saveFailed');
       setStatus({ kind: 'err', message: String(detail) });
     } finally {
       setBusy(false);
@@ -117,7 +119,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="block text-sm font-medium">Name</label>
+        <label className="block text-sm font-medium">{t('form.name')}</label>
         <input
           required
           maxLength={200}
@@ -128,20 +130,20 @@ export default function ProductForm({ product, onSaved, onDelete }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium">Description</label>
+        <label className="block text-sm font-medium">{t('form.description')}</label>
         <textarea
           rows={6}
           maxLength={10_000}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm font-mono focus:border-nexus-accent focus:ring-nexus-accent"
-          placeholder="What is it? Who's it for? Why does it matter?"
+          placeholder={t('form.descriptionPlaceholder')}
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium">Price</label>
+          <label className="block text-sm font-medium">{t('form.price')}</label>
           <input
             type="number"
             inputMode="decimal"
@@ -153,7 +155,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Currency</label>
+          <label className="block text-sm font-medium">{t('form.currency')}</label>
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
@@ -165,7 +167,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium">Quantity</label>
+          <label className="block text-sm font-medium">{t('form.quantity')}</label>
           <input
             type="number"
             inputMode="numeric"
@@ -179,16 +181,16 @@ export default function ProductForm({ product, onSaved, onDelete }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium">Product URL (optional)</label>
+        <label className="block text-sm font-medium">{t('form.url')}</label>
         <input
           type="url"
-          placeholder="https://shop.example.com/product/abc"
+          placeholder={t('form.urlPlaceholder')}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           className="mt-1 w-full rounded-md border border-nexus-border px-3 py-2 text-sm focus:border-nexus-accent focus:ring-nexus-accent"
         />
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Used as the “View” button target in Messenger carousels.
+          {t('form.urlHint')}
         </p>
       </div>
 
@@ -198,7 +200,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
           checked={isActive}
           onChange={(e) => setIsActive(e.target.checked)}
         />
-        Active (visible in catalogue + carousel)
+        {t('form.active')}
       </label>
 
       <ImageCarouselEditor
@@ -208,7 +210,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
       />
       {!isEditing && images.length === 0 && (
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Drop images now — they upload after you click “Create product.”
+          {t('form.stagedHint')}
         </p>
       )}
 
@@ -231,7 +233,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
           disabled={busy || !name.trim()}
           className="rounded-md bg-nexus-accent px-4 py-2 text-sm font-medium text-white shadow-sm hover:opacity-95 disabled:opacity-50"
         >
-          {busy ? 'Saving…' : isEditing ? 'Save changes' : 'Create product'}
+          {busy ? t('form.saving') : isEditing ? t('form.saveChanges') : t('form.createProduct')}
         </button>
         {isEditing && onDelete && (
           <button
@@ -239,7 +241,7 @@ export default function ProductForm({ product, onSaved, onDelete }) {
             onClick={() => onDelete(product.id)}
             className="text-sm text-red-600 hover:text-red-700"
           >
-            Delete product
+            {t('form.deleteProduct')}
           </button>
         )}
       </div>

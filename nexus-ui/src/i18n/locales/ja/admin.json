@@ -1,0 +1,64 @@
+{
+  "title": "管理 · ユーザー",
+  "subtitle": "アカウントの作成・昇格・無効化。スーパーユーザー専用。",
+  "inviteUser": "ユーザーを招待",
+  "searchPlaceholder": "メールで検索…",
+  "search": "検索",
+  "requestFailed": "リクエストに失敗しました。",
+  "role": { "admin": "管理者", "user": "ユーザー" },
+  "status": { "active": "有効", "disabled": "無効" },
+  "table": {
+    "email": "メール",
+    "displayName": "表示名",
+    "role": "役割",
+    "status": "ステータス",
+    "actions": "操作",
+    "loading": "読み込み中…",
+    "empty": "一致するユーザーがいません。",
+    "you": "あなた"
+  },
+  "actions": {
+    "promote": "昇格",
+    "demote": "降格",
+    "deactivate": "無効化",
+    "delete": "削除",
+    "promoteTitle": "管理者に昇格",
+    "demoteTitle": "ユーザーに降格",
+    "demoteSelf": "自分を降格できません",
+    "deactivateTitle": "無効化",
+    "deactivateSelf": "自分を無効化できません",
+    "alreadyDeactivated": "すでに無効",
+    "hardDeleteTitle": "完全削除",
+    "deleteSelf": "自分を削除できません"
+  },
+  "pagination": { "range": "{{total}} 件中 {{start}}–{{end}}", "previous": "前へ", "next": "次へ" },
+  "banner": {
+    "loadFailed": "読み込みに失敗しました: {{error}}",
+    "promoted": "{{email}} を管理者に昇格しました。",
+    "promoteFailed": "昇格に失敗しました: {{error}}",
+    "demoted": "{{email}} をユーザーに降格しました。",
+    "demoteFailed": "降格に失敗しました: {{error}}",
+    "deactivated": "{{email}} を無効化しました。",
+    "deactivateFailed": "無効化に失敗しました: {{error}}",
+    "deleted": "{{email}} を完全に削除しました。",
+    "deleteFailed": "削除に失敗しました: {{error}}"
+  },
+  "confirm": {
+    "demote": "{{email}} の管理者権限を解除しますか？",
+    "deactivate": "{{email}} を無効化しますか？サインインできなくなります。",
+    "hardDelete": "{{email}} を完全削除しますか？行を削除し、チャットセッションにも波及します。元に戻せません。"
+  },
+  "invite": {
+    "title": "ユーザーを招待",
+    "close": "閉じる",
+    "email": "メール",
+    "displayName": "表示名（任意）",
+    "password": "仮パスワード（8文字以上）",
+    "passwordHint": "別の手段でユーザーに共有してください。/profile で変更できます。",
+    "grantSuperuser": "スーパーユーザー（管理者）権限を付与",
+    "passwordTooShort": "パスワードは8文字以上にしてください。",
+    "cancel": "キャンセル",
+    "creating": "作成中…",
+    "create": "ユーザーを作成"
+  }
+}

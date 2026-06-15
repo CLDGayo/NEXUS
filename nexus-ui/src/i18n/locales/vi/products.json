@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "searchPlaceholder": "Tìm theo tên hoặc mô tả…",
+    "activeOnly": "Chỉ đang hoạt động",
+    "count_one": "{{count}} sản phẩm",
+    "count_other": "{{count}} sản phẩm",
+    "new": "Mới",
+    "loadFailed": "Tải thất bại.",
+    "confirmDelete": "Xóa \"{{name}}\"? Không thể hoàn tác.",
+    "deleteFailed": "Xóa thất bại."
+  },
+  "edit": {
+    "loadFailed": "Tải sản phẩm thất bại.",
+    "confirmDelete": "Xóa sản phẩm này? Không thể hoàn tác.",
+    "deleteFailed": "Xóa thất bại.",
+    "back": "Quay lại sản phẩm",
+    "newProduct": "Sản phẩm mới"
+  },
+  "table": {
+    "empty": "Chưa có sản phẩm. Nhấp + Sản phẩm mới để thêm mục đầu tiên.",
+    "editTitle": "Sửa sản phẩm",
+    "outOfStock": "Hết hàng",
+    "stockImages_one": "Còn {{qty}} · {{count}} ảnh",
+    "stockImages_other": "Còn {{qty}} · {{count}} ảnh",
+    "edit": "Sửa",
+    "delete": "Xóa"
+  },
+  "form": {
+    "name": "Tên",
+    "description": "Mô tả",
+    "descriptionPlaceholder": "Nó là gì? Dành cho ai? Vì sao quan trọng?",
+    "price": "Giá",
+    "currency": "Tiền tệ",
+    "quantity": "Số lượng",
+    "url": "URL sản phẩm (tùy chọn)",
+    "urlPlaceholder": "https://shop.example.com/product/abc",
+    "urlHint": "Dùng làm đích nút \"Xem\" trong carousel Messenger.",
+    "active": "Hoạt động (hiển thị trong danh mục + carousel)",
+    "stagedHint": "Thả ảnh ngay — chúng sẽ tải lên sau khi bạn nhấp \"Tạo sản phẩm.\"",
+    "saving": "Đang lưu…",
+    "saveChanges": "Lưu thay đổi",
+    "createProduct": "Tạo sản phẩm",
+    "deleteProduct": "Xóa sản phẩm",
+    "saved": "Đã lưu.",
+    "created": "Đã tạo.",
+    "createdImageFailed": "Đã tạo sản phẩm, nhưng tải ảnh thất bại: {{detail}}",
+    "imageUploadFailed": "Tải ảnh thất bại.",
+    "saveFailed": "Lưu thất bại."
+  },
+  "images": {
+    "label": "Ảnh ({{count}}/{{max}})",
+    "add": "Thêm ảnh",
+    "working": "Đang xử lý…",
+    "loading": "đang tải…",
+    "dragReorder": "Kéo để sắp xếp",
+    "deleteImage": "Xóa ảnh",
+    "maxReached": "Tối đa {{max}} ảnh mỗi sản phẩm.",
+    "skipped": "Đã bỏ qua {{name}} — chỉ cho phép JPG/PNG/WEBP.",
+    "uploadFailed": "Tải lên thất bại.",
+    "deleteFailed": "Xóa thất bại.",
+    "reorderFailed": "Sắp xếp thất bại."
+  }
+}

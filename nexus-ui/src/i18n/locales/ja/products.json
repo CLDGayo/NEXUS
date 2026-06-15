@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "searchPlaceholder": "名前または説明で検索…",
+    "activeOnly": "有効のみ",
+    "count_one": "{{count}} 件の製品",
+    "count_other": "{{count}} 件の製品",
+    "new": "新規",
+    "loadFailed": "読み込みに失敗しました。",
+    "confirmDelete": "「{{name}}」を削除しますか？元に戻せません。",
+    "deleteFailed": "削除に失敗しました。"
+  },
+  "edit": {
+    "loadFailed": "製品の読み込みに失敗しました。",
+    "confirmDelete": "この製品を削除しますか？元に戻せません。",
+    "deleteFailed": "削除に失敗しました。",
+    "back": "製品一覧に戻る",
+    "newProduct": "新規製品"
+  },
+  "table": {
+    "empty": "まだ製品がありません。「+ 新規製品」をクリックして最初の出品を追加してください。",
+    "editTitle": "製品を編集",
+    "outOfStock": "在庫切れ",
+    "stockImages_one": "在庫 {{qty}} · 画像 {{count}} 枚",
+    "stockImages_other": "在庫 {{qty}} · 画像 {{count}} 枚",
+    "edit": "編集",
+    "delete": "削除"
+  },
+  "form": {
+    "name": "名前",
+    "description": "説明",
+    "descriptionPlaceholder": "これは何ですか？誰のためですか？なぜ重要ですか？",
+    "price": "価格",
+    "currency": "通貨",
+    "quantity": "数量",
+    "url": "製品 URL（任意）",
+    "urlPlaceholder": "https://shop.example.com/product/abc",
+    "urlHint": "Messenger カルーセルの「表示」ボタンのリンク先として使用されます。",
+    "active": "有効（カタログ + カルーセルに表示）",
+    "stagedHint": "今すぐ画像をドロップ — 「製品を作成」をクリックした後にアップロードされます。",
+    "saving": "保存中…",
+    "saveChanges": "変更を保存",
+    "createProduct": "製品を作成",
+    "deleteProduct": "製品を削除",
+    "saved": "保存しました。",
+    "created": "作成しました。",
+    "createdImageFailed": "製品を作成しましたが、画像のアップロードに失敗しました: {{detail}}",
+    "imageUploadFailed": "画像のアップロードに失敗しました。",
+    "saveFailed": "保存に失敗しました。"
+  },
+  "images": {
+    "label": "画像 ({{count}}/{{max}})",
+    "add": "画像を追加",
+    "working": "処理中…",
+    "loading": "読み込み中…",
+    "dragReorder": "ドラッグして並べ替え",
+    "deleteImage": "画像を削除",
+    "maxReached": "製品ごとに最大 {{max}} 枚の画像。",
+    "skipped": "{{name}} をスキップ — JPG/PNG/WEBP のみ許可されています。",
+    "uploadFailed": "アップロードに失敗しました。",
+    "deleteFailed": "削除に失敗しました。",
+    "reorderFailed": "並べ替えに失敗しました。"
+  }
+}

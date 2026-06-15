@@ -10,25 +10,19 @@
  */
 
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { GRAPH_COLORS } from '../../lib/topology.js';
-
-const STATE_LABELS = {
-  healthy: 'Healthy',
-  active:  'Active',
-  paused:  'Paused',
-  abstain: 'Abstain',
-  stub:    'Stub',
-};
 
 function resolveId(endpoint) {
   return typeof endpoint === 'object' ? endpoint.id : endpoint;
 }
 
 export default function NodeDetailPanel({ node, graphData, onClose }) {
+  const { t } = useTranslation('graph');
   if (!node) return null;
 
   const stateColor = GRAPH_COLORS[node.state] ?? GRAPH_COLORS.healthy;
-  const stateLabel = STATE_LABELS[node.state] ?? node.state;
+  const stateLabel = node.state ? t(`state.${node.state}`) : node.state;
 
   // Compute in/out edges from graphData.links
   const outEdges = (graphData?.links ?? []).filter(
@@ -59,7 +53,7 @@ export default function NodeDetailPanel({ node, graphData, onClose }) {
         <button
           onClick={onClose}
           className="shrink-0 rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:dark:bg-slate-800 hover:text-slate-700 hover:dark:text-slate-300"
-          aria-label="Close node detail"
+          aria-label={t('close')}
         >
           <X className="h-4 w-4" />
         </button>
@@ -85,7 +79,7 @@ export default function NodeDetailPanel({ node, graphData, onClose }) {
         {outEdges.length > 0 && (
           <section>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Out ({outEdges.length})
+              {t('out', { count: outEdges.length })}
             </p>
             <ul className="space-y-1">
               {outEdges.map((l, i) => (
@@ -106,7 +100,7 @@ export default function NodeDetailPanel({ node, graphData, onClose }) {
         {inEdges.length > 0 && (
           <section>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              In ({inEdges.length})
+              {t('in', { count: inEdges.length })}
             </p>
             <ul className="space-y-1">
               {inEdges.map((l, i) => (
@@ -125,7 +119,7 @@ export default function NodeDetailPanel({ node, graphData, onClose }) {
         )}
 
         {outEdges.length === 0 && inEdges.length === 0 && (
-          <p className="text-xs text-slate-400">No edges for this node.</p>
+          <p className="text-xs text-slate-400">{t('noEdges')}</p>
         )}
       </div>
     </div>

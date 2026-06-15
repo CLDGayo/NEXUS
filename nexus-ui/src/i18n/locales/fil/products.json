@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "searchPlaceholder": "Maghanap ng pangalan o paglalarawan…",
+    "activeOnly": "Aktibo lang",
+    "count_one": "{{count}} produkto",
+    "count_other": "{{count}} produkto",
+    "new": "Bago",
+    "loadFailed": "Nabigo sa pag-load.",
+    "confirmDelete": "Burahin ang \"{{name}}\"? Hindi na ito mababawi.",
+    "deleteFailed": "Nabigo ang pagbura."
+  },
+  "edit": {
+    "loadFailed": "Nabigo sa pag-load ng produkto.",
+    "confirmDelete": "Burahin ang produktong ito? Hindi na ito mababawi.",
+    "deleteFailed": "Nabigo ang pagbura.",
+    "back": "Bumalik sa mga produkto",
+    "newProduct": "Bagong produkto"
+  },
+  "table": {
+    "empty": "Wala pang produkto. I-click ang + Bagong produkto para magdagdag ng unang listing.",
+    "editTitle": "I-edit ang produkto",
+    "outOfStock": "Ubos na",
+    "stockImages_one": "{{qty}} sa stock · {{count}} larawan",
+    "stockImages_other": "{{qty}} sa stock · {{count}} larawan",
+    "edit": "I-edit",
+    "delete": "Burahin"
+  },
+  "form": {
+    "name": "Pangalan",
+    "description": "Paglalarawan",
+    "descriptionPlaceholder": "Ano ito? Para kanino? Bakit ito mahalaga?",
+    "price": "Presyo",
+    "currency": "Pera",
+    "quantity": "Dami",
+    "url": "Product URL (opsyonal)",
+    "urlPlaceholder": "https://shop.example.com/product/abc",
+    "urlHint": "Ginagamit bilang target ng \"View\" button sa Messenger carousels.",
+    "active": "Aktibo (makikita sa catalogue + carousel)",
+    "stagedHint": "Mag-drop ng mga larawan ngayon — mag-a-upload ang mga ito pagkatapos mong i-click ang \"Gumawa ng produkto.\"",
+    "saving": "Sine-save…",
+    "saveChanges": "I-save ang mga pagbabago",
+    "createProduct": "Gumawa ng produkto",
+    "deleteProduct": "Burahin ang produkto",
+    "saved": "Na-save.",
+    "created": "Nagawa.",
+    "createdImageFailed": "Nagawa ang produkto, ngunit nabigo ang pag-upload ng larawan: {{detail}}",
+    "imageUploadFailed": "Nabigo ang pag-upload ng larawan.",
+    "saveFailed": "Nabigo ang pag-save."
+  },
+  "images": {
+    "label": "Mga Larawan ({{count}}/{{max}})",
+    "add": "Magdagdag ng larawan",
+    "working": "Ginagawa…",
+    "loading": "naglo-load…",
+    "dragReorder": "I-drag para ayusin",
+    "deleteImage": "Burahin ang larawan",
+    "maxReached": "Max {{max}} na larawan kada produkto.",
+    "skipped": "Nilaktawan ang {{name}} — JPG/PNG/WEBP lang ang pinapayagan.",
+    "uploadFailed": "Nabigo ang pag-upload.",
+    "deleteFailed": "Nabigo ang pagbura.",
+    "reorderFailed": "Nabigo ang pag-aayos."
+  }
+}

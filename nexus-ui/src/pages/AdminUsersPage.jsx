@@ -7,43 +7,45 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth.js';
 import { api } from '../lib/api.js';
 
 const PAGE_SIZE = 50;
 
-function rolePill(user) {
+function rolePill(user, t) {
   if (user.is_superuser) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-        <ShieldCheck size={11} /> Admin
+        <ShieldCheck size={11} /> {t('role.admin')}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-400">
-      User
+      {t('role.user')}
     </span>
   );
 }
 
-function statusPill(user) {
+function statusPill(user, t) {
   return user.is_active ? (
     <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-      Active
+      {t('status.active')}
     </span>
   ) : (
     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-      Disabled
+      {t('status.disabled')}
     </span>
   );
 }
 
-function readApiError(err) {
-  return err?.body || err?.message || 'Request failed.';
+function readApiError(err, t) {
+  return err?.body || err?.message || t('requestFailed');
 }
 
 function InviteUserModal({ open, onClose, onCreated }) {
+  const { t } = useTranslation('admin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -67,7 +69,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
     e.preventDefault();
     setError(null);
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError(t('invite.passwordTooShort'));
       return;
     }
     setBusy(true);
@@ -81,7 +83,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
       onCreated?.();
       onClose();
     } catch (err) {
-      setError(readApiError(err));
+      setError(readApiError(err, t));
     } finally {
       setBusy(false);
     }
@@ -93,13 +95,13 @@ function InviteUserModal({ open, onClose, onCreated }) {
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <UserPlus size={14} className="text-nexus-accent" />
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Invite user</h3>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('invite.title')}</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="text-slate-400 hover:text-slate-700 hover:dark:text-slate-300"
-            aria-label="Close"
+            aria-label={t('invite.close')}
           >
             <X size={16} />
           </button>
@@ -107,7 +109,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
         <form onSubmit={submit} className="space-y-3">
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">
-              Email
+              {t('invite.email')}
             </label>
             <input
               type="email"
@@ -120,7 +122,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
           </div>
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">
-              Display name (optional)
+              {t('invite.displayName')}
             </label>
             <input
               type="text"
@@ -132,7 +134,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
           </div>
           <div>
             <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">
-              Temporary password (min 8 chars)
+              {t('invite.password')}
             </label>
             <input
               type="text"
@@ -143,7 +145,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
               className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm font-mono outline-none focus:border-nexus-accent"
             />
             <p className="mt-1 text-[11px] text-nexus-muted">
-              Share with the user out of band. They can rotate it from /profile.
+              {t('invite.passwordHint')}
             </p>
           </div>
           <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
@@ -152,7 +154,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
               checked={isSuperuser}
               onChange={(e) => setIsSuperuser(e.target.checked)}
             />
-            Grant superuser (admin) access
+            {t('invite.grantSuperuser')}
           </label>
 
           {error && (
@@ -167,14 +169,14 @@ function InviteUserModal({ open, onClose, onCreated }) {
               onClick={onClose}
               className="inline-flex items-center rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900"
             >
-              Cancel
+              {t('invite.cancel')}
             </button>
             <button
               type="submit"
               disabled={busy || !email || password.length < 8}
               className="inline-flex items-center gap-1.5 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              {busy ? 'Creating…' : 'Create user'}
+              {busy ? t('invite.creating') : t('invite.create')}
             </button>
           </div>
         </form>
@@ -184,6 +186,7 @@ function InviteUserModal({ open, onClose, onCreated }) {
 }
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation('admin');
   const { user: me } = useAuth();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -205,11 +208,11 @@ export default function AdminUsersPage() {
       setItems(data.items || []);
       setTotal(data.total || 0);
     } catch (err) {
-      setBanner({ kind: 'error', text: `Load failed: ${readApiError(err)}` });
+      setBanner({ kind: 'error', text: t('banner.loadFailed', { error: readApiError(err, t) }) });
     } finally {
       setLoading(false);
     }
-  }, [q, offset]);
+  }, [q, offset, t]);
 
   useEffect(() => {
     load();
@@ -218,45 +221,43 @@ export default function AdminUsersPage() {
   async function promote(target) {
     try {
       await api.post(`/admin/users/${target.id}/promote`);
-      setBanner({ kind: 'success', text: `${target.email} promoted to admin.` });
+      setBanner({ kind: 'success', text: t('banner.promoted', { email: target.email }) });
       load();
     } catch (err) {
-      setBanner({ kind: 'error', text: `Promote failed: ${readApiError(err)}` });
+      setBanner({ kind: 'error', text: t('banner.promoteFailed', { error: readApiError(err, t) }) });
     }
   }
 
   async function demote(target) {
-    if (!confirm(`Remove admin access from ${target.email}?`)) return;
+    if (!confirm(t('confirm.demote', { email: target.email }))) return;
     try {
       await api.post(`/admin/users/${target.id}/demote`);
-      setBanner({ kind: 'success', text: `${target.email} demoted to user.` });
+      setBanner({ kind: 'success', text: t('banner.demoted', { email: target.email }) });
       load();
     } catch (err) {
-      setBanner({ kind: 'error', text: `Demote failed: ${readApiError(err)}` });
+      setBanner({ kind: 'error', text: t('banner.demoteFailed', { error: readApiError(err, t) }) });
     }
   }
 
   async function deactivate(target) {
-    if (!confirm(`Deactivate ${target.email}? They will be unable to sign in.`)) return;
+    if (!confirm(t('confirm.deactivate', { email: target.email }))) return;
     try {
       await api.del(`/admin/users/${target.id}`);
-      setBanner({ kind: 'success', text: `${target.email} deactivated.` });
+      setBanner({ kind: 'success', text: t('banner.deactivated', { email: target.email }) });
       load();
     } catch (err) {
-      setBanner({ kind: 'error', text: `Deactivate failed: ${readApiError(err)}` });
+      setBanner({ kind: 'error', text: t('banner.deactivateFailed', { error: readApiError(err, t) }) });
     }
   }
 
   async function hardDelete(target) {
-    if (!confirm(
-      `HARD DELETE ${target.email}? This removes the row and cascades to their chat sessions. This cannot be undone.`,
-    )) return;
+    if (!confirm(t('confirm.hardDelete', { email: target.email }))) return;
     try {
       await api.del(`/admin/users/${target.id}?hard=true`);
-      setBanner({ kind: 'success', text: `${target.email} permanently deleted.` });
+      setBanner({ kind: 'success', text: t('banner.deleted', { email: target.email }) });
       load();
     } catch (err) {
-      setBanner({ kind: 'error', text: `Delete failed: ${readApiError(err)}` });
+      setBanner({ kind: 'error', text: t('banner.deleteFailed', { error: readApiError(err, t) }) });
     }
   }
 
@@ -274,9 +275,9 @@ export default function AdminUsersPage() {
       <div className="mx-auto max-w-5xl space-y-4 p-6">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Admin · Users</h2>
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('title')}</h2>
             <p className="text-xs text-nexus-muted">
-              Create, promote, or deactivate accounts. Superuser-only.
+              {t('subtitle')}
             </p>
           </div>
           <button
@@ -284,7 +285,7 @@ export default function AdminUsersPage() {
             onClick={() => setInviteOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
           >
-            <UserPlus size={14} /> Invite user
+            <UserPlus size={14} /> {t('inviteUser')}
           </button>
         </div>
 
@@ -295,7 +296,7 @@ export default function AdminUsersPage() {
               type="text"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search by email…"
+              placeholder={t('searchPlaceholder')}
               className="w-full rounded-lg border border-nexus-border bg-white dark:bg-slate-900 py-2 pl-9 pr-3 text-sm shadow-sm outline-none focus:border-nexus-accent"
             />
           </div>
@@ -303,7 +304,7 @@ export default function AdminUsersPage() {
             type="submit"
             className="inline-flex items-center rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900"
           >
-            Search
+            {t('search')}
           </button>
         </form>
 
@@ -323,25 +324,25 @@ export default function AdminUsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase tracking-wide text-nexus-muted">
               <tr>
-                <th className="px-3 py-2 text-left">Email</th>
-                <th className="px-3 py-2 text-left">Display name</th>
-                <th className="px-3 py-2 text-left">Role</th>
-                <th className="px-3 py-2 text-left">Status</th>
-                <th className="px-3 py-2 text-right">Actions</th>
+                <th className="px-3 py-2 text-left">{t('table.email')}</th>
+                <th className="px-3 py-2 text-left">{t('table.displayName')}</th>
+                <th className="px-3 py-2 text-left">{t('table.role')}</th>
+                <th className="px-3 py-2 text-left">{t('table.status')}</th>
+                <th className="px-3 py-2 text-right">{t('table.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={5} className="px-3 py-6 text-center text-nexus-muted">
-                    Loading…
+                    {t('table.loading')}
                   </td>
                 </tr>
               )}
               {!loading && items.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-3 py-6 text-center text-nexus-muted">
-                    No users match.
+                    {t('table.empty')}
                   </td>
                 </tr>
               )}
@@ -353,15 +354,15 @@ export default function AdminUsersPage() {
                       <div className="font-mono text-xs text-slate-700 dark:text-slate-300">{u.email}</div>
                       {isMe && (
                         <div className="text-[10px] uppercase tracking-wide text-nexus-accent">
-                          you
+                          {t('table.you')}
                         </div>
                       )}
                     </td>
                     <td className="px-3 py-2 align-top text-xs text-slate-600 dark:text-slate-400">
                       {u.display_name || <span className="text-slate-400">—</span>}
                     </td>
-                    <td className="px-3 py-2 align-top">{rolePill(u)}</td>
-                    <td className="px-3 py-2 align-top">{statusPill(u)}</td>
+                    <td className="px-3 py-2 align-top">{rolePill(u, t)}</td>
+                    <td className="px-3 py-2 align-top">{statusPill(u, t)}</td>
                     <td className="px-3 py-2 align-top text-right">
                       <div className="flex justify-end gap-1">
                         {!u.is_superuser ? (
@@ -369,20 +370,20 @@ export default function AdminUsersPage() {
                             type="button"
                             onClick={() => promote(u)}
                             disabled={!u.is_active}
-                            title="Promote to admin"
+                            title={t('actions.promoteTitle')}
                             className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-40"
                           >
-                            <ShieldCheck size={11} /> Promote
+                            <ShieldCheck size={11} /> {t('actions.promote')}
                           </button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => demote(u)}
                             disabled={isMe}
-                            title={isMe ? 'You cannot demote yourself' : 'Demote to user'}
+                            title={isMe ? t('actions.demoteSelf') : t('actions.demoteTitle')}
                             className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
                           >
-                            <ShieldOff size={11} /> Demote
+                            <ShieldOff size={11} /> {t('actions.demote')}
                           </button>
                         )}
                         <button
@@ -391,21 +392,21 @@ export default function AdminUsersPage() {
                           disabled={isMe || !u.is_active}
                           title={
                             isMe
-                              ? 'You cannot deactivate yourself'
-                              : u.is_active ? 'Deactivate' : 'Already deactivated'
+                              ? t('actions.deactivateSelf')
+                              : u.is_active ? t('actions.deactivateTitle') : t('actions.alreadyDeactivated')
                           }
                           className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
                         >
-                          Deactivate
+                          {t('actions.deactivate')}
                         </button>
                         <button
                           type="button"
                           onClick={() => hardDelete(u)}
                           disabled={isMe}
-                          title={isMe ? 'You cannot delete yourself' : 'Hard delete'}
+                          title={isMe ? t('actions.deleteSelf') : t('actions.hardDeleteTitle')}
                           className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-white dark:bg-slate-900 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40"
                         >
-                          <Trash2 size={11} /> Delete
+                          <Trash2 size={11} /> {t('actions.delete')}
                         </button>
                       </div>
                     </td>
@@ -418,7 +419,7 @@ export default function AdminUsersPage() {
 
         <div className="flex items-center justify-between text-xs text-nexus-muted">
           <span>
-            {start}–{end} of {total.toLocaleString()}
+            {t('pagination.range', { start, end, total: total.toLocaleString() })}
           </span>
           <div className="flex gap-1">
             <button
@@ -427,7 +428,7 @@ export default function AdminUsersPage() {
               disabled={offset === 0}
               className="rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
             >
-              Previous
+              {t('pagination.previous')}
             </button>
             <button
               type="button"
@@ -435,7 +436,7 @@ export default function AdminUsersPage() {
               disabled={offset + PAGE_SIZE >= total}
               className="rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-2 py-1 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:opacity-40"
             >
-              Next
+              {t('pagination.next')}
             </button>
           </div>
         </div>

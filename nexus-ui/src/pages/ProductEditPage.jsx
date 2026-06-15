@@ -7,10 +7,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import ProductForm from '../components/products/ProductForm.jsx';
 import { deleteProduct, getProduct } from '../lib/products.js';
 
 export default function ProductEditPage() {
+  const { t } = useTranslation('products');
   const { id } = useParams();
   const navigate = useNavigate();
   const isNew = !id || id === 'new';
@@ -27,7 +29,7 @@ export default function ProductEditPage() {
       const data = await getProduct(id);
       setProduct(data);
     } catch (err) {
-      setError(err?.body || err?.message || 'Failed to load product.');
+      setError(err?.body || err?.message || t('edit.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -38,13 +40,13 @@ export default function ProductEditPage() {
   }, [load]);
 
   async function handleDelete(productId) {
-    const ok = window.confirm('Delete this product? This cannot be undone.');
+    const ok = window.confirm(t('edit.confirmDelete'));
     if (!ok) return;
     try {
       await deleteProduct(productId);
       navigate('/products');
     } catch (err) {
-      setError(err?.body || err?.message || 'Delete failed.');
+      setError(err?.body || err?.message || t('edit.deleteFailed'));
     }
   }
 
@@ -61,10 +63,10 @@ export default function ProductEditPage() {
           onClick={() => navigate('/products')}
           className="inline-flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-nexus-accent"
         >
-          <ArrowLeft size={14} /> Back to products
+          <ArrowLeft size={14} /> {t('edit.back')}
         </button>
         <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-          {isNew ? 'New product' : product?.name || ''}
+          {isNew ? t('edit.newProduct') : product?.name || ''}
         </div>
       </div>
 

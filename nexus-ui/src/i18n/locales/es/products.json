@@ -1,0 +1,63 @@
+{
+  "dashboard": {
+    "searchPlaceholder": "Buscar nombre o descripción…",
+    "activeOnly": "Solo activos",
+    "count_one": "{{count}} producto",
+    "count_other": "{{count}} productos",
+    "new": "Nuevo",
+    "loadFailed": "Error al cargar.",
+    "confirmDelete": "¿Eliminar \"{{name}}\"? No se puede deshacer.",
+    "deleteFailed": "Error al eliminar."
+  },
+  "edit": {
+    "loadFailed": "Error al cargar el producto.",
+    "confirmDelete": "¿Eliminar este producto? No se puede deshacer.",
+    "deleteFailed": "Error al eliminar.",
+    "back": "Volver a productos",
+    "newProduct": "Nuevo producto"
+  },
+  "table": {
+    "empty": "Aún no hay productos. Haz clic en + Nuevo producto para añadir tu primer anuncio.",
+    "editTitle": "Editar producto",
+    "outOfStock": "Agotado",
+    "stockImages_one": "{{qty}} en stock · {{count}} imagen",
+    "stockImages_other": "{{qty}} en stock · {{count}} imágenes",
+    "edit": "Editar",
+    "delete": "Eliminar"
+  },
+  "form": {
+    "name": "Nombre",
+    "description": "Descripción",
+    "descriptionPlaceholder": "¿Qué es? ¿Para quién es? ¿Por qué importa?",
+    "price": "Precio",
+    "currency": "Moneda",
+    "quantity": "Cantidad",
+    "url": "URL del producto (opcional)",
+    "urlPlaceholder": "https://shop.example.com/product/abc",
+    "urlHint": "Se usa como destino del botón \"Ver\" en los carruseles de Messenger.",
+    "active": "Activo (visible en el catálogo + carrusel)",
+    "stagedHint": "Suelta las imágenes ahora — se subirán después de hacer clic en \"Crear producto.\"",
+    "saving": "Guardando…",
+    "saveChanges": "Guardar cambios",
+    "createProduct": "Crear producto",
+    "deleteProduct": "Eliminar producto",
+    "saved": "Guardado.",
+    "created": "Creado.",
+    "createdImageFailed": "Producto creado, pero falló la subida de la imagen: {{detail}}",
+    "imageUploadFailed": "Error al subir la imagen.",
+    "saveFailed": "Error al guardar."
+  },
+  "images": {
+    "label": "Imágenes ({{count}}/{{max}})",
+    "add": "Añadir imagen",
+    "working": "Trabajando…",
+    "loading": "cargando…",
+    "dragReorder": "Arrastra para reordenar",
+    "deleteImage": "Eliminar imagen",
+    "maxReached": "Máx. {{max}} imágenes por producto.",
+    "skipped": "Se omitió {{name}} — solo se permiten JPG/PNG/WEBP.",
+    "uploadFailed": "Error al subir.",
+    "deleteFailed": "Error al eliminar.",
+    "reorderFailed": "Error al reordenar."
+  }
+}

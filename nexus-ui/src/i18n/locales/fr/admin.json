@@ -1,0 +1,64 @@
+{
+  "title": "Administration · Utilisateurs",
+  "subtitle": "Créer, promouvoir ou désactiver des comptes. Réservé aux superutilisateurs.",
+  "inviteUser": "Inviter un utilisateur",
+  "searchPlaceholder": "Rechercher par e-mail…",
+  "search": "Rechercher",
+  "requestFailed": "Échec de la requête.",
+  "role": { "admin": "Administrateur", "user": "Utilisateur" },
+  "status": { "active": "Actif", "disabled": "Désactivé" },
+  "table": {
+    "email": "E-mail",
+    "displayName": "Nom d'affichage",
+    "role": "Rôle",
+    "status": "Statut",
+    "actions": "Actions",
+    "loading": "Chargement…",
+    "empty": "Aucun utilisateur correspondant.",
+    "you": "vous"
+  },
+  "actions": {
+    "promote": "Promouvoir",
+    "demote": "Rétrograder",
+    "deactivate": "Désactiver",
+    "delete": "Supprimer",
+    "promoteTitle": "Promouvoir administrateur",
+    "demoteTitle": "Rétrograder utilisateur",
+    "demoteSelf": "Vous ne pouvez pas vous rétrograder",
+    "deactivateTitle": "Désactiver",
+    "deactivateSelf": "Vous ne pouvez pas vous désactiver",
+    "alreadyDeactivated": "Déjà désactivé",
+    "hardDeleteTitle": "Suppression définitive",
+    "deleteSelf": "Vous ne pouvez pas vous supprimer"
+  },
+  "pagination": { "range": "{{start}}–{{end}} sur {{total}}", "previous": "Précédent", "next": "Suivant" },
+  "banner": {
+    "loadFailed": "Échec du chargement : {{error}}",
+    "promoted": "{{email}} promu administrateur.",
+    "promoteFailed": "Échec de la promotion : {{error}}",
+    "demoted": "{{email}} rétrogradé utilisateur.",
+    "demoteFailed": "Échec de la rétrogradation : {{error}}",
+    "deactivated": "{{email}} désactivé.",
+    "deactivateFailed": "Échec de la désactivation : {{error}}",
+    "deleted": "{{email}} supprimé définitivement.",
+    "deleteFailed": "Échec de la suppression : {{error}}"
+  },
+  "confirm": {
+    "demote": "Retirer l'accès administrateur à {{email}} ?",
+    "deactivate": "Désactiver {{email}} ? La personne ne pourra plus se connecter.",
+    "hardDelete": "SUPPRESSION DÉFINITIVE de {{email}} ? Cela supprime la ligne et se répercute sur ses sessions de chat. Cette action est irréversible."
+  },
+  "invite": {
+    "title": "Inviter un utilisateur",
+    "close": "Fermer",
+    "email": "E-mail",
+    "displayName": "Nom d'affichage (facultatif)",
+    "password": "Mot de passe temporaire (min 8 caractères)",
+    "passwordHint": "Communiquez-le à l'utilisateur hors plateforme. Il pourra le changer depuis /profile.",
+    "grantSuperuser": "Accorder l'accès superutilisateur (admin)",
+    "passwordTooShort": "Le mot de passe doit comporter au moins 8 caractères.",
+    "cancel": "Annuler",
+    "creating": "Création…",
+    "create": "Créer l'utilisateur"
+  }
+}
