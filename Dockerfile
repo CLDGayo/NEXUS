@@ -69,6 +69,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 WORKDIR /app
 COPY --chown=nexus:nexus rag /app/rag
+COPY --chown=nexus:nexus docs /app/docs
 
 # React SPA build — rag/main.py serves nexus-ui/dist/index.html + assets.
 COPY --from=ui --chown=nexus:nexus /ui/dist /app/nexus-ui/dist
