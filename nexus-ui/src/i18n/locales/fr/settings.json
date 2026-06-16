@@ -1,0 +1,37 @@
+{
+  "password": {
+    "currentPasswordInvalid": "Le mot de passe actuel est incorrect.",
+    "newSameAsCurrent": "Le nouveau mot de passe doit être différent de l'actuel.",
+    "updateFailed": "Échec de la mise à jour du mot de passe.",
+    "tooShort": "Le nouveau mot de passe doit comporter au moins 8 caractères.",
+    "updated": "Mot de passe mis à jour.",
+    "current": "Mot de passe actuel",
+    "new": "Nouveau mot de passe (min 8 caractères)",
+    "saving": "Enregistrement…",
+    "submit": "Mettre à jour le mot de passe"
+  },
+  "env": {
+    "title": "Environnement (lecture seule)",
+    "subtitle": "Configuré via des variables d'environnement sur l'hôte. Modifiez via systemd EnvironmentFile + redémarrage.",
+    "empty": "Aucune variable d'environnement exposée.",
+    "notSet": "non défini"
+  },
+  "jwt": {
+    "confirm": "Faire pivoter le secret JWT ? Toutes les sessions actives, y compris celle-ci, seront déconnectées.",
+    "rotated": "Secret JWT pivoté. Redirection vers la connexion…",
+    "title": "Faire pivoter le secret JWT",
+    "subtitle": "Invalide toutes les sessions actives (y compris ce navigateur). À utiliser après une fuite de jeton présumée ou comme hygiène périodique.",
+    "rotating": "Rotation…",
+    "rotate": "Pivoter maintenant"
+  },
+  "tunable": {
+    "title": "Paramètres ajustables",
+    "subtitle": "Conservés dans SQLite. Les modifications s'appliquent à la prochaine requête.",
+    "saved_one": "{{count}} paramètre enregistré.",
+    "saved_other": "{{count}} paramètres enregistrés.",
+    "enabled": "activé",
+    "disabled": "désactivé",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer les modifications"
+  }
+}

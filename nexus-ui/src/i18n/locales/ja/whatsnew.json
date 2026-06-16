@@ -1,0 +1,10 @@
+{
+  "title": "新着情報",
+  "subtitle": "Nexus プラットフォームの概要 — 今日稼働中の機能と今後の予定。",
+  "activeTitle": "稼働中のプラットフォーム機能",
+  "activeSubtitle": "Nexus のコアスタック、現在本番稼働中。",
+  "roadmapTitle": "プレミアム SaaS ロードマップ",
+  "roadmapSubtitle": "Enterprise ティアで利用できる今後の機能。",
+  "active": "アクティブ",
+  "premium": "プレミアム"
+}

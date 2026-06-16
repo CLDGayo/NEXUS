@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Save } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api.js';
 
 function Field({ spec, value, onChange }) {
+  const { t } = useTranslation('settings');
   const id = `setting-${spec.key}`;
   const common =
     'w-full rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 text-sm outline-none focus:border-nexus-accent';
@@ -52,7 +54,7 @@ function Field({ spec, value, onChange }) {
           onChange={(e) => onChange(e.target.checked)}
           className="h-4 w-4 rounded border-nexus-border text-nexus-accent focus:ring-nexus-accent"
         />
-        <span className="text-xs text-nexus-muted">{value ? 'enabled' : 'disabled'}</span>
+        <span className="text-xs text-nexus-muted">{value ? t('tunable.enabled') : t('tunable.disabled')}</span>
       </label>
     );
   }
@@ -69,6 +71,7 @@ function Field({ spec, value, onChange }) {
 }
 
 export default function TunableSettingsForm({ schema, values, onSaved }) {
+  const { t } = useTranslation('settings');
   const initial = useMemo(() => ({ ...(values || {}) }), [values]);
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
@@ -97,7 +100,7 @@ export default function TunableSettingsForm({ schema, values, onSaved }) {
     setSaving(true);
     try {
       await api.patch('/settings', dirty);
-      setStatus({ kind: 'success', text: `Saved ${Object.keys(dirty).length} setting${Object.keys(dirty).length === 1 ? '' : 's'}.` });
+      setStatus({ kind: 'success', text: t('tunable.saved', { count: Object.keys(dirty).length }) });
       onSaved?.();
     } catch (err) {
       setStatus({ kind: 'error', text: err.message });
@@ -109,8 +112,8 @@ export default function TunableSettingsForm({ schema, values, onSaved }) {
   return (
     <section className="glass-card p-5">
       <div className="mb-3">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Tunable Settings</h3>
-        <p className="text-xs text-nexus-muted">Persisted to SQLite. Changes apply on next request.</p>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('tunable.title')}</h3>
+        <p className="text-xs text-nexus-muted">{t('tunable.subtitle')}</p>
       </div>
       <form onSubmit={submit} className="space-y-3">
         {(schema || []).map((spec) => (
@@ -148,7 +151,7 @@ export default function TunableSettingsForm({ schema, values, onSaved }) {
             className="inline-flex items-center gap-1.5 rounded-lg bg-nexus-accent px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             <Save size={12} />
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? t('tunable.saving') : t('tunable.save')}
           </button>
         </div>
       </form>

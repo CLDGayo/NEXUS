@@ -1,9 +1,11 @@
 import { Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Section B card — a premium roadmap feature. Presentational only: the
 // content is rendered behind a subtle backdrop blur with a lock badge to
 // signal the enterprise-tier gate. No data, no network, no interaction.
 export default function RoadmapCard({ item }) {
+  const { t } = useTranslation('whatsnew');
   const { Icon, title, summary } = item;
   return (
     <div className="relative h-full overflow-hidden glass-card p-5">
@@ -12,7 +14,7 @@ export default function RoadmapCard({ item }) {
           {Icon ? <Icon size={20} /> : null}
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-600 dark:text-slate-400">
-          <Lock size={10} /> Premium
+          <Lock size={10} /> {t('premium')}
         </span>
       </div>
       <h4 className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h4>

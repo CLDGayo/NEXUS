@@ -1,0 +1,37 @@
+{
+  "password": {
+    "currentPasswordInvalid": "Current password is incorrect.",
+    "newSameAsCurrent": "New password must differ from the current one.",
+    "updateFailed": "Password update failed.",
+    "tooShort": "New password must be at least 8 characters.",
+    "updated": "Password updated.",
+    "current": "Current password",
+    "new": "New password (min 8 chars)",
+    "saving": "Saving…",
+    "submit": "Update password"
+  },
+  "env": {
+    "title": "Environment (read-only)",
+    "subtitle": "Configured via env vars on the host. Edit via systemd EnvironmentFile + restart.",
+    "empty": "No env vars exposed.",
+    "notSet": "not set"
+  },
+  "jwt": {
+    "confirm": "Rotate the JWT secret? Every active session, including this one, will be signed out.",
+    "rotated": "JWT secret rotated. Redirecting to login…",
+    "title": "Rotate JWT Secret",
+    "subtitle": "Invalidates every active session (including this browser). Use after a suspected token leak or as periodic hygiene.",
+    "rotating": "Rotating…",
+    "rotate": "Rotate now"
+  },
+  "tunable": {
+    "title": "Tunable Settings",
+    "subtitle": "Persisted to SQLite. Changes apply on next request.",
+    "saved_one": "Saved {{count}} setting.",
+    "saved_other": "Saved {{count}} settings.",
+    "enabled": "enabled",
+    "disabled": "disabled",
+    "saving": "Saving…",
+    "save": "Save changes"
+  }
+}

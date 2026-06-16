@@ -1,4 +1,5 @@
 import { Sparkles, Rocket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ACTIVE_CAPABILITIES, ROADMAP_FEATURES } from '../lib/whatsNew.js';
 import CapabilityCard from '../components/whatsnew/CapabilityCard.jsx';
 import RoadmapCard from '../components/whatsnew/RoadmapCard.jsx';
@@ -8,6 +9,7 @@ import { usePageMountTimeline } from '../hooks/usePageMountTimeline.js';
 // feed at /changelog. Section A markets shipped capabilities; Section B
 // previews the locked premium roadmap.
 export default function WhatsNewPage() {
+  const { t } = useTranslation('whatsnew');
   const pageRef = usePageMountTimeline();
   return (
     <div ref={pageRef} className="h-full overflow-y-auto">
@@ -15,21 +17,20 @@ export default function WhatsNewPage() {
         <header data-animate>
           <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">
             <Sparkles size={18} className="text-nexus-accent" />
-            What&apos;s New
+            {t('title')}
           </h2>
           <p className="mt-1 text-sm text-nexus-muted">
-            The Nexus platform at a glance — what&apos;s live today and
-            what&apos;s coming next.
+            {t('subtitle')}
           </p>
         </header>
 
         <section className="space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              Active Platform Capabilities
+              {t('activeTitle')}
             </h3>
             <p className="text-xs text-nexus-muted">
-              The Nexus core stack, shipping in production now.
+              {t('activeSubtitle')}
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -46,10 +47,10 @@ export default function WhatsNewPage() {
             <Rocket size={15} className="text-slate-400" />
             <div>
               <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                Premium SaaS Roadmap
+                {t('roadmapTitle')}
               </h3>
               <p className="text-xs text-nexus-muted">
-                Upcoming features available on the Enterprise tier.
+                {t('roadmapSubtitle')}
               </p>
             </div>
           </div>

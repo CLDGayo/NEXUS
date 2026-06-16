@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCheck, Newspaper } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api.js';
 import ChangelogEntry from '../components/changelog/ChangelogEntry.jsx';
 
 export default function ChangelogPage() {
+  const { t } = useTranslation('changelog');
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,7 +27,7 @@ export default function ChangelogPage() {
     setNotice(null);
     try {
       await api.post('/changelog/mark-read', {});
-      setNotice({ kind: 'success', text: 'Marked all entries as read.' });
+      setNotice({ kind: 'success', text: t('markedRead') });
       setTimeout(() => setNotice(null), 3000);
     } catch (err) {
       setNotice({ kind: 'error', text: err.message });
@@ -39,8 +41,8 @@ export default function ChangelogPage() {
       <div className="mx-auto max-w-3xl space-y-3 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">What's New</h2>
-            <p className="text-xs text-nexus-muted">Release notes for the Nexus stack.</p>
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('title')}</h2>
+            <p className="text-xs text-nexus-muted">{t('subtitle')}</p>
           </div>
           <button
             type="button"
@@ -49,7 +51,7 @@ export default function ChangelogPage() {
             className="inline-flex items-center gap-1.5 rounded-lg border border-nexus-border bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 shadow-sm hover:text-nexus-accent disabled:opacity-50"
           >
             <CheckCheck size={12} />
-            {marking ? 'Marking…' : 'Mark all read'}
+            {marking ? t('marking') : t('markAllRead')}
           </button>
         </div>
 
@@ -67,7 +69,7 @@ export default function ChangelogPage() {
 
         {loading && (
           <div className="rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-6 text-center text-sm text-nexus-muted shadow-sm">
-            Loading changelog…
+            {t('loading')}
           </div>
         )}
         {error && (
@@ -78,7 +80,7 @@ export default function ChangelogPage() {
           entries.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-xl border border-nexus-border bg-white dark:bg-slate-900 p-10 text-center text-sm text-nexus-muted shadow-sm">
               <Newspaper size={20} />
-              No changelog entries yet.
+              {t('empty')}
             </div>
           ) : (
             <div className="space-y-3">

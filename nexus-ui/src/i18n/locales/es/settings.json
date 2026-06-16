@@ -1,0 +1,37 @@
+{
+  "password": {
+    "currentPasswordInvalid": "La contraseña actual es incorrecta.",
+    "newSameAsCurrent": "La nueva contraseña debe ser distinta de la actual.",
+    "updateFailed": "Error al actualizar la contraseña.",
+    "tooShort": "La nueva contraseña debe tener al menos 8 caracteres.",
+    "updated": "Contraseña actualizada.",
+    "current": "Contraseña actual",
+    "new": "Nueva contraseña (mín. 8 caracteres)",
+    "saving": "Guardando…",
+    "submit": "Actualizar contraseña"
+  },
+  "env": {
+    "title": "Entorno (solo lectura)",
+    "subtitle": "Configurado mediante variables de entorno en el host. Edita en systemd EnvironmentFile + reinicia.",
+    "empty": "No hay variables de entorno expuestas.",
+    "notSet": "no configurado"
+  },
+  "jwt": {
+    "confirm": "¿Rotar el secreto JWT? Todas las sesiones activas, incluida esta, se cerrarán.",
+    "rotated": "Secreto JWT rotado. Redirigiendo al inicio de sesión…",
+    "title": "Rotar secreto JWT",
+    "subtitle": "Invalida todas las sesiones activas (incluido este navegador). Úsalo tras una sospecha de fuga de token o como higiene periódica.",
+    "rotating": "Rotando…",
+    "rotate": "Rotar ahora"
+  },
+  "tunable": {
+    "title": "Ajustes configurables",
+    "subtitle": "Guardado en SQLite. Los cambios se aplican en la siguiente solicitud.",
+    "saved_one": "Se guardó {{count}} ajuste.",
+    "saved_other": "Se guardaron {{count}} ajustes.",
+    "enabled": "activado",
+    "disabled": "desactivado",
+    "saving": "Guardando…",
+    "save": "Guardar cambios"
+  }
+}

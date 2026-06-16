@@ -1,0 +1,37 @@
+{
+  "password": {
+    "currentPasswordInvalid": "Mali ang kasalukuyang password.",
+    "newSameAsCurrent": "Dapat iba ang bagong password sa kasalukuyan.",
+    "updateFailed": "Nabigo ang pag-update ng password.",
+    "tooShort": "Dapat hindi bababa sa 8 karakter ang bagong password.",
+    "updated": "Na-update ang password.",
+    "current": "Kasalukuyang password",
+    "new": "Bagong password (min 8 char)",
+    "saving": "Sine-save…",
+    "submit": "I-update ang password"
+  },
+  "env": {
+    "title": "Environment (read-only)",
+    "subtitle": "Naka-configure sa pamamagitan ng env vars sa host. I-edit sa systemd EnvironmentFile + i-restart.",
+    "empty": "Walang env var na nakalantad.",
+    "notSet": "hindi naka-set"
+  },
+  "jwt": {
+    "confirm": "I-rotate ang JWT secret? Lahat ng aktibong session, kasama ito, ay masi-sign out.",
+    "rotated": "Na-rotate ang JWT secret. Ire-redirect sa login…",
+    "title": "I-rotate ang JWT Secret",
+    "subtitle": "Pinapawalang-bisa ang lahat ng aktibong session (kasama ang browser na ito). Gamitin pagkatapos ng pinaghihinalaang token leak o bilang regular na hygiene.",
+    "rotating": "Nire-rotate…",
+    "rotate": "I-rotate na"
+  },
+  "tunable": {
+    "title": "Mga Tunable na Setting",
+    "subtitle": "Naka-persist sa SQLite. Magkakabisa ang mga pagbabago sa susunod na request.",
+    "saved_one": "Na-save ang {{count}} setting.",
+    "saved_other": "Na-save ang {{count}} settings.",
+    "enabled": "naka-enable",
+    "disabled": "naka-disable",
+    "saving": "Sine-save…",
+    "save": "I-save ang mga pagbabago"
+  }
+}

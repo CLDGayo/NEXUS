@@ -1,7 +1,9 @@
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Section A card — a shipped, live capability.
 export default function CapabilityCard({ item }) {
+  const { t } = useTranslation('whatsnew');
   const { Icon, title, summary } = item;
   return (
     <div className="flex h-full flex-col glass-card p-5">
@@ -10,7 +12,7 @@ export default function CapabilityCard({ item }) {
           {Icon ? <Icon size={20} /> : null}
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-700">
-          <Check size={11} /> Active
+          <Check size={11} /> {t('active')}
         </span>
       </div>
       <h4 className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">{title}</h4>

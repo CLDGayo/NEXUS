@@ -1,20 +1,22 @@
 import { useState } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api.js';
 import { clearToken } from '../../lib/auth.js';
 
 export default function JwtRotateCard() {
+  const { t } = useTranslation('settings');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null);
 
   async function rotate() {
-    if (!window.confirm('Rotate the JWT secret? Every active session, including this one, will be signed out.')) return;
+    if (!window.confirm(t('jwt.confirm'))) return;
     setStatus(null);
     setBusy(true);
     try {
       await api.post('/settings/rotate-jwt', {});
       clearToken();
-      setStatus({ kind: 'success', text: 'JWT secret rotated. Redirecting to login…' });
+      setStatus({ kind: 'success', text: t('jwt.rotated') });
       setTimeout(() => { window.location.href = '/login'; }, 800);
     } catch (err) {
       setStatus({ kind: 'error', text: err.message });
@@ -26,11 +28,10 @@ export default function JwtRotateCard() {
     <section className="rounded-xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
         <AlertTriangle size={14} className="text-amber-600" />
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Rotate JWT Secret</h3>
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('jwt.title')}</h3>
       </div>
       <p className="mb-3 text-xs text-nexus-muted">
-        Invalidates every active session (including this browser). Use after a suspected token leak or as
-        periodic hygiene.
+        {t('jwt.subtitle')}
       </p>
 
       {status && (
@@ -52,7 +53,7 @@ export default function JwtRotateCard() {
         className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white/55 backdrop-blur-glass dark:bg-white/5 px-3 py-1.5 text-xs font-semibold text-amber-700 shadow-sm hover:bg-amber-100 disabled:opacity-50"
       >
         <RotateCcw size={12} />
-        {busy ? 'Rotating…' : 'Rotate now'}
+        {busy ? t('jwt.rotating') : t('jwt.rotate')}
       </button>
     </section>
   );

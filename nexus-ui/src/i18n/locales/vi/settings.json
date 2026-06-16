@@ -1,0 +1,37 @@
+{
+  "password": {
+    "currentPasswordInvalid": "Mật khẩu hiện tại không đúng.",
+    "newSameAsCurrent": "Mật khẩu mới phải khác mật khẩu hiện tại.",
+    "updateFailed": "Cập nhật mật khẩu thất bại.",
+    "tooShort": "Mật khẩu mới phải có ít nhất 8 ký tự.",
+    "updated": "Đã cập nhật mật khẩu.",
+    "current": "Mật khẩu hiện tại",
+    "new": "Mật khẩu mới (tối thiểu 8 ký tự)",
+    "saving": "Đang lưu…",
+    "submit": "Cập nhật mật khẩu"
+  },
+  "env": {
+    "title": "Môi trường (chỉ đọc)",
+    "subtitle": "Cấu hình qua biến môi trường trên máy chủ. Sửa qua systemd EnvironmentFile + khởi động lại.",
+    "empty": "Không có biến môi trường nào được hiển thị.",
+    "notSet": "chưa đặt"
+  },
+  "jwt": {
+    "confirm": "Xoay khóa bí mật JWT? Mọi phiên đang hoạt động, kể cả phiên này, sẽ bị đăng xuất.",
+    "rotated": "Đã xoay khóa bí mật JWT. Đang chuyển đến trang đăng nhập…",
+    "title": "Xoay khóa bí mật JWT",
+    "subtitle": "Vô hiệu hóa mọi phiên đang hoạt động (kể cả trình duyệt này). Dùng sau khi nghi ngờ rò rỉ token hoặc để vệ sinh định kỳ.",
+    "rotating": "Đang xoay…",
+    "rotate": "Xoay ngay"
+  },
+  "tunable": {
+    "title": "Cài đặt tinh chỉnh",
+    "subtitle": "Lưu vào SQLite. Thay đổi áp dụng ở request tiếp theo.",
+    "saved_one": "Đã lưu {{count}} cài đặt.",
+    "saved_other": "Đã lưu {{count}} cài đặt.",
+    "enabled": "bật",
+    "disabled": "tắt",
+    "saving": "Đang lưu…",
+    "save": "Lưu thay đổi"
+  }
+}
