@@ -86,6 +86,7 @@ from routers import (  # noqa: E402
     chat_uploads,
     conversations,
     dashboard,
+    docs_content,
     documents,
     integrations,
     logs,
@@ -270,6 +271,7 @@ app.include_router(workspace_ai_settings.router, prefix="/api/workspace")
 app.include_router(resources.router, prefix="/api/resources")
 app.include_router(products.router, prefix="/api")
 app.include_router(objects.router, prefix="/api")
+app.include_router(docs_content.router)
 
 # React SPA assets + widget mounts. The catch-all must be registered last so
 # that named API/asset routes win the match. Vite emits hashed bundles under
