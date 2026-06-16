@@ -68,6 +68,14 @@ async def _send_once(client: httpx.AsyncClient, item: QueuedItem) -> tuple[bool,
 
     target = getattr(item, "target", "broker") or "broker"
 
+    if target == "fb_sync":
+        # Phase 55 — Facebook Page metadata sync. Delegated wholesale to
+        # page_sync (opens its own DB session); returns this same 4-tuple so
+        # the requeue/dead-letter machinery below is reused unchanged.
+        from rag.messenger.page_sync import run_page_sync_job
+
+        return await run_page_sync_job(client, item.payload)
+
     if target == "graph_api":
         token = current_page_access_token()
         if not token:

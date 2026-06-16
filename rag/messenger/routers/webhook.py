@@ -52,6 +52,7 @@ from rag.messenger.idempotency import (
     claim_content_idempotency,
     release_thread_lock,
 )
+from rag.messenger.page_sync import PAGE_SYNC_FIELDS, schedule_page_sync
 from rag.messenger.payloads import build_outbound_payload
 from rag.messenger.pii import scrub
 from rag.messenger.ratelimit import enforce_rate_limit
@@ -407,6 +408,20 @@ async def messenger_inbound_direct(
                     comment_id,
                     comment_sender_id,
                 )
+
+        # Phase 55 — Page metadata changes (name / about / picture). These
+        # also arrive under entry.changes. The webhook is only a signal: we
+        # enqueue a sync job and return fast; the worker fetches the
+        # authoritative values from the Graph API and writes them.
+        if settings.facebook_sync_enabled:
+            for change in entry.get("changes") or []:
+                if not isinstance(change, dict):
+                    continue
+                field = change.get("field")
+                if field not in PAGE_SYNC_FIELDS:
+                    continue
+                _scheduler(schedule_page_sync(page_id=page_id, field=field))
+                _log.info("fb_sync.scheduled page=%s field=%s", page_id, field)
 
     # Coalescing window: events from the same sender within this many
     # seconds collapse into one turn. Two seconds is wider than Meta's

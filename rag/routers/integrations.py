@@ -30,6 +30,7 @@ from events import EVENT_NAMES
 from integrations.dispatcher import fire_test
 from integrations.providers import PROVIDERS
 
+from rag.config import settings
 from rag.database.engine import get_async_session
 from rag.database.models import Integration, MessengerPageTenant, Tenant
 from routers.deps import require_manager
@@ -281,6 +282,9 @@ async def patch_messenger(
 
 class MessengerPageBindRequest(BaseModel):
     facebook_page_id: str = Field(..., min_length=1, max_length=64)
+    # Phase 55 — optional page access token. When provided (and sync is
+    # enabled) the bind flow subscribes webhook fields + seeds page metadata.
+    page_access_token: str | None = Field(default=None, max_length=1024)
 
 
 def _serialize_page(row: MessengerPageTenant) -> dict[str, Any]:
@@ -288,6 +292,14 @@ def _serialize_page(row: MessengerPageTenant) -> dict[str, Any]:
         "facebook_page_id": row.facebook_page_id,
         "tenant_id": str(row.tenant_id),
         "created_at": row.created_at.isoformat() if row.created_at else None,
+        # Phase 55 — sync metadata for the SPA (reconnect banner reads these).
+        "page_name": row.page_name,
+        "profile_picture_url": row.profile_picture_url,
+        "token_status": row.token_status,
+        "sync_status": row.sync_status,
+        "last_synced_at": (
+            row.last_synced_at.isoformat() if row.last_synced_at else None
+        ),
     }
 
 
@@ -342,6 +354,16 @@ async def bind_messenger_page(
     db.add(row)
     await db.commit()
     await db.refresh(row)
+
+    # Phase 55 — subscribe webhook fields + seed metadata when a page token is
+    # supplied and sync is enabled. Best-effort: a Graph failure must not undo
+    # the binding (subscribe_and_seed swallows + logs its own errors).
+    if settings.facebook_sync_enabled and body.page_access_token:
+        from rag.messenger.page_sync import subscribe_and_seed
+
+        await subscribe_and_seed(db, row.facebook_page_id, body.page_access_token)
+        await db.refresh(row)
+
     return _serialize_page(row)
 
 
