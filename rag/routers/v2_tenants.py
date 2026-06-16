@@ -269,14 +269,18 @@ async def update_member_role(
     )
 
 
-@router.delete("/{tenant_id}/members/{member_user_id}", status_code=204)
+@router.delete(
+    "/{tenant_id}/members/{member_user_id}",
+    status_code=204,
+    response_class=Response,
+)
 async def remove_member(
     tenant_id: uuid.UUID,
     member_user_id: uuid.UUID,
     user: User = Depends(current_active_user),
     tenant: Tenant = Depends(require_manager),
     db: AsyncSession = Depends(get_async_session),
-) -> None:
+) -> Response:
     """Remove a member from the workspace.
 
     Guards: admins cannot remove owners; the last owner can never be
@@ -311,6 +315,8 @@ async def remove_member(
         str(user.id),
         str(member_user_id),
     )
+
+    return Response(status_code=204)
 
 
 # ---------------------------------------------------------------------------
@@ -770,7 +776,7 @@ async def get_tenant_usage(
     )
 
 
-@router.delete("/{tenant_id}", status_code=204)
+@router.delete("/{tenant_id}", status_code=204, response_class=Response)
 async def delete_tenant(
     tenant_id: uuid.UUID,
     body: _DeleteWorkspaceBody,
