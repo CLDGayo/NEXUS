@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Building2, Check, ChevronDown, Settings2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTenant } from '../../hooks/useTenant.js';
 import { useTactilePress } from '../../hooks/useTactilePress.js';
 
@@ -10,6 +11,7 @@ import { useTactilePress } from '../../hooks/useTactilePress.js';
 // TenantProvider.setActiveTenant which bumps cacheVersion — pages with
 // per-tenant data refetch on the next render.
 export default function WorkspaceSwitcher() {
+  const { t } = useTranslation('workspace');
   const {
     tenants,
     activeTenantId,
@@ -21,7 +23,7 @@ export default function WorkspaceSwitcher() {
 
   if (tenants.length === 0) return null;
 
-  const label = activeTenantName || 'Select workspace';
+  const label = activeTenantName || t('switcher.select');
   const activeTenant = tenants.find((t) => t.id === activeTenantId);
   // Only render real http(s) URLs — the `minio:` sentinel means no public
   // base URL is configured, so fall back to the default icon.
@@ -37,7 +39,7 @@ export default function WorkspaceSwitcher() {
           ref={triggerRef}
           type="button"
           className="inline-flex items-center gap-2 rounded-md border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-2.5 py-1.5 text-sm text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-50 hover:dark:bg-slate-900 focus:outline-none"
-          title="Switch workspace"
+          title={t('switcher.switchTitle')}
         >
           {avatarUrl ? (
             <img
@@ -60,7 +62,7 @@ export default function WorkspaceSwitcher() {
           className="glass-pane z-50 w-64 overflow-hidden text-sm text-slate-700 dark:text-slate-300"
         >
           <div className="border-b border-nexus-border px-3 py-2 text-[10px] uppercase tracking-wide text-nexus-muted">
-            Workspaces
+            {t('switcher.workspaces')}
           </div>
           <div className="max-h-72 overflow-y-auto py-1">
             {tenants.map((tenant) => {
@@ -93,7 +95,7 @@ export default function WorkspaceSwitcher() {
                   className="flex cursor-pointer items-center gap-2 px-3 py-2 text-xs text-nexus-accent outline-none data-[highlighted]:bg-slate-100/70"
                 >
                   <Settings2 size={12} />
-                  Manage workspaces
+                  {t('switcher.manage')}
                 </Link>
               </DropdownMenu.Item>
             </>

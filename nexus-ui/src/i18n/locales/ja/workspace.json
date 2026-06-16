@@ -1,0 +1,191 @@
+{
+  "list": {
+    "title": "ワークスペース",
+    "subtitle": "テナントのワークスペースを管理します。各ワークスペースは独自のドキュメント・チャット・連携を分離します。",
+    "yourWorkspaces": "あなたのワークスペース",
+    "col": { "name": "名前", "slug": "スラッグ", "role": "役割", "members": "メンバー", "created": "作成日", "action": "操作" },
+    "active": "アクティブ",
+    "switch": "切り替え",
+    "empty": "まだどのワークスペースにも所属していません。",
+    "create": "ワークスペースを作成",
+    "companyName": "会社名",
+    "companyPlaceholder": "Akiro Collectibles",
+    "creating": "作成中…",
+    "createBtn": "作成",
+    "nameExists": "その名前のワークスペースは既に存在します。",
+    "createFailed": "ワークスペースの作成に失敗しました。",
+    "createdSwitched": "{{name}} を作成して切り替えました。"
+  },
+  "detail": {
+    "back": "ワークスペース",
+    "active": "アクティブ",
+    "yourRole": "あなたの役割:",
+    "loading": "ワークスペースを読み込み中…",
+    "notActiveBanner": "現在アクティブでないワークスペースを表示しています。メンバーと設定を管理するには切り替えてください。",
+    "switchTo": "{{name}} に切り替え",
+    "tabs": { "general": "一般", "members": "メンバー", "usage": "使用状況", "advanced": "詳細" },
+    "placeholder": {
+      "generalTitle": "設定を編集するにはこのワークスペースに切り替えてください",
+      "generalCopy": "ワークスペース設定はアクティブなワークスペースに対して動作します。上の切り替えバナーを使用してください。",
+      "membersTitle": "メンバーを管理するにはこのワークスペースに切り替えてください",
+      "membersCopy": "メンバー管理はアクティブなワークスペースに対して動作します。上の切り替えバナーを使用してください。",
+      "usageTitle": "使用状況を見るにはこのワークスペースに切り替えてください",
+      "usageCopy": "使用状況の統計はアクティブなワークスペースに対して動作します。上の切り替えバナーを使用してください。",
+      "advancedTitle": "詳細コントロールにはこのワークスペースに切り替えてください",
+      "advancedCopy": "アーカイブ・所有権移転・削除はアクティブなワークスペースに対して動作します。上の切り替えバナーを使用してください。"
+    }
+  },
+  "general": {
+    "avatarTitle": "ワークスペースのアバター",
+    "uploadImage": "画像をアップロード",
+    "changeImage": "画像を変更",
+    "remove": "削除",
+    "imageHint": "JPG、PNG または WebP · 最大 2 MB",
+    "identityTitle": "ワークスペースの識別情報",
+    "name": "名前",
+    "slug": "スラッグ",
+    "slugWarning": "スラッグを変更すると既存の連携リンクが壊れる可能性があります。",
+    "created": "作成日",
+    "members": "メンバー",
+    "yourRole": "あなたの役割",
+    "saved": "正常に保存しました。",
+    "saving": "保存中…",
+    "save": "変更を保存",
+    "err": {
+      "slugBlocked": "スラッグを変更できません — このワークスペースにはインデックス済みのドキュメントがあります。先にすべてのドキュメントを削除してください。",
+      "slugTaken": "そのスラッグは既に使われています。別のものを選んでください。",
+      "unsupportedMime": "サポートされていない画像形式です。JPG、PNG、または WebP を使用してください。",
+      "avatarTooLarge": "画像ファイルが大きすぎます（最大 2 MB）。",
+      "requestFailed": "リクエストに失敗しました。"
+    }
+  },
+  "members": {
+    "roles": { "owner": "オーナー", "admin": "管理者", "member": "メンバー" },
+    "inviteTitle": "ワークスペースに招待",
+    "emailLabel": "メール（オープンリンクの場合は任意）",
+    "emailPlaceholder": "colleague@example.com",
+    "role": "役割",
+    "sending": "送信中…",
+    "sendInvite": "招待を送信",
+    "createLink": "リンクを作成",
+    "inviteSentTo": "{{email}} に招待を送信しました。",
+    "joinLinkCreated": "参加リンクを作成しました。",
+    "copyLink": "リンクをコピー",
+    "copyLinkTitle": "招待リンクをコピー",
+    "copied": "コピー済み",
+    "pending": "保留中の招待 ({{count}})",
+    "col": { "emailType": "メール / 種類", "role": "役割", "expires": "有効期限", "actions": "操作" },
+    "openLink": "オープンリンク",
+    "expired": "（期限切れ）",
+    "resend": "再送",
+    "resendTitle": "メールを再送",
+    "revoke": "取り消し",
+    "revokeTitle": "招待を取り消し",
+    "title": "メンバー ({{count}})",
+    "tcol": { "user": "ユーザー", "role": "役割", "joined": "参加日", "actions": "操作" },
+    "you": "（あなた）",
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "removing": "削除中…",
+    "remove": "削除",
+    "removeTitle": "メンバーを削除",
+    "loading": "メンバーを読み込み中…",
+    "footer": "オーナーはワークスペースの削除を含む完全な権限を持ちます。管理者はメンバーと設定を管理できますが、ワークスペースは削除できません。",
+    "err": {
+      "lastOwner": "これは最後のオーナーです — 先に所有権を移転してください。",
+      "adminsCannot": "管理者はオーナーを変更または削除できません。",
+      "onlyOwners": "オーナー役割を付与できるのはオーナーのみです。",
+      "requestFailed": "リクエストに失敗しました。"
+    }
+  },
+  "usage": {
+    "failedTitle": "使用状況の読み込みに失敗しました",
+    "managerRequired": "使用状況を表示するには管理者またはオーナー役割が必要です。",
+    "failedData": "使用状況データの読み込みに失敗しました。",
+    "noMessages": "過去 7 日間にメッセージはありません。",
+    "messages7d": "メッセージ — 過去 7 日間",
+    "documents": "ドキュメント",
+    "products": "製品",
+    "members": "メンバー",
+    "vectorChunks": "ベクトルチャンク",
+    "totalMessages": "メッセージ総数"
+  },
+  "advanced": {
+    "ownerOnly": "オーナーのみ",
+    "ownerOnlyNote": "この操作はワークスペースのオーナーのみが実行できます。",
+    "cancel": "キャンセル",
+    "archive": {
+      "unarchiveTitle": "ワークスペースをアーカイブ解除",
+      "archiveTitle": "ワークスペースをアーカイブ",
+      "unarchiveDesc": "このワークスペースは現在アーカイブされています。復元するまでメンバーは使用できません。",
+      "archiveDesc": "このワークスペースを一時停止します。アーカイブ解除するまでメンバーはロックアウトされます。データは保持されます。",
+      "archivedBanner": "このワークスペースはアーカイブされています。メンバーに対してすべてのデータルートが 403 を返します。",
+      "confirmRestore": "このワークスペースを復元しますか？",
+      "confirmArchive": "このワークスペースをアーカイブしますか？",
+      "working": "処理中…",
+      "yesRestore": "はい、復元",
+      "yesArchive": "はい、アーカイブ",
+      "restore": "ワークスペースを復元",
+      "archiveBtn": "ワークスペースをアーカイブ",
+      "errAlreadyArchived": "このワークスペースは既にアーカイブされています。",
+      "errNotArchived": "このワークスペースはアーカイブされていません。"
+    },
+    "transfer": {
+      "title": "所有権を移転",
+      "desc": "完全な所有権を別のメンバーに渡します。移転後、あなたは管理者に降格されます。新しいオーナーの協力なしには元に戻せません。",
+      "newOwner": "新しいオーナー",
+      "selectMember": "メンバーを選択…",
+      "transferBtn": "移転…",
+      "confirmQuestion": "所有権を {{name}} に移転しますか？あなたは管理者に降格されます。",
+      "transferring": "移転中…",
+      "confirmTransfer": "移転を確認",
+      "errMemberNotFound": "そのユーザーはこのワークスペースのメンバーではありません。",
+      "errAlreadyOwner": "そのメンバーは既にオーナーです。",
+      "errYourself": "自分自身に所有権を移転することはできません。"
+    },
+    "delete": {
+      "title": "ワークスペースを削除",
+      "desc": "このワークスペースと、ドキュメント・メンバー・メッセージ・Qdrant ベクトルを含むすべてのデータを完全に削除します。この操作は元に戻せません。",
+      "deleteBtn": "ワークスペースを削除…",
+      "typeName": "確認のためワークスペース名 {{name}} を入力してください:",
+      "deleting": "削除中…",
+      "permanentlyDelete": "完全に削除",
+      "errNameMismatch": "入力したワークスペース名が一致しません。もう一度お試しください。"
+    },
+    "requestFailed": "リクエストに失敗しました。"
+  },
+  "switcher": {
+    "select": "ワークスペースを選択",
+    "switchTitle": "ワークスペースを切り替え",
+    "workspaces": "ワークスペース",
+    "manage": "ワークスペースを管理"
+  },
+  "picker": {
+    "title": "ワークスペースを選択",
+    "prompt": "このセッションでどのワークスペースを管理しますか？",
+    "continue": "続行"
+  },
+  "require": {
+    "loading": "ワークスペースを読み込み中…",
+    "errorTitle": "ワークスペースを読み込めませんでした",
+    "empty": "まだワークスペースがありません",
+    "emptyPrompt": "最初のワークスペースを作成して NEXUS を使い始めましょう。",
+    "create": "ワークスペースを作成"
+  },
+  "placeholder": {
+    "defaultDesc": "このページはまだ React アプリに移植されていません。/static/ の旧 SPA が引き続き動作版を提供します。"
+  },
+  "join": {
+    "title": "ワークスペースに参加中…",
+    "verifying": "招待を確認中…",
+    "joined": "{{role}} として {{name}} に参加しました。",
+    "redirecting": "リダイレクト中…",
+    "goToNexus": "NEXUS へ",
+    "fallbackName": "ワークスペース",
+    "noToken": "URL に招待トークンがありません。",
+    "errNotFound": "招待リンクが見つからないか、既に使用されています。",
+    "errUsed": "この招待は既に受諾または取り消されています。",
+    "errExpired": "この招待リンクは期限切れです。ワークスペース管理者に再送を依頼してください。",
+    "errGeneric": "問題が発生しました。"
+  }
+}

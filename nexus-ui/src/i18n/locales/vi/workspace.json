@@ -1,0 +1,191 @@
+{
+  "list": {
+    "title": "Không gian làm việc",
+    "subtitle": "Quản lý các không gian làm việc. Mỗi không gian tách biệt tài liệu, cuộc trò chuyện và tích hợp riêng.",
+    "yourWorkspaces": "Không gian của bạn",
+    "col": { "name": "Tên", "slug": "Slug", "role": "Vai trò", "members": "Thành viên", "created": "Tạo lúc", "action": "Hành động" },
+    "active": "Đang hoạt động",
+    "switch": "Chuyển",
+    "empty": "Bạn chưa thuộc không gian làm việc nào.",
+    "create": "Tạo không gian",
+    "companyName": "Tên công ty",
+    "companyPlaceholder": "Akiro Collectibles",
+    "creating": "Đang tạo…",
+    "createBtn": "Tạo",
+    "nameExists": "Đã có không gian làm việc với tên đó.",
+    "createFailed": "Tạo không gian làm việc thất bại.",
+    "createdSwitched": "Đã tạo {{name}} và chuyển sang nó."
+  },
+  "detail": {
+    "back": "Không gian làm việc",
+    "active": "Đang hoạt động",
+    "yourRole": "vai trò của bạn:",
+    "loading": "Đang tải không gian làm việc…",
+    "notActiveBanner": "Bạn đang xem một không gian làm việc không hoạt động. Chuyển sang nó để quản lý thành viên và cài đặt.",
+    "switchTo": "Chuyển sang {{name}}",
+    "tabs": { "general": "Chung", "members": "Thành viên", "usage": "Sử dụng", "advanced": "Nâng cao" },
+    "placeholder": {
+      "generalTitle": "Chuyển sang không gian này để sửa cài đặt",
+      "generalCopy": "Cài đặt không gian áp dụng cho không gian đang hoạt động. Dùng thanh chuyển ở trên.",
+      "membersTitle": "Chuyển sang không gian này để quản lý thành viên",
+      "membersCopy": "Quản lý thành viên áp dụng cho không gian đang hoạt động. Dùng thanh chuyển ở trên.",
+      "usageTitle": "Chuyển sang không gian này để xem mức sử dụng",
+      "usageCopy": "Thống kê sử dụng áp dụng cho không gian đang hoạt động. Dùng thanh chuyển ở trên.",
+      "advancedTitle": "Chuyển sang không gian này để dùng điều khiển nâng cao",
+      "advancedCopy": "Lưu trữ, chuyển quyền sở hữu và xóa áp dụng cho không gian đang hoạt động. Dùng thanh chuyển ở trên."
+    }
+  },
+  "general": {
+    "avatarTitle": "Ảnh đại diện không gian",
+    "uploadImage": "Tải ảnh lên",
+    "changeImage": "Đổi ảnh",
+    "remove": "Xóa",
+    "imageHint": "JPG, PNG hoặc WebP · tối đa 2 MB",
+    "identityTitle": "Danh tính không gian",
+    "name": "Tên",
+    "slug": "Slug",
+    "slugWarning": "Đổi slug có thể làm hỏng các liên kết tích hợp hiện có.",
+    "created": "Tạo lúc",
+    "members": "Thành viên",
+    "yourRole": "Vai trò của bạn",
+    "saved": "Đã lưu thành công.",
+    "saving": "Đang lưu…",
+    "save": "Lưu thay đổi",
+    "err": {
+      "slugBlocked": "Không thể đổi slug — không gian này có tài liệu đã lập chỉ mục. Hãy xóa hết tài liệu trước.",
+      "slugTaken": "Slug đó đã được dùng. Vui lòng chọn slug khác.",
+      "unsupportedMime": "Định dạng ảnh không được hỗ trợ. Dùng JPG, PNG hoặc WebP.",
+      "avatarTooLarge": "Tệp ảnh quá lớn (tối đa 2 MB).",
+      "requestFailed": "Yêu cầu thất bại."
+    }
+  },
+  "members": {
+    "roles": { "owner": "Chủ sở hữu", "admin": "Quản trị", "member": "Thành viên" },
+    "inviteTitle": "Mời vào không gian",
+    "emailLabel": "Email (tùy chọn cho liên kết mở)",
+    "emailPlaceholder": "donghiep@example.com",
+    "role": "Vai trò",
+    "sending": "Đang gửi…",
+    "sendInvite": "Gửi lời mời",
+    "createLink": "Tạo liên kết",
+    "inviteSentTo": "Đã gửi lời mời tới {{email}}.",
+    "joinLinkCreated": "Đã tạo liên kết tham gia.",
+    "copyLink": "Sao chép liên kết",
+    "copyLinkTitle": "Sao chép liên kết mời",
+    "copied": "Đã chép",
+    "pending": "Lời mời đang chờ ({{count}})",
+    "col": { "emailType": "Email / Loại", "role": "Vai trò", "expires": "Hết hạn", "actions": "Hành động" },
+    "openLink": "Liên kết mở",
+    "expired": "(hết hạn)",
+    "resend": "Gửi lại",
+    "resendTitle": "Gửi lại email",
+    "revoke": "Thu hồi",
+    "revokeTitle": "Thu hồi lời mời",
+    "title": "Thành viên ({{count}})",
+    "tcol": { "user": "Người dùng", "role": "Vai trò", "joined": "Tham gia", "actions": "Hành động" },
+    "you": "(bạn)",
+    "confirm": "Xác nhận",
+    "cancel": "Hủy",
+    "removing": "Đang xóa…",
+    "remove": "Xóa",
+    "removeTitle": "Xóa thành viên",
+    "loading": "Đang tải thành viên…",
+    "footer": "Chủ sở hữu có toàn quyền kể cả xóa không gian. Quản trị viên quản lý thành viên và cài đặt nhưng không thể xóa không gian.",
+    "err": {
+      "lastOwner": "Đây là chủ sở hữu cuối cùng — hãy chuyển quyền sở hữu trước.",
+      "adminsCannot": "Quản trị viên không thể sửa hoặc xóa chủ sở hữu.",
+      "onlyOwners": "Chỉ chủ sở hữu mới có thể cấp vai trò chủ sở hữu.",
+      "requestFailed": "Yêu cầu thất bại."
+    }
+  },
+  "usage": {
+    "failedTitle": "Tải mức sử dụng thất bại",
+    "managerRequired": "Cần vai trò quản trị hoặc chủ sở hữu để xem mức sử dụng.",
+    "failedData": "Tải dữ liệu sử dụng thất bại.",
+    "noMessages": "Không có tin nhắn trong 7 ngày qua.",
+    "messages7d": "Tin nhắn — 7 ngày qua",
+    "documents": "Tài liệu",
+    "products": "Sản phẩm",
+    "members": "Thành viên",
+    "vectorChunks": "Khối vector",
+    "totalMessages": "Tổng tin nhắn"
+  },
+  "advanced": {
+    "ownerOnly": "Chỉ chủ sở hữu",
+    "ownerOnlyNote": "Chỉ chủ sở hữu không gian mới thực hiện được hành động này.",
+    "cancel": "Hủy",
+    "archive": {
+      "unarchiveTitle": "Bỏ lưu trữ không gian",
+      "archiveTitle": "Lưu trữ không gian",
+      "unarchiveDesc": "Không gian hiện đang được lưu trữ. Thành viên không thể dùng cho đến khi bạn khôi phục.",
+      "archiveDesc": "Tạm ngưng không gian này. Thành viên sẽ bị khóa cho đến khi bạn bỏ lưu trữ. Dữ liệu được giữ lại.",
+      "archivedBanner": "Không gian này đã được lưu trữ. Mọi route dữ liệu trả về 403 cho thành viên.",
+      "confirmRestore": "Khôi phục không gian này?",
+      "confirmArchive": "Lưu trữ không gian này?",
+      "working": "Đang xử lý…",
+      "yesRestore": "Có, khôi phục",
+      "yesArchive": "Có, lưu trữ",
+      "restore": "Khôi phục không gian",
+      "archiveBtn": "Lưu trữ không gian",
+      "errAlreadyArchived": "Không gian này đã được lưu trữ rồi.",
+      "errNotArchived": "Không gian này chưa được lưu trữ."
+    },
+    "transfer": {
+      "title": "Chuyển quyền sở hữu",
+      "desc": "Chuyển toàn quyền sở hữu cho một thành viên khác. Bạn sẽ bị hạ xuống Quản trị sau khi chuyển. Không thể hoàn tác nếu không có sự hợp tác của chủ sở hữu mới.",
+      "newOwner": "Chủ sở hữu mới",
+      "selectMember": "Chọn thành viên…",
+      "transferBtn": "Chuyển…",
+      "confirmQuestion": "Chuyển quyền sở hữu cho {{name}}? Bạn sẽ bị hạ xuống Quản trị.",
+      "transferring": "Đang chuyển…",
+      "confirmTransfer": "Xác nhận chuyển",
+      "errMemberNotFound": "Người dùng đó không phải thành viên của không gian này.",
+      "errAlreadyOwner": "Thành viên đó đã là chủ sở hữu.",
+      "errYourself": "Bạn không thể chuyển quyền sở hữu cho chính mình."
+    },
+    "delete": {
+      "title": "Xóa không gian",
+      "desc": "Xóa vĩnh viễn không gian này và mọi dữ liệu gồm tài liệu, thành viên, tin nhắn và vector Qdrant. Hành động này không thể hoàn tác.",
+      "deleteBtn": "Xóa không gian…",
+      "typeName": "Nhập tên không gian {{name}} để xác nhận:",
+      "deleting": "Đang xóa…",
+      "permanentlyDelete": "Xóa vĩnh viễn",
+      "errNameMismatch": "Tên không gian bạn nhập không khớp. Vui lòng thử lại."
+    },
+    "requestFailed": "Yêu cầu thất bại."
+  },
+  "switcher": {
+    "select": "Chọn không gian",
+    "switchTitle": "Chuyển không gian",
+    "workspaces": "Không gian làm việc",
+    "manage": "Quản lý không gian"
+  },
+  "picker": {
+    "title": "Chọn một không gian làm việc",
+    "prompt": "Bạn muốn quản lý không gian nào trong phiên này?",
+    "continue": "Tiếp tục"
+  },
+  "require": {
+    "loading": "Đang tải không gian làm việc của bạn…",
+    "errorTitle": "Không tải được không gian làm việc",
+    "empty": "Chưa có không gian làm việc",
+    "emptyPrompt": "Tạo không gian làm việc đầu tiên để bắt đầu dùng NEXUS.",
+    "create": "Tạo không gian"
+  },
+  "placeholder": {
+    "defaultDesc": "Trang này chưa được chuyển sang ứng dụng React. SPA cũ tại /static/ vẫn phục vụ phiên bản hoạt động."
+  },
+  "join": {
+    "title": "Đang tham gia không gian làm việc…",
+    "verifying": "Đang xác minh lời mời…",
+    "joined": "Bạn đã tham gia {{name}} với vai trò {{role}}.",
+    "redirecting": "Đang chuyển hướng…",
+    "goToNexus": "Đến NEXUS",
+    "fallbackName": "không gian làm việc",
+    "noToken": "Không có token lời mời trong URL.",
+    "errNotFound": "Không tìm thấy liên kết mời hoặc đã được dùng.",
+    "errUsed": "Lời mời này đã được chấp nhận hoặc thu hồi.",
+    "errExpired": "Liên kết mời này đã hết hạn. Hãy nhờ quản lý không gian gửi lại.",
+    "errGeneric": "Đã xảy ra lỗi."
+  }
+}

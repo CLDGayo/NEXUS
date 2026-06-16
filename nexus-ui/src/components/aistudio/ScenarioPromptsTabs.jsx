@@ -1,44 +1,41 @@
 import * as Tabs from '@radix-ui/react-tabs';
+import { useTranslation } from 'react-i18next';
 
 // Phase 49 — scenario_prompts editor. Four lifecycle overlays, one textarea
 // each, wrapped in a glass pane. Maps 1:1 to ai_settings.scenario_prompts.
-const TABS = [
-  { key: 'introduction', label: 'Introduction', hint: 'First-turn opener overlay.' },
-  { key: 'core_behavior', label: 'Core Behavior', hint: 'Always appended persona / policy.' },
-  { key: 'checkout_transition', label: 'Checkout', hint: 'Buy-intent overlay.' },
-  { key: 'human_handoff', label: 'Human Handoff', hint: 'HITL handover overlay.' },
-];
+const TAB_KEYS = ['introduction', 'core_behavior', 'checkout_transition', 'human_handoff'];
 
 export default function ScenarioPromptsTabs({ value, onChange }) {
+  const { t } = useTranslation('aistudio');
   const prompts = value || {};
 
   return (
     <Tabs.Root defaultValue="core_behavior" className="glass-pane p-4">
       <Tabs.List className="mb-3 flex flex-wrap gap-1">
-        {TABS.map((t) => (
+        {TAB_KEYS.map((key) => (
           <Tabs.Trigger
-            key={t.key}
-            value={t.key}
+            key={key}
+            value={key}
             className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 transition-colors hover:bg-slate-50 hover:dark:bg-slate-900 data-[state=active]:bg-nexus-accent/10 data-[state=active]:text-nexus-accent"
           >
-            {t.label}
+            {t(`scenario.tabs.${key}`)}
           </Tabs.Trigger>
         ))}
       </Tabs.List>
 
-      {TABS.map((t) => (
-        <Tabs.Content key={t.key} value={t.key} className="focus:outline-none">
-          <p className="mb-1.5 text-xs text-nexus-muted">{t.hint}</p>
+      {TAB_KEYS.map((key) => (
+        <Tabs.Content key={key} value={key} className="focus:outline-none">
+          <p className="mb-1.5 text-xs text-nexus-muted">{t(`scenario.hints.${key}`)}</p>
           <textarea
-            value={prompts[t.key] ?? ''}
-            onChange={(e) => onChange(t.key, e.target.value)}
+            value={prompts[key] ?? ''}
+            onChange={(e) => onChange(key, e.target.value)}
             rows={8}
             maxLength={8000}
-            placeholder="Leave blank to use the default behavior…"
+            placeholder={t('scenario.placeholder')}
             className="w-full resize-y rounded-lg border border-nexus-border bg-white/80 p-3 text-sm text-slate-800 dark:text-slate-100 shadow-inner focus:border-nexus-accent focus:outline-none focus:ring-1 focus:ring-nexus-accent/40"
           />
           <div className="mt-1 text-right text-[11px] text-nexus-muted">
-            {(prompts[t.key] ?? '').length} / 8000
+            {t('scenario.charCount', { count: (prompts[key] ?? '').length })}
           </div>
         </Tabs.Content>
       ))}

@@ -1,0 +1,56 @@
+{
+  "title": "AI Studio",
+  "subtitle": "Ajusta el persona, los nodos activos y los parámetros del modelo de este espacio de trabajo.",
+  "saving": "Guardando…",
+  "save": "Guardar",
+  "loading": "Cargando ajustes de IA…",
+  "saved": "Guardado.",
+  "saveFailed": "Error al guardar.",
+  "sections": {
+    "scenarioPrompts": "Prompts de escenario",
+    "activeNodes": "Nodos activos",
+    "modelParams": "Parámetros del modelo"
+  },
+  "scenario": {
+    "placeholder": "Déjalo en blanco para usar el comportamiento predeterminado…",
+    "charCount": "{{count}} / 8000",
+    "tabs": {
+      "introduction": "Introducción",
+      "core_behavior": "Comportamiento principal",
+      "checkout_transition": "Pago",
+      "human_handoff": "Transferencia a humano"
+    },
+    "hints": {
+      "introduction": "Superposición de apertura en el primer turno.",
+      "core_behavior": "Persona / política siempre añadida.",
+      "checkout_transition": "Superposición de intención de compra.",
+      "human_handoff": "Superposición de transferencia HITL."
+    }
+  },
+  "nodes": {
+    "labels": {
+      "sentiment_analysis": "Análisis de sentimiento",
+      "research_mode": "Modo investigación",
+      "inject_product_context": "Contexto de producto",
+      "build_carousel": "Crear carrusel",
+      "sdr_persona": "Persona SDR",
+      "hitl_handover": "Transferencia HITL"
+    },
+    "hints": {
+      "sentiment_analysis": "Enrutamiento de sentimiento por empatía cognitiva.",
+      "research_mode": "Ruta de planificación de recuperación multisalto.",
+      "inject_product_context": "Insertar filas del catálogo en el contexto.",
+      "build_carousel": "Renderizar carruseles de productos de Messenger.",
+      "sdr_persona": "Herramientas de ventas + superposición de persona.",
+      "hitl_handover": "Emisión de transferencia a humano del guardarraíl."
+    }
+  },
+  "model": {
+    "temperature": "Temperatura",
+    "temperatureHint": "0 = determinista · 2 = más creativo",
+    "maxTokens": "Tokens máx.",
+    "model": "Modelo",
+    "default": "Predeterminado (sistema)",
+    "defaultHint": "El valor predeterminado recurre al modelo de generación del sistema."
+  }
+}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Sparkles, MessageSquareText, ToggleRight, SlidersHorizontal } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api.js';
 import { usePageMountTimeline } from '../hooks/usePageMountTimeline.js';
 import { useTactilePress } from '../hooks/useTactilePress.js';
@@ -11,6 +12,7 @@ import ModelParamsPanel from '../components/aistudio/ModelParamsPanel.jsx';
 // (scenario_prompts persona overlays, active_nodes toggles, model_params).
 // GET on mount, PUT the dirty sub-objects on save.
 export default function SettingsAiStudioPage() {
+  const { t } = useTranslation('aistudio');
   const pageRef = usePageMountTimeline();
   const saveRef = useTactilePress();
 
@@ -67,9 +69,9 @@ export default function SettingsAiStudioPage() {
       setSettings(blob);
       setInitial(JSON.stringify(blob));
       setAvailableModels(available_models);
-      setStatus('Saved.');
+      setStatus(t('saved'));
     } catch (err) {
-      setError(err.message || 'Save failed.');
+      setError(err.message || t('saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -82,10 +84,10 @@ export default function SettingsAiStudioPage() {
           <div>
             <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
               <Sparkles size={15} className="text-nexus-accent" />
-              AI Studio
+              {t('title')}
             </h2>
             <p className="text-xs text-nexus-muted">
-              Tune this workspace&apos;s persona, active nodes, and model parameters.
+              {t('subtitle')}
             </p>
           </div>
           <button
@@ -94,13 +96,13 @@ export default function SettingsAiStudioPage() {
             disabled={!dirty || saving}
             className="rounded-lg bg-nexus-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('saving') : t('save')}
           </button>
         </div>
 
         {loading && (
           <div className="glass-pane p-6 text-center text-sm text-nexus-muted">
-            Loading AI settings…
+            {t('loading')}
           </div>
         )}
         {error && (
@@ -119,7 +121,7 @@ export default function SettingsAiStudioPage() {
             <section data-animate className="space-y-2">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 <MessageSquareText size={14} className="text-nexus-accent" />
-                Scenario Prompts
+                {t('sections.scenarioPrompts')}
               </h3>
               <ScenarioPromptsTabs
                 value={settings.scenario_prompts}
@@ -130,7 +132,7 @@ export default function SettingsAiStudioPage() {
             <section data-animate className="space-y-2">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 <ToggleRight size={14} className="text-nexus-accent" />
-                Active Nodes
+                {t('sections.activeNodes')}
               </h3>
               <NodeTogglesPanel
                 value={settings.active_nodes}
@@ -141,7 +143,7 @@ export default function SettingsAiStudioPage() {
             <section data-animate className="space-y-2">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 <SlidersHorizontal size={14} className="text-nexus-accent" />
-                Model Parameters
+                {t('sections.modelParams')}
               </h3>
               <ModelParamsPanel
                 value={settings.model_params}

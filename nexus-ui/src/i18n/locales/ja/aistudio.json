@@ -1,0 +1,56 @@
+{
+  "title": "AI Studio",
+  "subtitle": "このワークスペースのペルソナ、アクティブノード、モデルパラメータを調整します。",
+  "saving": "保存中…",
+  "save": "保存",
+  "loading": "AI 設定を読み込み中…",
+  "saved": "保存しました。",
+  "saveFailed": "保存に失敗しました。",
+  "sections": {
+    "scenarioPrompts": "シナリオプロンプト",
+    "activeNodes": "アクティブノード",
+    "modelParams": "モデルパラメータ"
+  },
+  "scenario": {
+    "placeholder": "空欄にするとデフォルトの動作を使用します…",
+    "charCount": "{{count}} / 8000",
+    "tabs": {
+      "introduction": "導入",
+      "core_behavior": "コア動作",
+      "checkout_transition": "チェックアウト",
+      "human_handoff": "人への引き継ぎ"
+    },
+    "hints": {
+      "introduction": "初回ターンの冒頭オーバーレイ。",
+      "core_behavior": "常に追加されるペルソナ / ポリシー。",
+      "checkout_transition": "購入意図のオーバーレイ。",
+      "human_handoff": "HITL 引き継ぎオーバーレイ。"
+    }
+  },
+  "nodes": {
+    "labels": {
+      "sentiment_analysis": "感情分析",
+      "research_mode": "リサーチモード",
+      "inject_product_context": "製品コンテキスト",
+      "build_carousel": "カルーセル生成",
+      "sdr_persona": "SDR ペルソナ",
+      "hitl_handover": "HITL 引き継ぎ"
+    },
+    "hints": {
+      "sentiment_analysis": "認知的共感による感情ルーティング。",
+      "research_mode": "マルチホップ検索プランニング経路。",
+      "inject_product_context": "カタログ行をコンテキストに取り込みます。",
+      "build_carousel": "Messenger 製品カルーセルを描画します。",
+      "sdr_persona": "セールスツール + ペルソナオーバーレイ。",
+      "hitl_handover": "ガードレールによる人への引き継ぎの発行。"
+    }
+  },
+  "model": {
+    "temperature": "温度",
+    "temperatureHint": "0 = 決定的 · 2 = 最も創造的",
+    "maxTokens": "最大トークン",
+    "model": "モデル",
+    "default": "デフォルト（システム）",
+    "defaultHint": "デフォルトはシステムの生成モデルにフォールバックします。"
+  }
+}

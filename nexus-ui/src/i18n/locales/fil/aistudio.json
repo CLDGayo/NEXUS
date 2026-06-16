@@ -1,0 +1,56 @@
+{
+  "title": "AI Studio",
+  "subtitle": "I-tune ang persona, mga aktibong node, at model parameters ng workspace na ito.",
+  "saving": "Sine-save…",
+  "save": "I-save",
+  "loading": "Niloload ang mga AI setting…",
+  "saved": "Na-save.",
+  "saveFailed": "Nabigo ang pag-save.",
+  "sections": {
+    "scenarioPrompts": "Mga Scenario Prompt",
+    "activeNodes": "Mga Aktibong Node",
+    "modelParams": "Mga Parameter ng Model"
+  },
+  "scenario": {
+    "placeholder": "Iwanang blangko para gamitin ang default na ugali…",
+    "charCount": "{{count}} / 8000",
+    "tabs": {
+      "introduction": "Panimula",
+      "core_behavior": "Pangunahing Ugali",
+      "checkout_transition": "Checkout",
+      "human_handoff": "Human Handoff"
+    },
+    "hints": {
+      "introduction": "Overlay para sa unang-turn na pambungad.",
+      "core_behavior": "Laging idinadagdag na persona / patakaran.",
+      "checkout_transition": "Overlay kapag may intensyon bumili.",
+      "human_handoff": "Overlay ng HITL handover."
+    }
+  },
+  "nodes": {
+    "labels": {
+      "sentiment_analysis": "Sentiment Analysis",
+      "research_mode": "Research Mode",
+      "inject_product_context": "Product Context",
+      "build_carousel": "Build Carousel",
+      "sdr_persona": "SDR Persona",
+      "hitl_handover": "HITL Handover"
+    },
+    "hints": {
+      "sentiment_analysis": "Cognitive-empathy sentiment routing.",
+      "research_mode": "Multi-hop retrieval planning path.",
+      "inject_product_context": "I-hoist ang catalog rows sa context.",
+      "build_carousel": "Mag-render ng Messenger product carousels.",
+      "sdr_persona": "Sales tools + persona overlay.",
+      "hitl_handover": "Guardrails human-handover emission."
+    }
+  },
+  "model": {
+    "temperature": "Temperature",
+    "temperatureHint": "0 = deterministic · 2 = pinaka-creative",
+    "maxTokens": "Max Tokens",
+    "model": "Model",
+    "default": "Default (system)",
+    "defaultHint": "Ang default ay babalik sa system generation model."
+  }
+}

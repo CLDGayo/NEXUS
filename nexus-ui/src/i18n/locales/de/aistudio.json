@@ -1,0 +1,56 @@
+{
+  "title": "AI Studio",
+  "subtitle": "Persona, aktive Knoten und Modellparameter dieses Arbeitsbereichs anpassen.",
+  "saving": "Wird gespeichert…",
+  "save": "Speichern",
+  "loading": "AI-Einstellungen werden geladen…",
+  "saved": "Gespeichert.",
+  "saveFailed": "Speichern fehlgeschlagen.",
+  "sections": {
+    "scenarioPrompts": "Szenario-Prompts",
+    "activeNodes": "Aktive Knoten",
+    "modelParams": "Modellparameter"
+  },
+  "scenario": {
+    "placeholder": "Leer lassen, um das Standardverhalten zu verwenden…",
+    "charCount": "{{count}} / 8000",
+    "tabs": {
+      "introduction": "Einführung",
+      "core_behavior": "Kernverhalten",
+      "checkout_transition": "Checkout",
+      "human_handoff": "Mensch-Übergabe"
+    },
+    "hints": {
+      "introduction": "Overlay für den ersten Gesprächseinstieg.",
+      "core_behavior": "Stets angehängte Persona / Richtlinie.",
+      "checkout_transition": "Overlay bei Kaufabsicht.",
+      "human_handoff": "HITL-Übergabe-Overlay."
+    }
+  },
+  "nodes": {
+    "labels": {
+      "sentiment_analysis": "Stimmungsanalyse",
+      "research_mode": "Recherchemodus",
+      "inject_product_context": "Produktkontext",
+      "build_carousel": "Karussell erstellen",
+      "sdr_persona": "SDR-Persona",
+      "hitl_handover": "HITL-Übergabe"
+    },
+    "hints": {
+      "sentiment_analysis": "Routing nach kognitiv-empathischer Stimmung.",
+      "research_mode": "Mehrstufiger Retrieval-Planungspfad.",
+      "inject_product_context": "Katalogzeilen in den Kontext heben.",
+      "build_carousel": "Messenger-Produktkarussells rendern.",
+      "sdr_persona": "Vertriebstools + Persona-Overlay.",
+      "hitl_handover": "Guardrail-Mensch-Übergabe-Auslösung."
+    }
+  },
+  "model": {
+    "temperature": "Temperatur",
+    "temperatureHint": "0 = deterministisch · 2 = am kreativsten",
+    "maxTokens": "Max. Tokens",
+    "model": "Modell",
+    "default": "Standard (System)",
+    "defaultHint": "Standard greift auf das System-Generierungsmodell zurück."
+  }
+}

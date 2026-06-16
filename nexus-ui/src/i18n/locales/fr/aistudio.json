@@ -1,0 +1,56 @@
+{
+  "title": "AI Studio",
+  "subtitle": "Réglez le persona, les nœuds actifs et les paramètres du modèle de cet espace de travail.",
+  "saving": "Enregistrement…",
+  "save": "Enregistrer",
+  "loading": "Chargement des paramètres IA…",
+  "saved": "Enregistré.",
+  "saveFailed": "Échec de l'enregistrement.",
+  "sections": {
+    "scenarioPrompts": "Prompts de scénario",
+    "activeNodes": "Nœuds actifs",
+    "modelParams": "Paramètres du modèle"
+  },
+  "scenario": {
+    "placeholder": "Laissez vide pour utiliser le comportement par défaut…",
+    "charCount": "{{count}} / 8000",
+    "tabs": {
+      "introduction": "Introduction",
+      "core_behavior": "Comportement principal",
+      "checkout_transition": "Paiement",
+      "human_handoff": "Transfert humain"
+    },
+    "hints": {
+      "introduction": "Superposition d'ouverture au premier tour.",
+      "core_behavior": "Persona / politique toujours ajoutée.",
+      "checkout_transition": "Superposition d'intention d'achat.",
+      "human_handoff": "Superposition de transfert HITL."
+    }
+  },
+  "nodes": {
+    "labels": {
+      "sentiment_analysis": "Analyse de sentiment",
+      "research_mode": "Mode recherche",
+      "inject_product_context": "Contexte produit",
+      "build_carousel": "Créer un carrousel",
+      "sdr_persona": "Persona SDR",
+      "hitl_handover": "Transfert HITL"
+    },
+    "hints": {
+      "sentiment_analysis": "Routage du sentiment par empathie cognitive.",
+      "research_mode": "Chemin de planification de récupération multi-sauts.",
+      "inject_product_context": "Insérer les lignes du catalogue dans le contexte.",
+      "build_carousel": "Afficher les carrousels de produits Messenger.",
+      "sdr_persona": "Outils de vente + superposition de persona.",
+      "hitl_handover": "Émission de transfert humain par garde-fou."
+    }
+  },
+  "model": {
+    "temperature": "Température",
+    "temperatureHint": "0 = déterministe · 2 = le plus créatif",
+    "maxTokens": "Tokens max",
+    "model": "Modèle",
+    "default": "Par défaut (système)",
+    "defaultHint": "Par défaut, revient au modèle de génération du système."
+  }
+}

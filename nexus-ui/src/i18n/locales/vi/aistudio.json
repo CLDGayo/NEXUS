@@ -1,0 +1,56 @@
+{
+  "title": "AI Studio",
+  "subtitle": "Tinh chỉnh persona, các nút hoạt động và tham số mô hình cho không gian làm việc này.",
+  "saving": "Đang lưu…",
+  "save": "Lưu",
+  "loading": "Đang tải cài đặt AI…",
+  "saved": "Đã lưu.",
+  "saveFailed": "Lưu thất bại.",
+  "sections": {
+    "scenarioPrompts": "Prompt theo tình huống",
+    "activeNodes": "Nút đang hoạt động",
+    "modelParams": "Tham số mô hình"
+  },
+  "scenario": {
+    "placeholder": "Để trống để dùng hành vi mặc định…",
+    "charCount": "{{count}} / 8000",
+    "tabs": {
+      "introduction": "Giới thiệu",
+      "core_behavior": "Hành vi cốt lõi",
+      "checkout_transition": "Thanh toán",
+      "human_handoff": "Chuyển cho người"
+    },
+    "hints": {
+      "introduction": "Lớp phủ mở đầu lượt đầu tiên.",
+      "core_behavior": "Persona / chính sách luôn được thêm vào.",
+      "checkout_transition": "Lớp phủ khi có ý định mua.",
+      "human_handoff": "Lớp phủ chuyển giao HITL."
+    }
+  },
+  "nodes": {
+    "labels": {
+      "sentiment_analysis": "Phân tích cảm xúc",
+      "research_mode": "Chế độ nghiên cứu",
+      "inject_product_context": "Bối cảnh sản phẩm",
+      "build_carousel": "Tạo carousel",
+      "sdr_persona": "Persona SDR",
+      "hitl_handover": "Chuyển giao HITL"
+    },
+    "hints": {
+      "sentiment_analysis": "Định tuyến cảm xúc đồng cảm nhận thức.",
+      "research_mode": "Đường lập kế hoạch truy xuất đa bước.",
+      "inject_product_context": "Đưa các dòng danh mục vào bối cảnh.",
+      "build_carousel": "Hiển thị carousel sản phẩm Messenger.",
+      "sdr_persona": "Công cụ bán hàng + lớp phủ persona.",
+      "hitl_handover": "Phát tín hiệu chuyển giao cho người của guardrail."
+    }
+  },
+  "model": {
+    "temperature": "Nhiệt độ",
+    "temperatureHint": "0 = xác định · 2 = sáng tạo nhất",
+    "maxTokens": "Token tối đa",
+    "model": "Mô hình",
+    "default": "Mặc định (hệ thống)",
+    "defaultHint": "Mặc định quay về mô hình tạo của hệ thống."
+  }
+}

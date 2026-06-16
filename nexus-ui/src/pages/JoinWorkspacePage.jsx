@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTenant } from '../hooks/useTenant.js';
 import { api, HTTPError } from '../lib/api.js';
 
-function statusMsg(err) {
+function statusMsg(err, t) {
   if (err instanceof HTTPError) {
     const detail = (typeof err.body === 'string' && err.body) || '';
-    if (detail === 'invite_not_found') return 'Invite link not found or already used.';
-    if (detail === 'invite_already_used') return 'This invite has already been accepted or revoked.';
-    if (detail === 'invite_expired') return 'This invite link has expired. Ask a workspace manager to resend.';
+    if (detail === 'invite_not_found') return t('join.errNotFound');
+    if (detail === 'invite_already_used') return t('join.errUsed');
+    if (detail === 'invite_expired') return t('join.errExpired');
     return detail || err.message;
   }
-  return err?.message || 'Something went wrong.';
+  return err?.message || t('join.errGeneric');
 }
 
 // Full-page route — no AppShell, no sidebar. Accepts a workspace invite
 // token from /join?token=... After acceptance, refreshes tenant list,
 // switches to the new workspace, and navigates to /chat.
 export default function JoinWorkspacePage() {
+  const { t } = useTranslation('workspace');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { refreshTenants, setActiveTenant } = useTenant();
@@ -31,7 +33,7 @@ export default function JoinWorkspacePage() {
     const token = searchParams.get('token');
     if (!token) {
       setPhase('error');
-      setErrMsg('No invite token in URL.');
+      setErrMsg(t('join.noToken'));
       return;
     }
 
@@ -48,7 +50,7 @@ export default function JoinWorkspacePage() {
         setTimeout(() => navigate('/chat', { replace: true }), 1200);
       })
       .catch((err) => {
-        setErrMsg(statusMsg(err));
+        setErrMsg(statusMsg(err, t));
         setPhase('error');
       });
   // Run once on mount — token from URL does not change.
@@ -62,13 +64,13 @@ export default function JoinWorkspacePage() {
           <Building2 size={32} className="text-nexus-accent" />
         </div>
         <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-          Joining workspace…
+          {t('join.title')}
         </h1>
 
         {phase === 'loading' && (
           <div className="flex flex-col items-center gap-2 text-sm text-nexus-muted">
             <Loader2 size={20} className="animate-spin" />
-            Verifying invite…
+            {t('join.verifying')}
           </div>
         )}
 
@@ -76,13 +78,9 @@ export default function JoinWorkspacePage() {
           <div className="flex flex-col items-center gap-2">
             <CheckCircle size={20} className="text-green-500" />
             <p className="text-sm text-slate-700 dark:text-slate-300">
-              You joined{' '}
-              <span className="font-semibold">
-                {result?.tenant_name || 'the workspace'}
-              </span>{' '}
-              as <span className="font-medium">{result?.role}</span>.
+              {t('join.joined', { name: result?.tenant_name || t('join.fallbackName'), role: result?.role })}
             </p>
-            <p className="text-xs text-nexus-muted">Redirecting…</p>
+            <p className="text-xs text-nexus-muted">{t('join.redirecting')}</p>
           </div>
         )}
 
@@ -95,7 +93,7 @@ export default function JoinWorkspacePage() {
               onClick={() => navigate('/chat', { replace: true })}
               className="rounded-md bg-nexus-accent px-4 py-1.5 text-sm font-medium text-white hover:opacity-90"
             >
-              Go to NEXUS
+              {t('join.goToNexus')}
             </button>
           </div>
         )}

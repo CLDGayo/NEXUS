@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   Users,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTenant } from '../hooks/useTenant.js';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs.jsx';
 import MembersTab from '../components/workspace/MembersTab.jsx';
@@ -34,6 +35,7 @@ function PlaceholderTab({ icon: Icon, title, copy }) {
 // mismatches, so managing a non-active workspace requires switching first —
 // the banner below makes that explicit instead of letting calls 400.
 export default function WorkspaceDetailPage() {
+  const { t } = useTranslation('workspace');
   const { slug } = useParams();
   const {
     tenants,
@@ -50,7 +52,7 @@ export default function WorkspaceDetailPage() {
     if (tenantsLoading || tenants.length === 0) {
       return (
         <div className="flex h-full items-center justify-center text-sm text-nexus-muted">
-          Loading workspace…
+          {t('detail.loading')}
         </div>
       );
     }
@@ -68,7 +70,7 @@ export default function WorkspaceDetailPage() {
             className="glass-pressable inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-nexus-muted hover:text-slate-700 dark:hover:text-slate-300"
           >
             <ArrowLeft size={12} />
-            Workspaces
+            {t('detail.back')}
           </Link>
         </div>
 
@@ -85,12 +87,12 @@ export default function WorkspaceDetailPage() {
                 {isActive && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
                     <CheckCircle2 size={10} />
-                    Active
+                    {t('detail.active')}
                   </span>
                 )}
               </div>
               <p className="text-xs text-nexus-muted">
-                {tenant.slug} · your role:{' '}
+                {tenant.slug} · {t('detail.yourRole')}{' '}
                 <span className="font-medium uppercase">{tenant.role}</span>
               </p>
             </div>
@@ -100,25 +102,24 @@ export default function WorkspaceDetailPage() {
         {!isActive && (
           <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/30 dark:bg-amber-500/10">
             <p className="text-xs text-amber-800 dark:text-amber-300">
-              You are viewing a workspace that is not currently active. Switch
-              to it to manage members and settings.
+              {t('detail.notActiveBanner')}
             </p>
             <button
               type="button"
               onClick={() => setActiveTenant(tenant.id)}
               className="ml-3 shrink-0 rounded-md bg-nexus-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
             >
-              Switch to {tenant.name}
+              {t('detail.switchTo', { name: tenant.name })}
             </button>
           </div>
         )}
 
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="usage">Usage</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
+            <TabsTrigger value="general">{t('detail.tabs.general')}</TabsTrigger>
+            <TabsTrigger value="members">{t('detail.tabs.members')}</TabsTrigger>
+            <TabsTrigger value="usage">{t('detail.tabs.usage')}</TabsTrigger>
+            <TabsTrigger value="advanced">{t('detail.tabs.advanced')}</TabsTrigger>
           </TabsList>
 
           <div className="mt-4">
@@ -132,8 +133,8 @@ export default function WorkspaceDetailPage() {
               ) : (
                 <PlaceholderTab
                   icon={Settings2}
-                  title="Switch to this workspace to edit settings"
-                  copy="Workspace settings operate on the active workspace. Use the switch banner above."
+                  title={t('detail.placeholder.generalTitle')}
+                  copy={t('detail.placeholder.generalCopy')}
                 />
               )}
             </TabsContent>
@@ -144,8 +145,8 @@ export default function WorkspaceDetailPage() {
               ) : (
                 <PlaceholderTab
                   icon={Users}
-                  title="Switch to this workspace to manage members"
-                  copy="Member management operates on the active workspace. Use the switch banner above."
+                  title={t('detail.placeholder.membersTitle')}
+                  copy={t('detail.placeholder.membersCopy')}
                 />
               )}
             </TabsContent>
@@ -156,8 +157,8 @@ export default function WorkspaceDetailPage() {
               ) : (
                 <PlaceholderTab
                   icon={Gauge}
-                  title="Switch to this workspace to view usage"
-                  copy="Usage stats operate on the active workspace. Use the switch banner above."
+                  title={t('detail.placeholder.usageTitle')}
+                  copy={t('detail.placeholder.usageCopy')}
                 />
               )}
             </TabsContent>
@@ -172,8 +173,8 @@ export default function WorkspaceDetailPage() {
               ) : (
                 <PlaceholderTab
                   icon={ShieldAlert}
-                  title="Switch to this workspace for advanced controls"
-                  copy="Archive, ownership transfer, and deletion operate on the active workspace. Use the switch banner above."
+                  title={t('detail.placeholder.advancedTitle')}
+                  copy={t('detail.placeholder.advancedCopy')}
                 />
               )}
             </TabsContent>

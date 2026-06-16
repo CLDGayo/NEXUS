@@ -1,0 +1,56 @@
+{
+  "title": "AI Studio",
+  "subtitle": "Tune this workspace's persona, active nodes, and model parameters.",
+  "saving": "Saving…",
+  "save": "Save",
+  "loading": "Loading AI settings…",
+  "saved": "Saved.",
+  "saveFailed": "Save failed.",
+  "sections": {
+    "scenarioPrompts": "Scenario Prompts",
+    "activeNodes": "Active Nodes",
+    "modelParams": "Model Parameters"
+  },
+  "scenario": {
+    "placeholder": "Leave blank to use the default behavior…",
+    "charCount": "{{count}} / 8000",
+    "tabs": {
+      "introduction": "Introduction",
+      "core_behavior": "Core Behavior",
+      "checkout_transition": "Checkout",
+      "human_handoff": "Human Handoff"
+    },
+    "hints": {
+      "introduction": "First-turn opener overlay.",
+      "core_behavior": "Always appended persona / policy.",
+      "checkout_transition": "Buy-intent overlay.",
+      "human_handoff": "HITL handover overlay."
+    }
+  },
+  "nodes": {
+    "labels": {
+      "sentiment_analysis": "Sentiment Analysis",
+      "research_mode": "Research Mode",
+      "inject_product_context": "Product Context",
+      "build_carousel": "Build Carousel",
+      "sdr_persona": "SDR Persona",
+      "hitl_handover": "HITL Handover"
+    },
+    "hints": {
+      "sentiment_analysis": "Cognitive-empathy sentiment routing.",
+      "research_mode": "Multi-hop retrieval planning path.",
+      "inject_product_context": "Hoist catalog rows into context.",
+      "build_carousel": "Render Messenger product carousels.",
+      "sdr_persona": "Sales tools + persona overlay.",
+      "hitl_handover": "Guardrails human-handover emission."
+    }
+  },
+  "model": {
+    "temperature": "Temperature",
+    "temperatureHint": "0 = deterministic · 2 = most creative",
+    "maxTokens": "Max Tokens",
+    "model": "Model",
+    "default": "Default (system)",
+    "defaultHint": "Default falls back to the system generation model."
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "list": {
+    "title": "Workspaces",
+    "subtitle": "Manage tenant workspaces. Each workspace isolates its own documents, chats, and integrations.",
+    "yourWorkspaces": "Your workspaces",
+    "col": { "name": "Name", "slug": "Slug", "role": "Role", "members": "Members", "created": "Created", "action": "Action" },
+    "active": "Active",
+    "switch": "Switch",
+    "empty": "You don't belong to any workspaces yet.",
+    "create": "Create workspace",
+    "companyName": "Company name",
+    "companyPlaceholder": "Akiro Collectibles",
+    "creating": "Creating…",
+    "createBtn": "Create",
+    "nameExists": "A workspace with that name already exists.",
+    "createFailed": "Failed to create workspace.",
+    "createdSwitched": "Created {{name}} and switched to it."
+  },
+  "detail": {
+    "back": "Workspaces",
+    "active": "Active",
+    "yourRole": "your role:",
+    "loading": "Loading workspace…",
+    "notActiveBanner": "You are viewing a workspace that is not currently active. Switch to it to manage members and settings.",
+    "switchTo": "Switch to {{name}}",
+    "tabs": { "general": "General", "members": "Members", "usage": "Usage", "advanced": "Advanced" },
+    "placeholder": {
+      "generalTitle": "Switch to this workspace to edit settings",
+      "generalCopy": "Workspace settings operate on the active workspace. Use the switch banner above.",
+      "membersTitle": "Switch to this workspace to manage members",
+      "membersCopy": "Member management operates on the active workspace. Use the switch banner above.",
+      "usageTitle": "Switch to this workspace to view usage",
+      "usageCopy": "Usage stats operate on the active workspace. Use the switch banner above.",
+      "advancedTitle": "Switch to this workspace for advanced controls",
+      "advancedCopy": "Archive, ownership transfer, and deletion operate on the active workspace. Use the switch banner above."
+    }
+  },
+  "general": {
+    "avatarTitle": "Workspace avatar",
+    "uploadImage": "Upload image",
+    "changeImage": "Change image",
+    "remove": "Remove",
+    "imageHint": "JPG, PNG or WebP · max 2 MB",
+    "identityTitle": "Workspace identity",
+    "name": "Name",
+    "slug": "Slug",
+    "slugWarning": "Changing the slug may break existing integration links.",
+    "created": "Created",
+    "members": "Members",
+    "yourRole": "Your role",
+    "saved": "Saved successfully.",
+    "saving": "Saving…",
+    "save": "Save changes",
+    "err": {
+      "slugBlocked": "Cannot change slug — this workspace has indexed documents. Remove all documents first.",
+      "slugTaken": "That slug is already taken. Please choose another.",
+      "unsupportedMime": "Unsupported image format. Use JPG, PNG, or WebP.",
+      "avatarTooLarge": "Image file is too large (max 2 MB).",
+      "requestFailed": "Request failed."
+    }
+  },
+  "members": {
+    "roles": { "owner": "Owner", "admin": "Admin", "member": "Member" },
+    "inviteTitle": "Invite to workspace",
+    "emailLabel": "Email (optional for open link)",
+    "emailPlaceholder": "colleague@example.com",
+    "role": "Role",
+    "sending": "Sending…",
+    "sendInvite": "Send invite",
+    "createLink": "Create link",
+    "inviteSentTo": "Invite sent to {{email}}.",
+    "joinLinkCreated": "Join link created.",
+    "copyLink": "Copy link",
+    "copyLinkTitle": "Copy invite link",
+    "copied": "Copied",
+    "pending": "Pending invites ({{count}})",
+    "col": { "emailType": "Email / Type", "role": "Role", "expires": "Expires", "actions": "Actions" },
+    "openLink": "Open link",
+    "expired": "(expired)",
+    "resend": "Resend",
+    "resendTitle": "Resend email",
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke invite",
+    "title": "Members ({{count}})",
+    "tcol": { "user": "User", "role": "Role", "joined": "Joined", "actions": "Actions" },
+    "you": "(you)",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "removing": "Removing…",
+    "remove": "Remove",
+    "removeTitle": "Remove member",
+    "loading": "Loading members…",
+    "footer": "Owners have full control including workspace deletion. Admins manage members and settings but cannot delete the workspace.",
+    "err": {
+      "lastOwner": "This is the last owner — transfer ownership first.",
+      "adminsCannot": "Admins cannot modify or remove owners.",
+      "onlyOwners": "Only owners can grant the owner role.",
+      "requestFailed": "Request failed."
+    }
+  },
+  "usage": {
+    "failedTitle": "Failed to load usage",
+    "managerRequired": "Manager or owner role required to view usage.",
+    "failedData": "Failed to load usage data.",
+    "noMessages": "No messages in the last 7 days.",
+    "messages7d": "Messages — last 7 days",
+    "documents": "Documents",
+    "products": "Products",
+    "members": "Members",
+    "vectorChunks": "Vector Chunks",
+    "totalMessages": "Total Messages"
+  },
+  "advanced": {
+    "ownerOnly": "Owner only",
+    "ownerOnlyNote": "Only the workspace owner can perform this action.",
+    "cancel": "Cancel",
+    "archive": {
+      "unarchiveTitle": "Unarchive workspace",
+      "archiveTitle": "Archive workspace",
+      "unarchiveDesc": "The workspace is currently archived. Members cannot use it until you restore it.",
+      "archiveDesc": "Suspend this workspace. Members will be locked out until you unarchive it. Data is preserved.",
+      "archivedBanner": "This workspace is archived. All data routes return 403 for its members.",
+      "confirmRestore": "Restore this workspace?",
+      "confirmArchive": "Archive this workspace?",
+      "working": "Working…",
+      "yesRestore": "Yes, restore",
+      "yesArchive": "Yes, archive",
+      "restore": "Restore workspace",
+      "archiveBtn": "Archive workspace",
+      "errAlreadyArchived": "This workspace is already archived.",
+      "errNotArchived": "This workspace is not archived."
+    },
+    "transfer": {
+      "title": "Transfer ownership",
+      "desc": "Pass full ownership to another workspace member. You will be demoted to Admin after the transfer. This cannot be undone without the new owner's cooperation.",
+      "newOwner": "New owner",
+      "selectMember": "Select member…",
+      "transferBtn": "Transfer…",
+      "confirmQuestion": "Transfer ownership to {{name}}? You will be demoted to Admin.",
+      "transferring": "Transferring…",
+      "confirmTransfer": "Confirm transfer",
+      "errMemberNotFound": "That user is not a member of this workspace.",
+      "errAlreadyOwner": "That member is already an owner.",
+      "errYourself": "You cannot transfer ownership to yourself."
+    },
+    "delete": {
+      "title": "Delete workspace",
+      "desc": "Permanently delete this workspace and all its data including documents, members, messages, and Qdrant vectors. This action is irreversible.",
+      "deleteBtn": "Delete workspace…",
+      "typeName": "Type the workspace name {{name}} to confirm:",
+      "deleting": "Deleting…",
+      "permanentlyDelete": "Permanently delete",
+      "errNameMismatch": "The workspace name you typed does not match. Please try again."
+    },
+    "requestFailed": "Request failed."
+  },
+  "switcher": {
+    "select": "Select workspace",
+    "switchTitle": "Switch workspace",
+    "workspaces": "Workspaces",
+    "manage": "Manage workspaces"
+  },
+  "picker": {
+    "title": "Choose a workspace",
+    "prompt": "Which workspace would you like to manage in this session?",
+    "continue": "Continue"
+  },
+  "require": {
+    "loading": "Loading your workspaces…",
+    "errorTitle": "Couldn't load workspaces",
+    "empty": "No workspaces yet",
+    "emptyPrompt": "Create your first workspace to start using NEXUS.",
+    "create": "Create workspace"
+  },
+  "placeholder": {
+    "defaultDesc": "This page hasn't been ported into the React app yet. The legacy SPA at /static/ still serves the working version."
+  },
+  "join": {
+    "title": "Joining workspace…",
+    "verifying": "Verifying invite…",
+    "joined": "You joined {{name}} as {{role}}.",
+    "redirecting": "Redirecting…",
+    "goToNexus": "Go to NEXUS",
+    "fallbackName": "the workspace",
+    "noToken": "No invite token in URL.",
+    "errNotFound": "Invite link not found or already used.",
+    "errUsed": "This invite has already been accepted or revoked.",
+    "errExpired": "This invite link has expired. Ask a workspace manager to resend.",
+    "errGeneric": "Something went wrong."
+  }
+}

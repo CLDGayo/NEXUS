@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Building2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTenant } from '../../hooks/useTenant.js';
 
 // Login-time interceptor — surfaces when the user belongs to multiple
@@ -7,6 +8,7 @@ import { useTenant } from '../../hooks/useTenant.js';
 // modal naturally (TenantProvider flips `needsSelection` to false and
 // RequireTenant renders its children).
 export default function WorkspacePickerModal() {
+  const { t } = useTranslation('workspace');
   const { tenants, setActiveTenant } = useTenant();
   const [selectedId, setSelectedId] = useState(
     tenants.length > 0 ? tenants[0].id : null,
@@ -22,10 +24,10 @@ export default function WorkspacePickerModal() {
         <div className="mb-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
             <Building2 size={16} className="text-nexus-accent" />
-            Choose a workspace
+            {t('picker.title')}
           </div>
           <p className="mt-1 text-xs text-nexus-muted">
-            Which workspace would you like to manage in this session?
+            {t('picker.prompt')}
           </p>
         </div>
 
@@ -70,7 +72,7 @@ export default function WorkspacePickerModal() {
             disabled={!selectedId}
             className="inline-flex items-center justify-center rounded-md bg-nexus-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Continue
+            {t('picker.continue')}
           </button>
         </div>
       </div>

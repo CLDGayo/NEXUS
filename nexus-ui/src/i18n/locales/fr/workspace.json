@@ -1,0 +1,191 @@
+{
+  "list": {
+    "title": "Espaces de travail",
+    "subtitle": "Gérez les espaces de travail. Chaque espace isole ses propres documents, discussions et intégrations.",
+    "yourWorkspaces": "Vos espaces de travail",
+    "col": { "name": "Nom", "slug": "Slug", "role": "Rôle", "members": "Membres", "created": "Créé", "action": "Action" },
+    "active": "Actif",
+    "switch": "Basculer",
+    "empty": "Vous n'appartenez encore à aucun espace de travail.",
+    "create": "Créer un espace de travail",
+    "companyName": "Nom de l'entreprise",
+    "companyPlaceholder": "Akiro Collectibles",
+    "creating": "Création…",
+    "createBtn": "Créer",
+    "nameExists": "Un espace de travail portant ce nom existe déjà.",
+    "createFailed": "Échec de la création de l'espace de travail.",
+    "createdSwitched": "{{name}} créé et basculé dessus."
+  },
+  "detail": {
+    "back": "Espaces de travail",
+    "active": "Actif",
+    "yourRole": "votre rôle :",
+    "loading": "Chargement de l'espace de travail…",
+    "notActiveBanner": "Vous consultez un espace de travail qui n'est pas actif. Basculez dessus pour gérer les membres et les paramètres.",
+    "switchTo": "Basculer vers {{name}}",
+    "tabs": { "general": "Général", "members": "Membres", "usage": "Utilisation", "advanced": "Avancé" },
+    "placeholder": {
+      "generalTitle": "Basculez vers cet espace pour modifier les paramètres",
+      "generalCopy": "Les paramètres de l'espace s'appliquent à l'espace actif. Utilisez la bannière de bascule ci-dessus.",
+      "membersTitle": "Basculez vers cet espace pour gérer les membres",
+      "membersCopy": "La gestion des membres s'applique à l'espace actif. Utilisez la bannière de bascule ci-dessus.",
+      "usageTitle": "Basculez vers cet espace pour voir l'utilisation",
+      "usageCopy": "Les statistiques d'utilisation s'appliquent à l'espace actif. Utilisez la bannière de bascule ci-dessus.",
+      "advancedTitle": "Basculez vers cet espace pour les contrôles avancés",
+      "advancedCopy": "L'archivage, le transfert de propriété et la suppression s'appliquent à l'espace actif. Utilisez la bannière de bascule ci-dessus."
+    }
+  },
+  "general": {
+    "avatarTitle": "Avatar de l'espace de travail",
+    "uploadImage": "Téléverser une image",
+    "changeImage": "Changer d'image",
+    "remove": "Supprimer",
+    "imageHint": "JPG, PNG ou WebP · max 2 Mo",
+    "identityTitle": "Identité de l'espace de travail",
+    "name": "Nom",
+    "slug": "Slug",
+    "slugWarning": "Changer le slug peut casser les liens d'intégration existants.",
+    "created": "Créé",
+    "members": "Membres",
+    "yourRole": "Votre rôle",
+    "saved": "Enregistré avec succès.",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer les modifications",
+    "err": {
+      "slugBlocked": "Impossible de changer le slug — cet espace a des documents indexés. Supprimez d'abord tous les documents.",
+      "slugTaken": "Ce slug est déjà pris. Veuillez en choisir un autre.",
+      "unsupportedMime": "Format d'image non pris en charge. Utilisez JPG, PNG ou WebP.",
+      "avatarTooLarge": "Le fichier image est trop volumineux (max 2 Mo).",
+      "requestFailed": "Échec de la requête."
+    }
+  },
+  "members": {
+    "roles": { "owner": "Propriétaire", "admin": "Administrateur", "member": "Membre" },
+    "inviteTitle": "Inviter dans l'espace de travail",
+    "emailLabel": "E-mail (facultatif pour un lien ouvert)",
+    "emailPlaceholder": "collegue@example.com",
+    "role": "Rôle",
+    "sending": "Envoi…",
+    "sendInvite": "Envoyer l'invitation",
+    "createLink": "Créer un lien",
+    "inviteSentTo": "Invitation envoyée à {{email}}.",
+    "joinLinkCreated": "Lien d'adhésion créé.",
+    "copyLink": "Copier le lien",
+    "copyLinkTitle": "Copier le lien d'invitation",
+    "copied": "Copié",
+    "pending": "Invitations en attente ({{count}})",
+    "col": { "emailType": "E-mail / Type", "role": "Rôle", "expires": "Expire", "actions": "Actions" },
+    "openLink": "Lien ouvert",
+    "expired": "(expiré)",
+    "resend": "Renvoyer",
+    "resendTitle": "Renvoyer l'e-mail",
+    "revoke": "Révoquer",
+    "revokeTitle": "Révoquer l'invitation",
+    "title": "Membres ({{count}})",
+    "tcol": { "user": "Utilisateur", "role": "Rôle", "joined": "Rejoint", "actions": "Actions" },
+    "you": "(vous)",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "removing": "Suppression…",
+    "remove": "Supprimer",
+    "removeTitle": "Supprimer le membre",
+    "loading": "Chargement des membres…",
+    "footer": "Les propriétaires ont un contrôle total, y compris la suppression de l'espace. Les administrateurs gèrent les membres et les paramètres mais ne peuvent pas supprimer l'espace.",
+    "err": {
+      "lastOwner": "C'est le dernier propriétaire — transférez d'abord la propriété.",
+      "adminsCannot": "Les administrateurs ne peuvent pas modifier ou retirer les propriétaires.",
+      "onlyOwners": "Seuls les propriétaires peuvent accorder le rôle de propriétaire.",
+      "requestFailed": "Échec de la requête."
+    }
+  },
+  "usage": {
+    "failedTitle": "Échec du chargement de l'utilisation",
+    "managerRequired": "Rôle de gestionnaire ou de propriétaire requis pour voir l'utilisation.",
+    "failedData": "Échec du chargement des données d'utilisation.",
+    "noMessages": "Aucun message au cours des 7 derniers jours.",
+    "messages7d": "Messages — 7 derniers jours",
+    "documents": "Documents",
+    "products": "Produits",
+    "members": "Membres",
+    "vectorChunks": "Fragments vectoriels",
+    "totalMessages": "Total des messages"
+  },
+  "advanced": {
+    "ownerOnly": "Propriétaire uniquement",
+    "ownerOnlyNote": "Seul le propriétaire de l'espace de travail peut effectuer cette action.",
+    "cancel": "Annuler",
+    "archive": {
+      "unarchiveTitle": "Désarchiver l'espace de travail",
+      "archiveTitle": "Archiver l'espace de travail",
+      "unarchiveDesc": "L'espace de travail est actuellement archivé. Les membres ne peuvent pas l'utiliser tant que vous ne l'avez pas restauré.",
+      "archiveDesc": "Suspendre cet espace de travail. Les membres seront bloqués jusqu'à ce que vous le désarchiviez. Les données sont conservées.",
+      "archivedBanner": "Cet espace de travail est archivé. Toutes les routes de données renvoient 403 pour ses membres.",
+      "confirmRestore": "Restaurer cet espace de travail ?",
+      "confirmArchive": "Archiver cet espace de travail ?",
+      "working": "En cours…",
+      "yesRestore": "Oui, restaurer",
+      "yesArchive": "Oui, archiver",
+      "restore": "Restaurer l'espace de travail",
+      "archiveBtn": "Archiver l'espace de travail",
+      "errAlreadyArchived": "Cet espace de travail est déjà archivé.",
+      "errNotArchived": "Cet espace de travail n'est pas archivé."
+    },
+    "transfer": {
+      "title": "Transférer la propriété",
+      "desc": "Transférez la pleine propriété à un autre membre. Vous serez rétrogradé au rang d'administrateur après le transfert. Ceci est irréversible sans la coopération du nouveau propriétaire.",
+      "newOwner": "Nouveau propriétaire",
+      "selectMember": "Sélectionner un membre…",
+      "transferBtn": "Transférer…",
+      "confirmQuestion": "Transférer la propriété à {{name}} ? Vous serez rétrogradé au rang d'administrateur.",
+      "transferring": "Transfert…",
+      "confirmTransfer": "Confirmer le transfert",
+      "errMemberNotFound": "Cet utilisateur n'est pas membre de cet espace de travail.",
+      "errAlreadyOwner": "Ce membre est déjà propriétaire.",
+      "errYourself": "Vous ne pouvez pas transférer la propriété à vous-même."
+    },
+    "delete": {
+      "title": "Supprimer l'espace de travail",
+      "desc": "Supprimer définitivement cet espace de travail et toutes ses données, y compris les documents, membres, messages et vecteurs Qdrant. Cette action est irréversible.",
+      "deleteBtn": "Supprimer l'espace de travail…",
+      "typeName": "Saisissez le nom de l'espace de travail {{name}} pour confirmer :",
+      "deleting": "Suppression…",
+      "permanentlyDelete": "Supprimer définitivement",
+      "errNameMismatch": "Le nom de l'espace de travail saisi ne correspond pas. Veuillez réessayer."
+    },
+    "requestFailed": "Échec de la requête."
+  },
+  "switcher": {
+    "select": "Sélectionner un espace",
+    "switchTitle": "Changer d'espace de travail",
+    "workspaces": "Espaces de travail",
+    "manage": "Gérer les espaces de travail"
+  },
+  "picker": {
+    "title": "Choisir un espace de travail",
+    "prompt": "Quel espace de travail souhaitez-vous gérer pendant cette session ?",
+    "continue": "Continuer"
+  },
+  "require": {
+    "loading": "Chargement de vos espaces de travail…",
+    "errorTitle": "Impossible de charger les espaces de travail",
+    "empty": "Aucun espace de travail pour l'instant",
+    "emptyPrompt": "Créez votre premier espace de travail pour commencer à utiliser NEXUS.",
+    "create": "Créer un espace de travail"
+  },
+  "placeholder": {
+    "defaultDesc": "Cette page n'a pas encore été portée dans l'application React. L'ancienne SPA sur /static/ sert toujours la version fonctionnelle."
+  },
+  "join": {
+    "title": "Connexion à l'espace de travail…",
+    "verifying": "Vérification de l'invitation…",
+    "joined": "Vous avez rejoint {{name}} en tant que {{role}}.",
+    "redirecting": "Redirection…",
+    "goToNexus": "Aller à NEXUS",
+    "fallbackName": "l'espace de travail",
+    "noToken": "Aucun jeton d'invitation dans l'URL.",
+    "errNotFound": "Lien d'invitation introuvable ou déjà utilisé.",
+    "errUsed": "Cette invitation a déjà été acceptée ou révoquée.",
+    "errExpired": "Ce lien d'invitation a expiré. Demandez à un gestionnaire de l'espace de le renvoyer.",
+    "errGeneric": "Une erreur s'est produite."
+  }
+}

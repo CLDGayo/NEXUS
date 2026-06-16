@@ -1,0 +1,191 @@
+{
+  "list": {
+    "title": "Arbeitsbereiche",
+    "subtitle": "Verwalten Sie Mandanten-Arbeitsbereiche. Jeder Arbeitsbereich isoliert eigene Dokumente, Chats und Integrationen.",
+    "yourWorkspaces": "Ihre Arbeitsbereiche",
+    "col": { "name": "Name", "slug": "Slug", "role": "Rolle", "members": "Mitglieder", "created": "Erstellt", "action": "Aktion" },
+    "active": "Aktiv",
+    "switch": "Wechseln",
+    "empty": "Sie gehören noch keinem Arbeitsbereich an.",
+    "create": "Arbeitsbereich erstellen",
+    "companyName": "Firmenname",
+    "companyPlaceholder": "Akiro Collectibles",
+    "creating": "Wird erstellt…",
+    "createBtn": "Erstellen",
+    "nameExists": "Ein Arbeitsbereich mit diesem Namen existiert bereits.",
+    "createFailed": "Arbeitsbereich konnte nicht erstellt werden.",
+    "createdSwitched": "{{name}} erstellt und dorthin gewechselt."
+  },
+  "detail": {
+    "back": "Arbeitsbereiche",
+    "active": "Aktiv",
+    "yourRole": "Ihre Rolle:",
+    "loading": "Arbeitsbereich wird geladen…",
+    "notActiveBanner": "Sie sehen einen Arbeitsbereich, der derzeit nicht aktiv ist. Wechseln Sie dorthin, um Mitglieder und Einstellungen zu verwalten.",
+    "switchTo": "Zu {{name}} wechseln",
+    "tabs": { "general": "Allgemein", "members": "Mitglieder", "usage": "Nutzung", "advanced": "Erweitert" },
+    "placeholder": {
+      "generalTitle": "Wechseln Sie zu diesem Arbeitsbereich, um Einstellungen zu bearbeiten",
+      "generalCopy": "Arbeitsbereichseinstellungen gelten für den aktiven Arbeitsbereich. Nutzen Sie das Wechsel-Banner oben.",
+      "membersTitle": "Wechseln Sie zu diesem Arbeitsbereich, um Mitglieder zu verwalten",
+      "membersCopy": "Mitgliederverwaltung gilt für den aktiven Arbeitsbereich. Nutzen Sie das Wechsel-Banner oben.",
+      "usageTitle": "Wechseln Sie zu diesem Arbeitsbereich, um die Nutzung zu sehen",
+      "usageCopy": "Nutzungsstatistiken gelten für den aktiven Arbeitsbereich. Nutzen Sie das Wechsel-Banner oben.",
+      "advancedTitle": "Wechseln Sie zu diesem Arbeitsbereich für erweiterte Steuerung",
+      "advancedCopy": "Archivierung, Eigentumsübertragung und Löschung gelten für den aktiven Arbeitsbereich. Nutzen Sie das Wechsel-Banner oben."
+    }
+  },
+  "general": {
+    "avatarTitle": "Arbeitsbereich-Avatar",
+    "uploadImage": "Bild hochladen",
+    "changeImage": "Bild ändern",
+    "remove": "Entfernen",
+    "imageHint": "JPG, PNG oder WebP · max. 2 MB",
+    "identityTitle": "Arbeitsbereich-Identität",
+    "name": "Name",
+    "slug": "Slug",
+    "slugWarning": "Das Ändern des Slugs kann bestehende Integrationslinks zerstören.",
+    "created": "Erstellt",
+    "members": "Mitglieder",
+    "yourRole": "Ihre Rolle",
+    "saved": "Erfolgreich gespeichert.",
+    "saving": "Wird gespeichert…",
+    "save": "Änderungen speichern",
+    "err": {
+      "slugBlocked": "Slug kann nicht geändert werden — dieser Arbeitsbereich hat indizierte Dokumente. Entfernen Sie zuerst alle Dokumente.",
+      "slugTaken": "Dieser Slug ist bereits vergeben. Bitte wählen Sie einen anderen.",
+      "unsupportedMime": "Nicht unterstütztes Bildformat. Verwenden Sie JPG, PNG oder WebP.",
+      "avatarTooLarge": "Bilddatei ist zu groß (max. 2 MB).",
+      "requestFailed": "Anfrage fehlgeschlagen."
+    }
+  },
+  "members": {
+    "roles": { "owner": "Eigentümer", "admin": "Administrator", "member": "Mitglied" },
+    "inviteTitle": "Zum Arbeitsbereich einladen",
+    "emailLabel": "E-Mail (optional für offenen Link)",
+    "emailPlaceholder": "kollege@example.com",
+    "role": "Rolle",
+    "sending": "Wird gesendet…",
+    "sendInvite": "Einladung senden",
+    "createLink": "Link erstellen",
+    "inviteSentTo": "Einladung an {{email}} gesendet.",
+    "joinLinkCreated": "Beitrittslink erstellt.",
+    "copyLink": "Link kopieren",
+    "copyLinkTitle": "Einladungslink kopieren",
+    "copied": "Kopiert",
+    "pending": "Ausstehende Einladungen ({{count}})",
+    "col": { "emailType": "E-Mail / Typ", "role": "Rolle", "expires": "Läuft ab", "actions": "Aktionen" },
+    "openLink": "Offener Link",
+    "expired": "(abgelaufen)",
+    "resend": "Erneut senden",
+    "resendTitle": "E-Mail erneut senden",
+    "revoke": "Widerrufen",
+    "revokeTitle": "Einladung widerrufen",
+    "title": "Mitglieder ({{count}})",
+    "tcol": { "user": "Benutzer", "role": "Rolle", "joined": "Beigetreten", "actions": "Aktionen" },
+    "you": "(Sie)",
+    "confirm": "Bestätigen",
+    "cancel": "Abbrechen",
+    "removing": "Wird entfernt…",
+    "remove": "Entfernen",
+    "removeTitle": "Mitglied entfernen",
+    "loading": "Mitglieder werden geladen…",
+    "footer": "Eigentümer haben volle Kontrolle einschließlich Löschung des Arbeitsbereichs. Administratoren verwalten Mitglieder und Einstellungen, können den Arbeitsbereich aber nicht löschen.",
+    "err": {
+      "lastOwner": "Dies ist der letzte Eigentümer — übertragen Sie zuerst das Eigentum.",
+      "adminsCannot": "Administratoren können Eigentümer nicht ändern oder entfernen.",
+      "onlyOwners": "Nur Eigentümer können die Eigentümerrolle vergeben.",
+      "requestFailed": "Anfrage fehlgeschlagen."
+    }
+  },
+  "usage": {
+    "failedTitle": "Nutzung konnte nicht geladen werden",
+    "managerRequired": "Manager- oder Eigentümerrolle erforderlich, um die Nutzung anzuzeigen.",
+    "failedData": "Nutzungsdaten konnten nicht geladen werden.",
+    "noMessages": "Keine Nachrichten in den letzten 7 Tagen.",
+    "messages7d": "Nachrichten — letzte 7 Tage",
+    "documents": "Dokumente",
+    "products": "Produkte",
+    "members": "Mitglieder",
+    "vectorChunks": "Vektor-Chunks",
+    "totalMessages": "Nachrichten gesamt"
+  },
+  "advanced": {
+    "ownerOnly": "Nur Eigentümer",
+    "ownerOnlyNote": "Nur der Eigentümer des Arbeitsbereichs kann diese Aktion ausführen.",
+    "cancel": "Abbrechen",
+    "archive": {
+      "unarchiveTitle": "Arbeitsbereich wiederherstellen",
+      "archiveTitle": "Arbeitsbereich archivieren",
+      "unarchiveDesc": "Der Arbeitsbereich ist derzeit archiviert. Mitglieder können ihn erst nutzen, wenn Sie ihn wiederherstellen.",
+      "archiveDesc": "Diesen Arbeitsbereich aussetzen. Mitglieder werden ausgesperrt, bis Sie ihn wiederherstellen. Daten bleiben erhalten.",
+      "archivedBanner": "Dieser Arbeitsbereich ist archiviert. Alle Daten-Routen geben für seine Mitglieder 403 zurück.",
+      "confirmRestore": "Diesen Arbeitsbereich wiederherstellen?",
+      "confirmArchive": "Diesen Arbeitsbereich archivieren?",
+      "working": "Wird ausgeführt…",
+      "yesRestore": "Ja, wiederherstellen",
+      "yesArchive": "Ja, archivieren",
+      "restore": "Arbeitsbereich wiederherstellen",
+      "archiveBtn": "Arbeitsbereich archivieren",
+      "errAlreadyArchived": "Dieser Arbeitsbereich ist bereits archiviert.",
+      "errNotArchived": "Dieser Arbeitsbereich ist nicht archiviert."
+    },
+    "transfer": {
+      "title": "Eigentum übertragen",
+      "desc": "Übertragen Sie das volle Eigentum an ein anderes Mitglied. Nach der Übertragung werden Sie zum Administrator herabgestuft. Dies kann ohne Mitwirkung des neuen Eigentümers nicht rückgängig gemacht werden.",
+      "newOwner": "Neuer Eigentümer",
+      "selectMember": "Mitglied auswählen…",
+      "transferBtn": "Übertragen…",
+      "confirmQuestion": "Eigentum an {{name}} übertragen? Sie werden zum Administrator herabgestuft.",
+      "transferring": "Wird übertragen…",
+      "confirmTransfer": "Übertragung bestätigen",
+      "errMemberNotFound": "Dieser Benutzer ist kein Mitglied dieses Arbeitsbereichs.",
+      "errAlreadyOwner": "Dieses Mitglied ist bereits Eigentümer.",
+      "errYourself": "Sie können das Eigentum nicht an sich selbst übertragen."
+    },
+    "delete": {
+      "title": "Arbeitsbereich löschen",
+      "desc": "Diesen Arbeitsbereich und alle Daten dauerhaft löschen, einschließlich Dokumente, Mitglieder, Nachrichten und Qdrant-Vektoren. Diese Aktion ist unwiderruflich.",
+      "deleteBtn": "Arbeitsbereich löschen…",
+      "typeName": "Geben Sie den Arbeitsbereichsnamen {{name}} zur Bestätigung ein:",
+      "deleting": "Wird gelöscht…",
+      "permanentlyDelete": "Dauerhaft löschen",
+      "errNameMismatch": "Der eingegebene Arbeitsbereichsname stimmt nicht überein. Bitte versuchen Sie es erneut."
+    },
+    "requestFailed": "Anfrage fehlgeschlagen."
+  },
+  "switcher": {
+    "select": "Arbeitsbereich auswählen",
+    "switchTitle": "Arbeitsbereich wechseln",
+    "workspaces": "Arbeitsbereiche",
+    "manage": "Arbeitsbereiche verwalten"
+  },
+  "picker": {
+    "title": "Arbeitsbereich auswählen",
+    "prompt": "Welchen Arbeitsbereich möchten Sie in dieser Sitzung verwalten?",
+    "continue": "Weiter"
+  },
+  "require": {
+    "loading": "Ihre Arbeitsbereiche werden geladen…",
+    "errorTitle": "Arbeitsbereiche konnten nicht geladen werden",
+    "empty": "Noch keine Arbeitsbereiche",
+    "emptyPrompt": "Erstellen Sie Ihren ersten Arbeitsbereich, um NEXUS zu nutzen.",
+    "create": "Arbeitsbereich erstellen"
+  },
+  "placeholder": {
+    "defaultDesc": "Diese Seite wurde noch nicht in die React-App portiert. Die alte SPA unter /static/ liefert weiterhin die funktionierende Version."
+  },
+  "join": {
+    "title": "Arbeitsbereich wird beigetreten…",
+    "verifying": "Einladung wird überprüft…",
+    "joined": "Sie sind {{name}} als {{role}} beigetreten.",
+    "redirecting": "Weiterleitung…",
+    "goToNexus": "Zu NEXUS",
+    "fallbackName": "den Arbeitsbereich",
+    "noToken": "Kein Einladungs-Token in der URL.",
+    "errNotFound": "Einladungslink nicht gefunden oder bereits verwendet.",
+    "errUsed": "Diese Einladung wurde bereits angenommen oder widerrufen.",
+    "errExpired": "Dieser Einladungslink ist abgelaufen. Bitten Sie einen Arbeitsbereich-Manager, ihn erneut zu senden.",
+    "errGeneric": "Etwas ist schiefgelaufen."
+  }
+}

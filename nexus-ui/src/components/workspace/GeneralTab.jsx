@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, Settings2, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTenant } from '../../hooks/useTenant.js';
 import { api, HTTPError } from '../../lib/api.js';
 
 // Phase 52 — General settings tab: editable name, slug, and avatar upload.
 // Managers (owner | admin) can edit; plain members see the read-only view.
 export default function GeneralTab({ tenantId, tenant, onSaved }) {
+  const { t } = useTranslation('workspace');
   const { canManage, activeTenantRole } = useTenant();
 
   const [name, setName] = useState(tenant?.name ?? '');
@@ -51,7 +53,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
       setAvatarPreview(null);
       if (onSaved) onSaved(updated);
     } catch (err) {
-      setError(friendlyError(err));
+      setError(friendlyError(err, t));
     } finally {
       setBusy(false);
     }
@@ -86,7 +88,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
-      setError(friendlyError(err));
+      setError(friendlyError(err, t));
     } finally {
       setBusy(false);
     }
@@ -104,7 +106,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
         <div className="flex items-center gap-2">
           <Camera size={14} className="text-nexus-accent" />
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            Workspace avatar
+            {t('general.avatarTitle')}
           </h3>
         </div>
 
@@ -113,7 +115,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
             {showAvatar ? (
               <img
                 src={avatarPreview}
-                alt="Workspace avatar"
+                alt={t('general.avatarTitle')}
                 className="h-16 w-16 rounded-xl object-cover"
               />
             ) : (
@@ -132,7 +134,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
                 className="glass-pressable inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-nexus-accent hover:bg-nexus-accent/10 disabled:opacity-50"
               >
                 <Camera size={12} />
-                {pendingFile ? 'Change image' : 'Upload image'}
+                {pendingFile ? t('general.changeImage') : t('general.uploadImage')}
               </button>
               {(showAvatar || pendingFile) && (
                 <button
@@ -142,7 +144,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
                   className="glass-pressable inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 disabled:opacity-50"
                 >
                   <Trash2 size={12} />
-                  Remove
+                  {t('general.remove')}
                 </button>
               )}
               <input
@@ -152,7 +154,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
                 className="hidden"
                 onChange={handleFileChange}
               />
-              <p className="text-[10px] text-nexus-muted">JPG, PNG or WebP · max 2 MB</p>
+              <p className="text-[10px] text-nexus-muted">{t('general.imageHint')}</p>
             </div>
           )}
         </div>
@@ -163,7 +165,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
         <div className="flex items-center gap-2">
           <Settings2 size={14} className="text-nexus-accent" />
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-            Workspace identity
+            {t('general.identityTitle')}
           </h3>
         </div>
 
@@ -171,7 +173,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
           {/* Name */}
           <div>
             <label className="mb-1 block text-[10px] uppercase tracking-wide text-nexus-muted">
-              Name
+              {t('general.name')}
             </label>
             {canManage ? (
               <input
@@ -192,7 +194,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
           {/* Slug */}
           <div>
             <label className="mb-1 block text-[10px] uppercase tracking-wide text-nexus-muted">
-              Slug
+              {t('general.slug')}
             </label>
             {canManage ? (
               <>
@@ -208,7 +210,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
                 />
                 {slug !== tenant?.slug && (
                   <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
-                    Changing the slug may break existing integration links.
+                    {t('general.slugWarning')}
                   </p>
                 )}
               </>
@@ -223,7 +225,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
         {/* Read-only metadata */}
         <div className="grid grid-cols-1 gap-3 border-t border-nexus-border pt-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-xs text-nexus-muted">Created</dt>
+            <dt className="text-xs text-nexus-muted">{t('general.created')}</dt>
             <dd className="font-medium text-slate-800 dark:text-slate-100">
               {tenant?.created_at
                 ? new Date(tenant.created_at).toLocaleDateString()
@@ -231,13 +233,13 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-nexus-muted">Members</dt>
+            <dt className="text-xs text-nexus-muted">{t('general.members')}</dt>
             <dd className="font-medium text-slate-800 dark:text-slate-100">
               {tenant?.member_count ?? '—'}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-nexus-muted">Your role</dt>
+            <dt className="text-xs text-nexus-muted">{t('general.yourRole')}</dt>
             <dd className="font-medium uppercase text-slate-800 dark:text-slate-100">
               {activeTenantRole ?? '—'}
             </dd>
@@ -250,7 +252,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
         <p className="text-xs text-red-600">{error}</p>
       )}
       {success && (
-        <p className="text-xs text-emerald-600">Saved successfully.</p>
+        <p className="text-xs text-emerald-600">{t('general.saved')}</p>
       )}
 
       {/* Save button */}
@@ -261,7 +263,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
             disabled={busy}
             className="rounded-md bg-nexus-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
           >
-            {busy ? 'Saving…' : 'Save changes'}
+            {busy ? t('general.saving') : t('general.save')}
           </button>
         </div>
       )}
@@ -269,15 +271,14 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
   );
 }
 
-function friendlyError(err) {
+function friendlyError(err, t) {
   if (err instanceof HTTPError) {
     const detail = (typeof err.body === 'string' && err.body) || err.message || '';
-    if (detail === 'slug_change_blocked_documents_exist')
-      return 'Cannot change slug — this workspace has indexed documents. Remove all documents first.';
-    if (detail === 'slug_taken') return 'That slug is already taken. Please choose another.';
-    if (detail.includes('UNSUPPORTED_MIME')) return 'Unsupported image format. Use JPG, PNG, or WebP.';
-    if (detail.includes('AVATAR_TOO_LARGE')) return 'Image file is too large (max 2 MB).';
+    if (detail === 'slug_change_blocked_documents_exist') return t('general.err.slugBlocked');
+    if (detail === 'slug_taken') return t('general.err.slugTaken');
+    if (detail.includes('UNSUPPORTED_MIME')) return t('general.err.unsupportedMime');
+    if (detail.includes('AVATAR_TOO_LARGE')) return t('general.err.avatarTooLarge');
     return detail;
   }
-  return err?.message || 'Request failed.';
+  return err?.message || t('general.err.requestFailed');
 }

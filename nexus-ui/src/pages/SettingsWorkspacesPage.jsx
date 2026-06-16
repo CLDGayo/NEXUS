@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, CheckCircle2, ChevronRight, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTenant } from '../hooks/useTenant.js';
 import { api, HTTPError } from '../lib/api.js';
 
@@ -22,6 +23,7 @@ export default function SettingsWorkspacesPage() {
     refreshTenants,
   } = useTenant();
   const navigate = useNavigate();
+  const { t } = useTranslation('workspace');
 
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -46,9 +48,9 @@ export default function SettingsWorkspacesPage() {
       refreshTenants().catch(() => {});
     } catch (err) {
       if (err instanceof HTTPError && err.status === 409) {
-        setError('A workspace with that name already exists.');
+        setError(t('list.nameExists'));
       } else {
-        setError(err.message || 'Failed to create workspace.');
+        setError(err.message || t('list.createFailed'));
       }
     } finally {
       setSubmitting(false);
@@ -59,10 +61,9 @@ export default function SettingsWorkspacesPage() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl space-y-4 p-6">
         <div>
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Workspaces</h2>
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('list.title')}</h2>
           <p className="text-xs text-nexus-muted">
-            Manage tenant workspaces. Each workspace isolates its own
-            documents, chats, and integrations.
+            {t('list.subtitle')}
           </p>
         </div>
 
@@ -70,18 +71,18 @@ export default function SettingsWorkspacesPage() {
           <div className="px-5 py-3 border-b border-nexus-border flex items-center gap-2">
             <Building2 size={14} className="text-nexus-accent" />
             <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              Your workspaces
+              {t('list.yourWorkspaces')}
             </h3>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-nexus-muted">
-                <th className="px-5 py-2 font-medium">Name</th>
-                <th className="px-5 py-2 font-medium">Slug</th>
-                <th className="px-5 py-2 font-medium">Role</th>
-                <th className="px-5 py-2 font-medium">Members</th>
-                <th className="px-5 py-2 font-medium">Created</th>
-                <th className="px-5 py-2 font-medium text-right">Action</th>
+                <th className="px-5 py-2 font-medium">{t('list.col.name')}</th>
+                <th className="px-5 py-2 font-medium">{t('list.col.slug')}</th>
+                <th className="px-5 py-2 font-medium">{t('list.col.role')}</th>
+                <th className="px-5 py-2 font-medium">{t('list.col.members')}</th>
+                <th className="px-5 py-2 font-medium">{t('list.col.created')}</th>
+                <th className="px-5 py-2 font-medium text-right">{t('list.col.action')}</th>
               </tr>
             </thead>
             <tbody>
@@ -99,7 +100,7 @@ export default function SettingsWorkspacesPage() {
                         {isActive && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
                             <CheckCircle2 size={10} />
-                            Active
+                            {t('list.active')}
                           </span>
                         )}
                       </div>
@@ -127,7 +128,7 @@ export default function SettingsWorkspacesPage() {
                           disabled={isActive}
                           className="rounded-md border border-nexus-border px-3 py-1 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {isActive ? 'Active' : 'Switch'}
+                          {isActive ? t('list.active') : t('list.switch')}
                         </button>
                         <ChevronRight size={14} className="text-nexus-muted" />
                       </div>
@@ -141,7 +142,7 @@ export default function SettingsWorkspacesPage() {
                     colSpan={6}
                     className="px-5 py-6 text-center text-xs text-nexus-muted"
                   >
-                    You don’t belong to any workspaces yet.
+                    {t('list.empty')}
                   </td>
                 </tr>
               )}
@@ -153,7 +154,7 @@ export default function SettingsWorkspacesPage() {
           <div className="mb-3 flex items-center gap-2">
             <Plus size={14} className="text-nexus-accent" />
             <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              Create workspace
+              {t('list.create')}
             </h3>
           </div>
           <form
@@ -162,13 +163,13 @@ export default function SettingsWorkspacesPage() {
           >
             <label className="flex-1">
               <span className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                Company name
+                {t('list.companyName')}
               </span>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Akiro Collectibles"
+                placeholder={t('list.companyPlaceholder')}
                 maxLength={120}
                 required
                 className="w-full rounded-md border border-nexus-border bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-nexus-accent focus:outline-none focus:ring-1 focus:ring-nexus-accent"
@@ -179,7 +180,7 @@ export default function SettingsWorkspacesPage() {
               disabled={submitting || !name.trim()}
               className="inline-flex items-center justify-center rounded-md bg-nexus-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? 'Creating…' : 'Create'}
+              {submitting ? t('list.creating') : t('list.createBtn')}
             </button>
           </form>
           {error && (
@@ -189,8 +190,7 @@ export default function SettingsWorkspacesPage() {
           )}
           {created && (
             <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-              Created <span className="font-medium">{created.name}</span> and
-              switched to it.
+              {t('list.createdSwitched', { name: created.name })}
             </div>
           )}
         </section>

@@ -1,6 +1,7 @@
 import * as Slider from '@radix-ui/react-slider';
 import * as Select from '@radix-ui/react-select';
 import { Check, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Phase 49 — model_params editor. temperature (0-2), max_tokens (64-8192),
 // model_choice (allowlist or default). null model_choice => backend uses the
@@ -8,6 +9,7 @@ import { Check, ChevronDown } from 'lucide-react';
 const DEFAULT_CHOICE = '__default__';
 
 export default function ModelParamsPanel({ value, availableModels, onChange }) {
+  const { t } = useTranslation('aistudio');
   const mp = value || {};
   const temperature = typeof mp.temperature === 'number' ? mp.temperature : 0.3;
   const maxTokens = typeof mp.max_tokens === 'number' ? mp.max_tokens : 1024;
@@ -19,7 +21,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
       {/* Temperature */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-800 dark:text-slate-100">Temperature</label>
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-100">{t('model.temperature')}</label>
           <span className="font-mono text-xs text-nexus-accent">{temperature.toFixed(2)}</span>
         </div>
         <Slider.Root
@@ -35,13 +37,13 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
           </Slider.Track>
           <Slider.Thumb className="block h-4 w-4 rounded-full border border-nexus-accent bg-white/55 backdrop-blur-glass dark:bg-white/5 shadow focus:outline-none focus:ring-2 focus:ring-nexus-accent/40" />
         </Slider.Root>
-        <p className="mt-1 text-[11px] text-nexus-muted">0 = deterministic · 2 = most creative</p>
+        <p className="mt-1 text-[11px] text-nexus-muted">{t('model.temperatureHint')}</p>
       </div>
 
       {/* Max tokens */}
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="text-sm font-medium text-slate-800 dark:text-slate-100">Max Tokens</label>
+          <label className="text-sm font-medium text-slate-800 dark:text-slate-100">{t('model.maxTokens')}</label>
           <input
             type="number"
             min={64}
@@ -72,7 +74,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
 
       {/* Model choice */}
       <div>
-        <label className="mb-2 block text-sm font-medium text-slate-800 dark:text-slate-100">Model</label>
+        <label className="mb-2 block text-sm font-medium text-slate-800 dark:text-slate-100">{t('model.model')}</label>
         <Select.Root
           value={choice}
           onValueChange={(v) => onChange('model_choice', v === DEFAULT_CHOICE ? null : v)}
@@ -90,7 +92,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
                   value={DEFAULT_CHOICE}
                   className="flex cursor-pointer items-center justify-between rounded-md px-2 py-1.5 outline-none data-[highlighted]:bg-slate-100/70"
                 >
-                  <Select.ItemText>Default (system)</Select.ItemText>
+                  <Select.ItemText>{t('model.default')}</Select.ItemText>
                   <Select.ItemIndicator>
                     <Check size={14} className="text-nexus-accent" />
                   </Select.ItemIndicator>
@@ -111,7 +113,7 @@ export default function ModelParamsPanel({ value, availableModels, onChange }) {
             </Select.Content>
           </Select.Portal>
         </Select.Root>
-        <p className="mt-1 text-[11px] text-nexus-muted">Default falls back to the system generation model.</p>
+        <p className="mt-1 text-[11px] text-nexus-muted">{t('model.defaultHint')}</p>
       </div>
     </div>
   );

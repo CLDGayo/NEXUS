@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useTenant } from '../../hooks/useTenant.js';
 import WorkspacePickerModal from '../tenant/WorkspacePickerModal.jsx';
 
@@ -8,6 +9,7 @@ import WorkspacePickerModal from '../tenant/WorkspacePickerModal.jsx';
 //   * loaded with >1 tenant and no active selection → blocking picker
 // Otherwise: render children.
 export default function RequireTenant({ children }) {
+  const { t } = useTranslation('workspace');
   const {
     tenants,
     tenantsLoading,
@@ -19,7 +21,7 @@ export default function RequireTenant({ children }) {
   if (tenantsLoading && tenants.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-sm text-nexus-muted">
-        Loading your workspaces…
+        {t('require.loading')}
       </div>
     );
   }
@@ -28,7 +30,7 @@ export default function RequireTenant({ children }) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="max-w-md rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-          <div className="font-semibold mb-1">Couldn’t load workspaces</div>
+          <div className="font-semibold mb-1">{t('require.errorTitle')}</div>
           <div>{error.message || String(error)}</div>
         </div>
       </div>
@@ -39,15 +41,15 @@ export default function RequireTenant({ children }) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="max-w-md glass-card p-6 shadow-sm text-center">
-          <div className="text-sm font-semibold mb-1">No workspaces yet</div>
+          <div className="text-sm font-semibold mb-1">{t('require.empty')}</div>
           <p className="text-xs text-nexus-muted mb-4">
-            Create your first workspace to start using NEXUS.
+            {t('require.emptyPrompt')}
           </p>
           <Link
             to="/settings/workspaces"
             className="inline-flex items-center justify-center rounded-md bg-nexus-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
           >
-            Create workspace
+            {t('require.create')}
           </Link>
         </div>
       </div>

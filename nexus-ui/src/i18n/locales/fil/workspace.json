@@ -1,0 +1,191 @@
+{
+  "list": {
+    "title": "Mga Workspace",
+    "subtitle": "Pamahalaan ang mga workspace. Ihinihiwalay ng bawat workspace ang sarili nitong dokumento, chat, at integrasyon.",
+    "yourWorkspaces": "Iyong mga workspace",
+    "col": { "name": "Pangalan", "slug": "Slug", "role": "Tungkulin", "members": "Miyembro", "created": "Nilikha", "action": "Aksyon" },
+    "active": "Aktibo",
+    "switch": "Lumipat",
+    "empty": "Wala ka pang kabilang na workspace.",
+    "create": "Gumawa ng workspace",
+    "companyName": "Pangalan ng kumpanya",
+    "companyPlaceholder": "Akiro Collectibles",
+    "creating": "Ginagawa…",
+    "createBtn": "Gumawa",
+    "nameExists": "May workspace na ang pangalang iyan.",
+    "createFailed": "Nabigo ang paggawa ng workspace.",
+    "createdSwitched": "Nagawa ang {{name}} at lumipat dito."
+  },
+  "detail": {
+    "back": "Mga Workspace",
+    "active": "Aktibo",
+    "yourRole": "iyong tungkulin:",
+    "loading": "Niloload ang workspace…",
+    "notActiveBanner": "Tinitingnan mo ang isang workspace na hindi kasalukuyang aktibo. Lumipat dito para pamahalaan ang mga miyembro at setting.",
+    "switchTo": "Lumipat sa {{name}}",
+    "tabs": { "general": "Pangkalahatan", "members": "Mga Miyembro", "usage": "Paggamit", "advanced": "Advanced" },
+    "placeholder": {
+      "generalTitle": "Lumipat sa workspace na ito para i-edit ang mga setting",
+      "generalCopy": "Ang mga setting ng workspace ay gumagana sa aktibong workspace. Gamitin ang switch banner sa itaas.",
+      "membersTitle": "Lumipat sa workspace na ito para pamahalaan ang mga miyembro",
+      "membersCopy": "Ang pamamahala ng miyembro ay gumagana sa aktibong workspace. Gamitin ang switch banner sa itaas.",
+      "usageTitle": "Lumipat sa workspace na ito para makita ang paggamit",
+      "usageCopy": "Ang usage stats ay gumagana sa aktibong workspace. Gamitin ang switch banner sa itaas.",
+      "advancedTitle": "Lumipat sa workspace na ito para sa advanced na kontrol",
+      "advancedCopy": "Ang archive, paglipat ng pagmamay-ari, at pagtanggal ay gumagana sa aktibong workspace. Gamitin ang switch banner sa itaas."
+    }
+  },
+  "general": {
+    "avatarTitle": "Avatar ng workspace",
+    "uploadImage": "Mag-upload ng imahe",
+    "changeImage": "Palitan ang imahe",
+    "remove": "Alisin",
+    "imageHint": "JPG, PNG o WebP · max 2 MB",
+    "identityTitle": "Pagkakakilanlan ng workspace",
+    "name": "Pangalan",
+    "slug": "Slug",
+    "slugWarning": "Ang pagpapalit ng slug ay maaaring makasira ng mga umiiral na integration link.",
+    "created": "Nilikha",
+    "members": "Mga Miyembro",
+    "yourRole": "Iyong tungkulin",
+    "saved": "Matagumpay na na-save.",
+    "saving": "Sine-save…",
+    "save": "I-save ang mga pagbabago",
+    "err": {
+      "slugBlocked": "Hindi mapalitan ang slug — may naka-index na dokumento ang workspace na ito. Alisin muna lahat ng dokumento.",
+      "slugTaken": "Nagamit na ang slug na iyan. Pumili ng iba.",
+      "unsupportedMime": "Hindi suportadong format ng imahe. Gumamit ng JPG, PNG, o WebP.",
+      "avatarTooLarge": "Masyadong malaki ang file ng imahe (max 2 MB).",
+      "requestFailed": "Nabigo ang request."
+    }
+  },
+  "members": {
+    "roles": { "owner": "May-ari", "admin": "Admin", "member": "Miyembro" },
+    "inviteTitle": "Mag-imbita sa workspace",
+    "emailLabel": "Email (opsyonal para sa open link)",
+    "emailPlaceholder": "kasamahan@example.com",
+    "role": "Tungkulin",
+    "sending": "Ipinapadala…",
+    "sendInvite": "Magpadala ng imbitasyon",
+    "createLink": "Gumawa ng link",
+    "inviteSentTo": "Naipadala ang imbitasyon kay {{email}}.",
+    "joinLinkCreated": "Nagawa ang join link.",
+    "copyLink": "Kopyahin ang link",
+    "copyLinkTitle": "Kopyahin ang invite link",
+    "copied": "Nakopya",
+    "pending": "Mga nakabinbing imbitasyon ({{count}})",
+    "col": { "emailType": "Email / Uri", "role": "Tungkulin", "expires": "Mag-e-expire", "actions": "Mga Aksyon" },
+    "openLink": "Open link",
+    "expired": "(expired)",
+    "resend": "Ipadala muli",
+    "resendTitle": "Ipadala muli ang email",
+    "revoke": "Bawiin",
+    "revokeTitle": "Bawiin ang imbitasyon",
+    "title": "Mga Miyembro ({{count}})",
+    "tcol": { "user": "User", "role": "Tungkulin", "joined": "Sumali", "actions": "Mga Aksyon" },
+    "you": "(ikaw)",
+    "confirm": "Kumpirmahin",
+    "cancel": "Kanselahin",
+    "removing": "Inaalis…",
+    "remove": "Alisin",
+    "removeTitle": "Alisin ang miyembro",
+    "loading": "Niloload ang mga miyembro…",
+    "footer": "May ganap na kontrol ang mga may-ari kasama ang pagtanggal ng workspace. Pinamamahalaan ng mga admin ang miyembro at setting ngunit hindi maaaring magtanggal ng workspace.",
+    "err": {
+      "lastOwner": "Ito ang huling may-ari — ilipat muna ang pagmamay-ari.",
+      "adminsCannot": "Hindi maaaring baguhin o alisin ng mga admin ang mga may-ari.",
+      "onlyOwners": "Mga may-ari lang ang makakapagbigay ng tungkuling may-ari.",
+      "requestFailed": "Nabigo ang request."
+    }
+  },
+  "usage": {
+    "failedTitle": "Nabigo ang pag-load ng paggamit",
+    "managerRequired": "Kailangan ng manager o owner na tungkulin para makita ang paggamit.",
+    "failedData": "Nabigo ang pag-load ng usage data.",
+    "noMessages": "Walang mensahe sa nakaraang 7 araw.",
+    "messages7d": "Mga mensahe — nakaraang 7 araw",
+    "documents": "Mga Dokumento",
+    "products": "Mga Produkto",
+    "members": "Mga Miyembro",
+    "vectorChunks": "Vector Chunks",
+    "totalMessages": "Kabuuang Mensahe"
+  },
+  "advanced": {
+    "ownerOnly": "May-ari lang",
+    "ownerOnlyNote": "Tanging ang may-ari ng workspace lang ang makakagawa nito.",
+    "cancel": "Kanselahin",
+    "archive": {
+      "unarchiveTitle": "I-unarchive ang workspace",
+      "archiveTitle": "I-archive ang workspace",
+      "unarchiveDesc": "Kasalukuyang naka-archive ang workspace. Hindi ito magagamit ng mga miyembro hangga't hindi mo ito naibabalik.",
+      "archiveDesc": "Suspindihin ang workspace na ito. Mai-lock out ang mga miyembro hangga't hindi mo ito na-unarchive. Pinananatili ang data.",
+      "archivedBanner": "Naka-archive ang workspace na ito. Lahat ng data route ay nagbabalik ng 403 para sa mga miyembro nito.",
+      "confirmRestore": "Ibalik ang workspace na ito?",
+      "confirmArchive": "I-archive ang workspace na ito?",
+      "working": "Ginagawa…",
+      "yesRestore": "Oo, ibalik",
+      "yesArchive": "Oo, i-archive",
+      "restore": "Ibalik ang workspace",
+      "archiveBtn": "I-archive ang workspace",
+      "errAlreadyArchived": "Naka-archive na ang workspace na ito.",
+      "errNotArchived": "Hindi naka-archive ang workspace na ito."
+    },
+    "transfer": {
+      "title": "Ilipat ang pagmamay-ari",
+      "desc": "Ipasa ang buong pagmamay-ari sa ibang miyembro ng workspace. Mada-demote ka sa Admin pagkatapos ng paglipat. Hindi ito mababawi nang walang kooperasyon ng bagong may-ari.",
+      "newOwner": "Bagong may-ari",
+      "selectMember": "Pumili ng miyembro…",
+      "transferBtn": "Ilipat…",
+      "confirmQuestion": "Ilipat ang pagmamay-ari kay {{name}}? Mada-demote ka sa Admin.",
+      "transferring": "Inililipat…",
+      "confirmTransfer": "Kumpirmahin ang paglipat",
+      "errMemberNotFound": "Ang user na iyon ay hindi miyembro ng workspace na ito.",
+      "errAlreadyOwner": "May-ari na ang miyembrong iyon.",
+      "errYourself": "Hindi mo maililipat ang pagmamay-ari sa sarili mo."
+    },
+    "delete": {
+      "title": "Tanggalin ang workspace",
+      "desc": "Permanenteng tanggalin ang workspace na ito at lahat ng data nito kasama ang mga dokumento, miyembro, mensahe, at Qdrant vectors. Hindi na ito mababawi.",
+      "deleteBtn": "Tanggalin ang workspace…",
+      "typeName": "I-type ang pangalan ng workspace na {{name}} para kumpirmahin:",
+      "deleting": "Tinatanggal…",
+      "permanentlyDelete": "Permanenteng tanggalin",
+      "errNameMismatch": "Hindi tumugma ang pangalan ng workspace na ni-type mo. Pakisubukan muli."
+    },
+    "requestFailed": "Nabigo ang request."
+  },
+  "switcher": {
+    "select": "Pumili ng workspace",
+    "switchTitle": "Lumipat ng workspace",
+    "workspaces": "Mga Workspace",
+    "manage": "Pamahalaan ang mga workspace"
+  },
+  "picker": {
+    "title": "Pumili ng workspace",
+    "prompt": "Aling workspace ang gusto mong pamahalaan sa session na ito?",
+    "continue": "Magpatuloy"
+  },
+  "require": {
+    "loading": "Niloload ang iyong mga workspace…",
+    "errorTitle": "Hindi ma-load ang mga workspace",
+    "empty": "Wala pang workspace",
+    "emptyPrompt": "Gumawa ng iyong unang workspace para magsimulang gumamit ng NEXUS.",
+    "create": "Gumawa ng workspace"
+  },
+  "placeholder": {
+    "defaultDesc": "Hindi pa na-port ang pahinang ito sa React app. Ang lumang SPA sa /static/ ay nagsisilbi pa rin sa gumaganang bersyon."
+  },
+  "join": {
+    "title": "Sumasali sa workspace…",
+    "verifying": "Vine-verify ang imbitasyon…",
+    "joined": "Sumali ka sa {{name}} bilang {{role}}.",
+    "redirecting": "Nire-redirect…",
+    "goToNexus": "Pumunta sa NEXUS",
+    "fallbackName": "ang workspace",
+    "noToken": "Walang invite token sa URL.",
+    "errNotFound": "Hindi natagpuan ang invite link o nagamit na.",
+    "errUsed": "Natanggap na o nabawi na ang imbitasyong ito.",
+    "errExpired": "Nag-expire na ang invite link na ito. Hilingin sa workspace manager na ipadala muli.",
+    "errGeneric": "May nangyaring mali."
+  }
+}

@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { BarChart2, Database, FileText, MessageSquare, Package, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api, HTTPError } from '../../lib/api.js';
 
-function errorCopy(err) {
+function errorCopy(err, t) {
   if (err instanceof HTTPError) {
     const detail = (typeof err.body === 'string' && err.body) || err.message || '';
-    if (detail.includes('manager_role_required')) return 'Manager or owner role required to view usage.';
-    return detail || 'Failed to load usage data.';
+    if (detail.includes('manager_role_required')) return t('usage.managerRequired');
+    return detail || t('usage.failedData');
   }
-  return err?.message || 'Failed to load usage data.';
+  return err?.message || t('usage.failedData');
 }
 
 // Skeleton shimmer block
@@ -50,6 +51,7 @@ function StatCardSkeleton() {
 
 // 7-day bar chart — pure CSS, no external chart dep
 function MessageChart({ days }) {
+  const { t } = useTranslation('workspace');
   const allZero = days.every((d) => d.count === 0);
   const maxCount = Math.max(...days.map((d) => d.count), 1);
 
@@ -57,7 +59,7 @@ function MessageChart({ days }) {
     return (
       <div className="glass-card flex flex-col items-center gap-2 py-8 text-center">
         <BarChart2 size={18} className="text-nexus-muted" />
-        <p className="text-sm text-nexus-muted">No messages in the last 7 days.</p>
+        <p className="text-sm text-nexus-muted">{t('usage.noMessages')}</p>
       </div>
     );
   }
@@ -65,7 +67,7 @@ function MessageChart({ days }) {
   return (
     <div className="glass-card p-4">
       <p className="mb-4 text-xs font-medium uppercase tracking-wide text-nexus-muted">
-        Messages — last 7 days
+        {t('usage.messages7d')}
       </p>
       <div className="flex h-28 items-end gap-1.5">
         {days.map((d) => {
@@ -104,6 +106,7 @@ function MessageChart({ days }) {
 }
 
 export default function UsageTab({ tenantId }) {
+  const { t } = useTranslation('workspace');
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -123,7 +126,7 @@ export default function UsageTab({ tenantId }) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(errorCopy(err));
+          setError(errorCopy(err, t));
           setLoading(false);
         }
       });
@@ -137,7 +140,7 @@ export default function UsageTab({ tenantId }) {
     return (
       <div className="glass-card flex flex-col items-center gap-2 py-10 text-center">
         <BarChart2 size={18} className="text-red-400" />
-        <p className="text-sm font-medium text-red-500">Failed to load usage</p>
+        <p className="text-sm font-medium text-red-500">{t('usage.failedTitle')}</p>
         <p className="max-w-xs text-xs text-nexus-muted">{error}</p>
       </div>
     );
@@ -165,28 +168,28 @@ export default function UsageTab({ tenantId }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard
           icon={FileText}
-          label="Documents"
+          label={t('usage.documents')}
           value={usage.document_count.toLocaleString()}
         />
         <StatCard
           icon={Package}
-          label="Products"
+          label={t('usage.products')}
           value={usage.product_count.toLocaleString()}
         />
         <StatCard
           icon={Users}
-          label="Members"
+          label={t('usage.members')}
           value={usage.member_count.toLocaleString()}
         />
         <StatCard
           icon={Database}
-          label="Vector Chunks"
+          label={t('usage.vectorChunks')}
           value={vectorDisplay}
           muted={usage.vector_chunks == null}
         />
         <StatCard
           icon={MessageSquare}
-          label="Total Messages"
+          label={t('usage.totalMessages')}
           value={usage.messages_total.toLocaleString()}
         />
       </div>
