@@ -69,8 +69,11 @@ from rag.database.engine import dispose_engine  # noqa: E402
 from rag.messenger.routers import health as v2_health  # noqa: E402
 from rag.messenger.routers import outbound as v2_outbound  # noqa: E402
 from rag.messenger.routers import webhook as v2_webhook  # noqa: E402
+from rag.auth.oauth import router as v2_google_oauth  # noqa: E402
+from rag.auth.session import router as v2_auth_session  # noqa: E402
 from rag.observability.tracing import init_tracing  # noqa: E402
 from rag.routers import admin_users as v2_admin_users  # noqa: E402
+from rag.routers import domain_join as v2_domain_join  # noqa: E402
 from rag.routers import profile as v2_profile  # noqa: E402
 from rag.routers import v2_tenants  # noqa: E402
 from rag.routers.tenant_invites import public_router as v2_invites_public  # noqa: E402
@@ -255,6 +258,10 @@ app.include_router(v2_tenants.router)
 # Phase 51 — invite routes (/api/tenants/{id}/invites) + public accept (/api/invites/accept).
 app.include_router(v2_invites)
 app.include_router(v2_invites_public)
+# Phase 56 — Google SSO (routers carry their own /api/auth* prefixes).
+app.include_router(v2_google_oauth)
+app.include_router(v2_auth_session)
+app.include_router(v2_domain_join.router)
 
 app.include_router(chat.router, prefix="/api/chat")
 app.include_router(chat_uploads.router, prefix="/api/chat")

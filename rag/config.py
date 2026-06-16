@@ -290,6 +290,41 @@ class Settings(BaseSettings):
     # When False, feed/comment webhook events are silently dropped (200 OK).
     comment_triage_enabled: bool = Field(default=False)
 
+    # ---- Phase 55/56 — token encryption at rest ----
+    # urlsafe-base64 32-byte Fernet key. Encrypts Facebook page/user tokens and
+    # Google OAuth access tokens before they touch Postgres. Empty in dev/tests;
+    # rag.crypto raises if a code path actually needs it while unset.
+    nexus_token_encryption_key: str = Field(
+        default="", alias="NEXUS_TOKEN_ENCRYPTION_KEY"
+    )
+
+    # ---- Phase 55 — Facebook Page metadata sync ----
+    # Master switch for the page-field webhook branch + sync worker path. When
+    # False the webhook ignores name/about/picture changes (200 OK) and no
+    # Graph API metadata fetches are scheduled.
+    facebook_sync_enabled: bool = Field(default=False)
+    facebook_graph_version: str = Field(default="v21.0")
+    # Redis key the sync jobs share with the existing outbound queue machinery.
+    facebook_sync_correlation_prefix: str = Field(default="fb_sync")
+
+    # ---- Phase 56 — Google SSO (OIDC authorization-code + PKCE) ----
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    # Absolute callback URL registered in the Google Cloud console, e.g.
+    # https://chat.nexus.gayo-sphere.cloud/api/auth/google/callback
+    google_redirect_uri: str | None = None
+    # Short-lived server-side CSRF/nonce/PKCE state lifetime (seconds).
+    oauth_state_ttl_seconds: int = Field(default=600, ge=60, le=3600)
+    # Rotating refresh-cookie lifetime (days). Access JWT stays 1h (auth/config).
+    refresh_token_ttl_days: int = Field(default=30, ge=1, le=365)
+    # When True, an OAuth login whose email domain matches an existing
+    # tenant.domain creates a pending domain_join_request instead of silently
+    # provisioning a brand-new workspace. Admin approval grants membership.
+    domain_autojoin_enabled: bool = Field(default=True)
+    # Set Secure flag on the refresh cookie. True in prod (HTTPS); tests/dev
+    # over http need it False or the cookie is dropped.
+    refresh_cookie_secure: bool = Field(default=True)
+
     def outbound_backoff_seconds(self) -> list[int]:
         """Parse the CSV into ordered backoff intervals."""
 

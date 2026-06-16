@@ -117,6 +117,12 @@ class Tenant(Base):
         DateTime(timezone=True), nullable=True
     )
 
+    # Phase 56 — Google SSO domain auto-join. When set (e.g. "acmewidgets.com")
+    # an OAuth login whose *verified* email ends in this domain creates a
+    # pending domain_join_request instead of provisioning a brand-new
+    # workspace. Nullable: most tenants never opt in.
+    domain: Mapped[str | None] = mapped_column(String(253), nullable=True, index=True)
+
     # Phase 45 — Lifecycle Persona Engine. Carries the full ai_settings blob
     # (scenario_prompts, active_nodes, model_params). Default is the empty-
     # string / True / None shape so existing tenants behave byte-identically
@@ -222,6 +228,16 @@ class MessengerPageTenant(Base):
     """
 
     __tablename__ = "messenger_page_tenants"
+    __table_args__ = (
+        CheckConstraint(
+            "token_status IN ('active', 'expired', 'revoked', 'invalid')",
+            name="ck_mpt_token_status",
+        ),
+        CheckConstraint(
+            "sync_status IN ('ok', 'stale', 'error')",
+            name="ck_mpt_sync_status",
+        ),
+    )
 
     facebook_page_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
@@ -231,6 +247,195 @@ class MessengerPageTenant(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # ---- Phase 55 — Page metadata sync (name / about / picture) ----
+    # The webhook is a *signal*; the sync worker fetches the authoritative
+    # values from the Graph API with the page's own token and writes them here.
+    page_name: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    page_about: Mapped[str | None] = mapped_column(Text, nullable=True)
+    profile_picture_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    # Fernet ciphertext (rag.crypto) — the per-page access token used to read
+    # metadata. Never stored plaintext. Nullable until the page is connected
+    # via the OAuth-backed bind flow.
+    page_access_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    token_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="active"
+    )
+    token_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Fields this page is subscribed to on the app webhook (audit/debug only).
+    subscribed_fields: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True
+    )
+    last_synced_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    sync_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="ok"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class FacebookUserToken(Base):
+    """Phase 55 — per-tenant long-lived Facebook *user* token (~60 days).
+
+    Distinct from the per-page token on ``MessengerPageTenant``: the user
+    token is what mints fresh page tokens and (re)subscribes webhook fields
+    when a page token expires. One row per tenant; the ciphertext is Fernet
+    (rag.crypto).
+    """
+
+    __tablename__ = "facebook_user_tokens"
+    __table_args__ = (
+        CheckConstraint(
+            "token_status IN ('active', 'expired', 'revoked', 'invalid')",
+            name="ck_fut_token_status",
+        ),
+    )
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"), primary_key=True
+    )
+    fb_user_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_token_enc: Mapped[str] = mapped_column(Text, nullable=False)
+    scopes: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    token_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="active"
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class OAuthAccount(Base):
+    """Phase 56 — third-party identity link (one row per provider account).
+
+    Plain model (not fastapi-users' base) so the FK targets ``app.users.id``
+    and the row lives in the ``app`` schema. ``(oauth_name, account_id)`` is
+    unique so the same Google ``sub`` can never fan out to two NEXUS users.
+    ``access_token`` is Fernet ciphertext (rag.crypto).
+    """
+
+    __tablename__ = "oauth_accounts"
+    __table_args__ = (
+        UniqueConstraint(
+            "oauth_name", "account_id", name="uq_oauth_provider_account"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    oauth_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    account_id: Mapped[str] = mapped_column(String(320), nullable=False)
+    account_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    access_token_enc: Mapped[str] = mapped_column(Text, nullable=False)
+    refresh_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
+    expires_at: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class OAuthState(Base):
+    """Phase 56 — single-use CSRF state + replay nonce + PKCE verifier.
+
+    Persisted server-side *before* the redirect to Google and consumed exactly
+    once on the callback. Short TTL (``oauth_state_ttl_seconds``). ``state`` is
+    the URL-visible random token; ``nonce`` is bound into the id_token and
+    re-checked; ``code_verifier`` proves the PKCE exchange.
+    """
+
+    __tablename__ = "oauth_states"
+
+    state: Mapped[str] = mapped_column(String(64), primary_key=True)
+    nonce: Mapped[str] = mapped_column(String(64), nullable=False)
+    code_verifier: Mapped[str] = mapped_column(String(128), nullable=False)
+    invite_token: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    redirect_after: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    consumed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class RefreshToken(Base):
+    """Phase 56 — rotating refresh token backing the HttpOnly session cookie.
+
+    Only the SHA-256 hash is stored (same discipline as TenantInvite). Each
+    use rotates: the old row is marked ``revoked_at`` and a fresh row issued,
+    so a stolen-then-replayed token is detectable and revocable.
+    """
+
+    __tablename__ = "refresh_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class DomainJoinRequest(Base):
+    """Phase 56 — pending domain auto-join awaiting admin approval.
+
+    Created when an OAuth user's verified email domain matches a
+    ``tenant.domain`` but they have no invite/membership. A manager approves
+    or rejects; approval mints the ``TenantUser`` membership.
+    """
+
+    __tablename__ = "domain_join_requests"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending', 'approved', 'rejected')",
+            name="ck_djr_status",
+        ),
+        UniqueConstraint(
+            "tenant_id", "user_id", name="uq_djr_tenant_user"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    email_domain: Mapped[str] = mapped_column(String(253), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="pending"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app.users.id", ondelete="SET NULL"), nullable=True
+    )
+    decided_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
 

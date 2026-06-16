@@ -16,6 +16,7 @@ import hashlib
 import logging
 import secrets
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -118,6 +119,67 @@ async def _fire_n8n_invite(
         _log.error("invites.n8n: webhook timed out for %s", email)
     except Exception as exc:  # noqa: BLE001
         _log.error("invites.n8n: unexpected error for %s: %s", email, exc)
+
+
+@dataclass(frozen=True)
+class InviteOutcome:
+    """Result of consuming an invite. ``status`` is one of:
+    ``ok`` (joined), ``already_member``, ``not_found``, ``already_used``,
+    ``expired``.
+    """
+
+    status: str
+    tenant_id: uuid.UUID | None = None
+    role: str | None = None
+
+
+async def resolve_and_apply_invite(
+    db: AsyncSession, user: User, raw_token: str
+) -> InviteOutcome:
+    """Consume a pending invite for ``user`` and apply membership.
+
+    Mutates the session (adds the ``TenantUser`` row, marks the invite
+    accepted) but does NOT commit — the caller owns the transaction boundary
+    so this composes inside the OAuth callback's single commit. Returns an
+    outcome instead of raising for the invalid-token cases so the OAuth path
+    can fall through to other tenant-resolution branches.
+    """
+
+    token_hash = _token_hash(raw_token)
+    invite = (
+        await db.execute(
+            select(TenantInvite).where(TenantInvite.token_hash == token_hash)
+        )
+    ).scalar_one_or_none()
+
+    if invite is None:
+        return InviteOutcome("not_found")
+    if invite.status != "pending":
+        return InviteOutcome("already_used", tenant_id=invite.tenant_id)
+    if invite.expires_at < datetime.now(timezone.utc):
+        return InviteOutcome("expired", tenant_id=invite.tenant_id)
+
+    existing = (
+        await db.execute(
+            select(TenantUser).where(
+                TenantUser.tenant_id == invite.tenant_id,
+                TenantUser.user_id == user.id,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        invite.status = "accepted"
+        return InviteOutcome(
+            "already_member", tenant_id=invite.tenant_id, role=existing.role
+        )
+
+    db.add(
+        TenantUser(
+            tenant_id=invite.tenant_id, user_id=user.id, role=invite.role
+        )
+    )
+    invite.status = "accepted"
+    return InviteOutcome("ok", tenant_id=invite.tenant_id, role=invite.role)
 
 
 # ---------- tenant-gated routes -----------------------------------------------
@@ -261,49 +323,32 @@ async def accept_invite(
     user: User = Depends(current_active_user),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
-    token_hash = _token_hash(body.token)
-    stmt = select(TenantInvite).where(TenantInvite.token_hash == token_hash)
-    invite = (await db.execute(stmt)).scalar_one_or_none()
+    outcome = await resolve_and_apply_invite(db, user, body.token)
 
-    if invite is None:
+    if outcome.status == "not_found":
         raise HTTPException(status_code=404, detail="invite_not_found")
-    if invite.status != "pending":
+    if outcome.status == "already_used":
         raise HTTPException(status_code=409, detail="invite_already_used")
-    if invite.expires_at < datetime.now(timezone.utc):
+    if outcome.status == "expired":
         raise HTTPException(status_code=410, detail="invite_expired")
 
-    # Check if user is already a member.
-    existing_stmt = select(TenantUser).where(
-        TenantUser.tenant_id == invite.tenant_id,
-        TenantUser.user_id == user.id,
-    )
-    existing = (await db.execute(existing_stmt)).scalar_one_or_none()
-    if existing is not None:
-        invite.status = "accepted"
-        await db.commit()
-        return {"tenant_id": str(invite.tenant_id), "role": existing.role}
-
-    membership = TenantUser(
-        tenant_id=invite.tenant_id,
-        user_id=user.id,
-        role=invite.role,
-    )
-    invite.status = "accepted"
-    db.add(membership)
     await db.commit()
 
-    tenant_stmt = select(Tenant).where(Tenant.id == invite.tenant_id)
+    if outcome.status == "already_member":
+        return {"tenant_id": str(outcome.tenant_id), "role": outcome.role}
+
+    tenant_stmt = select(Tenant).where(Tenant.id == outcome.tenant_id)
     tenant = (await db.execute(tenant_stmt)).scalar_one_or_none()
 
     _log.info(
         "invites.accept: user=%s joined tenant=%s role=%s",
         user.id,
-        invite.tenant_id,
-        invite.role,
+        outcome.tenant_id,
+        outcome.role,
     )
     return {
-        "tenant_id": str(invite.tenant_id),
+        "tenant_id": str(outcome.tenant_id),
         "tenant_name": tenant.name if tenant else None,
         "tenant_slug": tenant.slug if tenant else None,
-        "role": invite.role,
+        "role": outcome.role,
     }
