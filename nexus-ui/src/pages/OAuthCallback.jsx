@@ -1,86 +1,57 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, ShieldCheck, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { saveToken } from '../lib/auth.js';
-import { api, HTTPError } from '../lib/api.js';
 
 // Landing pad for the Google OAuth redirect (Phase 56 SSO).
 //
-// Public route — mounted OUTSIDE RequireAuth/RequireTenant because the user
-// has no Nexus session yet when Google bounces them back here. Google returns
-// either `?code=...&state=...` (success) or `?error=access_denied` (declined).
+// Public route — mounted OUTSIDE RequireAuth/RequireTenant: the user has no
+// Nexus session yet when they land here.
 //
-// INTEGRATION SEAM — backend contract not yet finalised:
-//   The Phase 56 backend exposes `GET /api/auth/google/callback?code&state`
-//   (rag/auth/oauth.py) which exchanges the code, verifies the id_token, links
-//   the account, resolves the tenant, and returns `{ access_token, tenant }`
-//   plus a Set-Cookie refresh cookie. For this SPA pad to be the redirect
-//   target, set GOOGLE_REDIRECT_URI to `<origin>/auth/callback` and this
-//   component forwards code+state to that backend endpoint. (Alternatively the
-//   backend stays the redirect target and 302s here with tokens in the URL
-//   fragment — in which case read from `window.location.hash` instead.)
-//   Pick one before wiring live; the scaffold below assumes the forward model.
-function readError(err, t) {
-  if (err instanceof HTTPError) {
-    const detail = (typeof err.body === 'string' && err.body) || '';
-    if (detail === 'invalid_state') return t('oauth.stateExpired');
-    if (detail === 'google_email_unverified') return t('oauth.emailUnverified');
-    return detail || err.message;
-  }
-  return err?.message || t('oauth.errorGeneric');
+// Fragment handoff: the backend (rag/auth/oauth.py) owns the secure
+// authorization-code exchange (PKCE verifier, JWKS id_token verify, account
+// linking, tenant resolution), then 302-redirects here with the freshly minted
+// access token in the URL *fragment*:
+//     /auth/callback#access_token=<jwt>[&token_type=bearer]
+//   on failure:
+//     /auth/callback#error=<code>
+// The fragment is never sent to a server (so the token stays out of access
+// logs). We read it client-side, persist the token, and hard-navigate so
+// AuthProvider re-reads the token from storage and hydrates user + tenant.
+function errorCopy(code, t) {
+  if (code === 'invalid_state') return t('oauth.stateExpired');
+  if (code === 'google_email_unverified') return t('oauth.emailUnverified');
+  if (code === 'access_denied') return t('oauth.cancelled');
+  return t('oauth.errorReturned', { error: code });
 }
 
 export default function OAuthCallback() {
   const { t } = useTranslation('auth');
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const [phase, setPhase] = useState('loading'); // loading | error
   const [errMsg, setErrMsg] = useState('');
 
   useEffect(() => {
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    const oauthError = searchParams.get('error');
+    // Token + error arrive in the fragment (after '#'), not the query string.
+    const frag = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const token = frag.get('access_token');
+    const errCode = frag.get('error');
 
-    // Google declined / user cancelled consent.
-    if (oauthError) {
-      setErrMsg(
-        searchParams.get('error_description') ||
-          (oauthError === 'access_denied'
-            ? t('oauth.cancelled')
-            : t('oauth.errorReturned', { error: oauthError })),
-      );
-      setPhase('error');
+    if (token) {
+      saveToken(token);
+      // Scrub the token from the address bar / history before leaving.
+      window.history.replaceState(null, '', window.location.pathname);
+      // Hard navigation forces AuthProvider to re-read the token on mount and
+      // hydrate the user + tenant context cleanly.
+      window.location.assign('/chat');
       return;
     }
 
-    if (!code || !state) {
-      setErrMsg(t('oauth.missingParams'));
-      setPhase('error');
-      return;
-    }
-
-    // Forward the code + state to the backend for the secure exchange. The
-    // backend owns PKCE verifier lookup, JWKS id_token verification, account
-    // linking and tenant resolution — the SPA never sees the id_token.
-    const query = new URLSearchParams({ code, state }).toString();
-    api
-      .get(`/auth/google/callback?${query}`)
-      .then((data) => {
-        if (data?.access_token) {
-          saveToken(data.access_token);
-        }
-        // Hard navigation so AuthProvider re-reads the token from storage on
-        // mount and hydrates the user + tenant context cleanly.
-        window.location.assign('/chat');
-      })
-      .catch((err) => {
-        setErrMsg(readError(err, t));
-        setPhase('error');
-      });
-    // Run once on mount — params come from the redirect URL and do not change.
+    setErrMsg(errCode ? errorCopy(errCode, t) : t('oauth.missingParams'));
+    setPhase('error');
+    // Run once on mount — fragment comes from the redirect URL, never changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
