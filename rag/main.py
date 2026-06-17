@@ -66,6 +66,7 @@ from rag.auth import (  # noqa: E402
 )
 from rag.config import settings  # noqa: E402
 from rag.database.engine import dispose_engine  # noqa: E402
+from rag.messenger.routers import automations as v2_fb_automations  # noqa: E402
 from rag.messenger.routers import health as v2_health  # noqa: E402
 from rag.messenger.routers import outbound as v2_outbound  # noqa: E402
 from rag.messenger.routers import webhook as v2_webhook  # noqa: E402
@@ -258,6 +259,8 @@ app.include_router(v2_tenants.router)
 # Phase 51 — invite routes (/api/tenants/{id}/invites) + public accept (/api/invites/accept).
 app.include_router(v2_invites)
 app.include_router(v2_invites_public)
+# Phase 57.1 — facebook automation CRUD (/api/tenants/{id}/facebook/automations).
+app.include_router(v2_fb_automations.router)
 # Phase 56 — Google SSO (routers carry their own /api/auth* prefixes).
 app.include_router(v2_google_oauth)
 app.include_router(v2_auth_session)
