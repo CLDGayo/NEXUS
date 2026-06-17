@@ -15,6 +15,14 @@ _publish/public/
 # macOS
 .DS_Store
 
+# Knowledge graph — regenerated locally by graphify, not source.
+# Root-anchored so it never shadows tracked process/**/ paths.
+/graphify-out/
+
+# Scratch research reports dropped at the repo root by Explore agents.
+# Durable reports live under process/**/reports/ and stay tracked.
+/reports/
+
 # Runtime data — application logs and SQLite databases live here.
 # Never commit. The deploy script rsyncs sources only.
 rag/data/*.log
