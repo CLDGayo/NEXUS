@@ -261,6 +261,8 @@ class TestFeedWebhook:
         captured_events: list[Awaitable[None]],
     ) -> None:
         monkeypatch.setattr(_settings, "comment_triage_enabled", True)
+        # Phase 57: disable automations so the legacy inline-triage path runs.
+        monkeypatch.setattr(_settings, "fb_automations_enabled", False)
         monkeypatch.setenv("MESSENGER_APP_SECRET", "feed-secret-1")
 
         seen: list[str] = []
@@ -315,6 +317,9 @@ class TestFeedWebhook:
         captured_events: list[Awaitable[None]],
     ) -> None:
         monkeypatch.setattr(_settings, "comment_triage_enabled", False)
+        # Phase 57: disable automations too so that both comment paths are off
+        # and the comment is truly dropped (the original intent of this test).
+        monkeypatch.setattr(_settings, "fb_automations_enabled", False)
         monkeypatch.setenv("MESSENGER_APP_SECRET", "feed-secret-3")
 
         body = json.dumps(_feed_envelope()).encode()
@@ -356,6 +361,8 @@ class TestFeedWebhook:
         captured_events: list[Awaitable[None]],
     ) -> None:
         monkeypatch.setattr(_settings, "comment_triage_enabled", True)
+        # Phase 57: disable automations so the legacy inline-triage path runs.
+        monkeypatch.setattr(_settings, "fb_automations_enabled", False)
         monkeypatch.setenv("MESSENGER_APP_SECRET", "feed-secret-5")
         overlay_tmp.set_page_access_token("EAA-feed-token-123456")
 

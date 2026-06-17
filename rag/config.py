@@ -290,6 +290,14 @@ class Settings(BaseSettings):
     # When False, feed/comment webhook events are silently dropped (200 OK).
     comment_triage_enabled: bool = Field(default=False)
 
+    # Phase 57 — Facebook Comment-to-Message automation engine.
+    # When True (default), feed/comment/add events are enqueued as
+    # ``fb_private_reply`` jobs. The worker runs keyword matching first and
+    # falls back to the LLM triage path on no-match (coexistence mode).
+    # Set to False to disable automations and fall back to the plain
+    # ``comment_triage_enabled`` path for back-compat.
+    fb_automations_enabled: bool = Field(default=True)
+
     # ---- Phase 55/56 — token encryption at rest ----
     # urlsafe-base64 32-byte Fernet key. Encrypts Facebook page/user tokens and
     # Google OAuth access tokens before they touch Postgres. Empty in dev/tests;

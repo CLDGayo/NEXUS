@@ -63,7 +63,9 @@ def _classify_graph_error(status_code: int, body: Any) -> tuple[bool, str]:
     return False, summary
 
 
-async def _send_once(client: httpx.AsyncClient, item: QueuedItem) -> tuple[bool, int | None, str | None, bool]:
+async def _send_once(
+    client: httpx.AsyncClient, item: QueuedItem
+) -> tuple[bool, int | None, str | None, bool]:
     """Return (delivered, status_code, error, retryable)."""
 
     target = getattr(item, "target", "broker") or "broker"
@@ -76,17 +78,34 @@ async def _send_once(client: httpx.AsyncClient, item: QueuedItem) -> tuple[bool,
 
         return await run_page_sync_job(client, item.payload)
 
+    if target == "fb_private_reply":
+        # Phase 57 — deterministic keyword-triggered private reply engine.
+        # Opens its own DB session; dead-letters immediately on any error
+        # (retryable=False always — see private_reply.py for the rationale).
+        from rag.messenger.private_reply import run_private_reply_job
+
+        return await run_private_reply_job(client, item.payload)
+
     if target == "graph_api":
         token = current_page_access_token()
         if not token:
             return False, None, "page access token missing", False
         url = f"{_GRAPH_API_BASE}?access_token={token}"
         reply_text = (
-            item.payload.get("reply", {}).get("text") if isinstance(item.payload, dict) else None
+            item.payload.get("reply", {}).get("text")
+            if isinstance(item.payload, dict)
+            else None
         )
-        recipient_id = item.payload.get("user_id") if isinstance(item.payload, dict) else None
+        recipient_id = (
+            item.payload.get("user_id") if isinstance(item.payload, dict) else None
+        )
         if not reply_text or not recipient_id:
-            return False, None, "queued graph_api item missing reply.text or user_id", False
+            return (
+                False,
+                None,
+                "queued graph_api item missing reply.text or user_id",
+                False,
+            )
         body = {
             "recipient": {"id": recipient_id},
             "messaging_type": "RESPONSE",
@@ -116,7 +135,12 @@ async def _send_once(client: httpx.AsyncClient, item: QueuedItem) -> tuple[bool,
 
     retryable = response.status_code >= 500
     snippet = (response.text or "")[:200]
-    return False, response.status_code, f"http {response.status_code}: {snippet}", retryable
+    return (
+        False,
+        response.status_code,
+        f"http {response.status_code}: {snippet}",
+        retryable,
+    )
 
 
 async def _process_batch(
@@ -138,7 +162,9 @@ async def _process_batch(
             if delivered:
                 _log.info(
                     "outbound retried delivery ok correlation_id=%s attempt=%d status=%s",
-                    item.correlation_id, item.attempts + 1, status,
+                    item.correlation_id,
+                    item.attempts + 1,
+                    status,
                 )
                 counters["delivered"] += 1
                 continue
@@ -191,14 +217,20 @@ async def run_forever(
 
     stop_event = stop_event or asyncio.Event()
     queue = queue or get_queue()
-    poll = poll_seconds if poll_seconds is not None else settings.outbound_worker_poll_seconds
+    poll = (
+        poll_seconds
+        if poll_seconds is not None
+        else settings.outbound_worker_poll_seconds
+    )
     client_factory = client_factory or (
         lambda: httpx.AsyncClient(timeout=settings.outbound_send_timeout_seconds)
     )
 
     _log.info(
         "outbound worker started poll=%.1fs batch=%d max_attempts=%d",
-        poll, settings.outbound_worker_batch_size, settings.outbound_max_attempts,
+        poll,
+        settings.outbound_worker_batch_size,
+        settings.outbound_max_attempts,
     )
 
     iterations = 0
