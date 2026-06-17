@@ -29,6 +29,7 @@ import WhatsNewPage from './pages/WhatsNewPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import JoinWorkspacePage from './pages/JoinWorkspacePage.jsx';
+import OAuthCallback from './pages/OAuthCallback.jsx';
 import DocsPage from './pages/DocsPage.jsx';
 import GlassSpinner from './components/graph/GlassSpinner.jsx';
 
@@ -43,6 +44,9 @@ export default function App() {
         <Tooltip.Provider delayDuration={0}>
         <Routes>
           <Route path="/login" element={<LoginScreen />} />
+          {/* Phase 56 — Google OAuth landing pad. Public (no RequireAuth):
+              the user has no Nexus session yet when Google redirects here. */}
+          <Route path="/auth/callback" element={<OAuthCallback />} />
           <Route
             element={
               <RequireAuth>
