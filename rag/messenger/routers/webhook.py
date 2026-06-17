@@ -53,6 +53,7 @@ from rag.messenger.idempotency import (
     release_thread_lock,
 )
 from rag.messenger.page_sync import PAGE_SYNC_FIELDS, schedule_page_sync
+from rag.messenger.private_reply import enqueue_private_reply_job
 from rag.messenger.payloads import build_outbound_payload
 from rag.messenger.pii import scrub
 from rag.messenger.ratelimit import enforce_rate_limit
@@ -372,27 +373,51 @@ async def messenger_inbound_direct(
                 }
             )
 
-        # Phase 38 — Feed events (public comments on Page posts).
+        # Phase 38 / Phase 57 — Feed events (public comments on Page posts).
         # These arrive under entry.changes, NOT entry.messaging.
-        # Dispatched to the stateless triage engine (no LangGraph).
-        if settings.comment_triage_enabled:
-            for change in entry.get("changes") or []:
-                if not isinstance(change, dict):
-                    continue
-                if change.get("field") != "feed":
-                    continue
-                value = change.get("value") or {}
-                if value.get("item") != "comment" or value.get("verb") != "add":
-                    continue
-                comment_sender_id = str(((value.get("from") or {}).get("id")) or "")
-                # Strict echo guard: never process our own Page's comments.
-                if not comment_sender_id or comment_sender_id == page_id:
-                    continue
-                comment_id = str(value.get("comment_id") or "")
-                post_id = str(value.get("post_id") or "")
-                comment_text = str(value.get("message") or "").strip()
-                if not comment_id or not comment_text:
-                    continue
+        #
+        # Phase 57 coexistence logic:
+        #   * fb_automations_enabled (default True) → enqueue a
+        #     ``fb_private_reply`` job; the worker owns the keyword-match
+        #     decision tree and falls back to LLM triage on no-match.
+        #   * comment_triage_enabled (legacy flag) with automations OFF →
+        #     keep the direct inline _handle_comment_triage scheduling
+        #     unchanged for back-compat.
+        #   * Both flags off → comments silently dropped.
+        for change in entry.get("changes") or []:
+            if not isinstance(change, dict):
+                continue
+            if change.get("field") != "feed":
+                continue
+            value = change.get("value") or {}
+            if value.get("item") != "comment" or value.get("verb") != "add":
+                continue
+            comment_sender_id = str(((value.get("from") or {}).get("id")) or "")
+            # Strict echo guard: never process our own Page's comments.
+            if not comment_sender_id or comment_sender_id == page_id:
+                continue
+            comment_id = str(value.get("comment_id") or "")
+            post_id = str(value.get("post_id") or "")
+            comment_text = str(value.get("message") or "").strip()
+            if not comment_id or not comment_text:
+                continue
+
+            if settings.fb_automations_enabled:
+                _scheduler(
+                    enqueue_private_reply_job(
+                        page_id=page_id,
+                        comment_id=comment_id,
+                        sender_id=comment_sender_id,
+                        message=comment_text,
+                    )
+                )
+                _log.info(
+                    "fb_automations.enqueued page=%s comment=%s sender=%s",
+                    page_id,
+                    comment_id,
+                    comment_sender_id,
+                )
+            elif settings.comment_triage_enabled:
                 _scheduler(
                     _handle_comment_triage(
                         page_id=page_id,
@@ -714,6 +739,7 @@ async def _handle_comment_triage(
     post_id: str,
     comment_text: str,
     sender_id: str,
+    token: str | None = None,
 ) -> None:
     """Phase 38 — background task: stateless LLM triage of a public comment.
 
@@ -721,6 +747,11 @@ async def _handle_comment_triage(
     classification, then dispatches public reply and/or private reply
     via the Graph API. All exceptions are caught and logged — a failed
     comment triage must never block the main DM pipeline.
+
+    Phase 57 — accepts an optional ``token`` so the worker's fallback path
+    can pass the already-resolved per-page token instead of reading the
+    global overlay.  When ``token`` is ``None`` the function falls back to
+    ``current_page_access_token()`` as before (back-compat).
     """
     try:
         result: TriageResult = await triage_comment(comment_text)
@@ -738,8 +769,8 @@ async def _handle_comment_triage(
         )
         from rag.messenger_overlay import current_page_access_token
 
-        token = current_page_access_token()
-        if not token:
+        resolved_token = token or current_page_access_token()
+        if not resolved_token:
             _log.warning("comment_triage.no_token comment=%s", comment_id)
             return
 
@@ -747,14 +778,14 @@ async def _handle_comment_triage(
             await send_public_comment_reply(
                 comment_id=comment_id,
                 message=result.public_reply,
-                access_token=token,
+                access_token=resolved_token,
             )
 
         if result.action == "public_and_private" and result.private_reply:
             await send_private_reply(
                 comment_id=comment_id,
                 message=result.private_reply,
-                access_token=token,
+                access_token=resolved_token,
             )
     except Exception as exc:  # noqa: BLE001
         _log.warning(

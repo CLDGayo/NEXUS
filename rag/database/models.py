@@ -210,7 +210,9 @@ class TenantInvite(Base):
         nullable=False,
     )
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -325,9 +327,7 @@ class OAuthAccount(Base):
 
     __tablename__ = "oauth_accounts"
     __table_args__ = (
-        UniqueConstraint(
-            "oauth_name", "account_id", name="uq_oauth_provider_account"
-        ),
+        UniqueConstraint("oauth_name", "account_id", name="uq_oauth_provider_account"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -412,9 +412,7 @@ class DomainJoinRequest(Base):
             "status IN ('pending', 'approved', 'rejected')",
             name="ck_djr_status",
         ),
-        UniqueConstraint(
-            "tenant_id", "user_id", name="uq_djr_tenant_user"
-        ),
+        UniqueConstraint("tenant_id", "user_id", name="uq_djr_tenant_user"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -752,6 +750,68 @@ class Product(Base):
         cascade="all, delete-orphan",
         order_by="ProductImage.display_order",
         lazy="selectin",
+    )
+
+
+class FacebookAutomation(Base):
+    """Phase 57 — deterministic keyword-triggered Private Reply automation.
+
+    One row per keyword rule per page. When a visitor comments on a Page
+    post and their text matches ``trigger_keyword`` (exact or contains),
+    the worker sends a pre-configured ``reply_payload`` as a private reply
+    instead of routing to the LLM triage engine.
+
+    Index on ``(page_id, is_active)`` keeps the per-comment lookup cheap.
+    """
+
+    __tablename__ = "facebook_automations"
+    __table_args__ = (
+        CheckConstraint(
+            "match_type IN ('exact', 'contains')",
+            name="ck_fba_match_type",
+        ),
+        {"schema": "app"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    page_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    trigger_keyword: Mapped[str] = mapped_column(String(255), nullable=False)
+    match_type: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="exact"
+    )
+    reply_payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=true()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ProcessedFbComment(Base):
+    """Phase 57 — idempotency lock table for comment-to-message jobs.
+
+    A row is inserted (comment_id as PK) before any send attempt. An
+    ``IntegrityError`` on insert means a duplicate webhook — the job is
+    silently dropped without a second send.
+    """
+
+    __tablename__ = "processed_fb_comments"
+    __table_args__ = {"schema": "app"}
+
+    comment_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    page_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    processed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
 
