@@ -17,6 +17,7 @@ import DocumentsPage from './pages/DocumentsPage.jsx';
 import ConversationsPage from './pages/ConversationsPage.jsx';
 import LogsPage from './pages/LogsPage.jsx';
 import IntegrationsPage from './pages/IntegrationsPage.jsx';
+import FlowsPage from './pages/FlowsPage.jsx';
 import ResourcesPage from './pages/ResourcesPage.jsx';
 import ProductsDashboardPage from './pages/ProductsDashboardPage.jsx';
 import ProductEditPage from './pages/ProductEditPage.jsx';
@@ -36,6 +37,10 @@ import GlassSpinner from './components/graph/GlassSpinner.jsx';
 // GraphPage is lazy-loaded to code-split react-force-graph-2d + d3-force
 // out of the main bundle. All other pages remain static imports.
 const GraphPage = lazy(() => import('./pages/GraphPage.jsx'));
+
+// Phase 58 — FlowBuilderPage is lazy-loaded to code-split @xyflow/react
+// (React Flow canvas) out of the main bundle. FlowsPage (list) stays static.
+const FlowBuilderPage = lazy(() => import('./pages/FlowBuilderPage.jsx'));
 
 export default function App() {
   return (
@@ -78,6 +83,16 @@ export default function App() {
             </Route>
             {/* Phase 50 — settings are manager-class (owner or admin). */}
             <Route element={<RequireManager />}>
+              {/* Phase 58 — NEXUS Flow visual builder (manager-class). */}
+              <Route path="/flows" element={<FlowsPage />} />
+              <Route
+                path="/flows/:id"
+                element={
+                  <Suspense fallback={<GlassSpinner />}>
+                    <FlowBuilderPage />
+                  </Suspense>
+                }
+              />
               <Route path="/settings" element={<SettingsPage />} />
               <Route
                 path="/settings/ai-studio"

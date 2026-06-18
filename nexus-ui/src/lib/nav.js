@@ -8,6 +8,7 @@ import {
   Library,
   Network,
   Package,
+  Workflow,
   Settings,
   Building2,
   SlidersHorizontal,
@@ -46,6 +47,8 @@ export const MANAGER_NAV = [
   { to: '/settings',            labelKey: 'nav.settings',   Icon: Settings, end: true },
   { to: '/settings/ai-studio',  labelKey: 'nav.aiStudio',   Icon: SlidersHorizontal },
   { to: '/settings/workspaces', labelKey: 'nav.workspaces', Icon: Building2 },
+  // Phase 58 — NEXUS Flow visual automation builder (manager-class).
+  { to: '/flows',               labelKey: 'nav.flows',      Icon: Workflow },
 ];
 
 export const TRAILING_NAV = [

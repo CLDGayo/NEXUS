@@ -1,0 +1,69 @@
+{
+  "title": "NEXUS Flows",
+  "subtitle": "Build multi-step Messenger automations on a visual canvas.",
+  "newFlow": "New Flow",
+  "newFlowName": "Untitled flow",
+  "creating": "Creating…",
+  "loading": "Loading…",
+  "noPageBound": "Connect a Facebook Page first",
+  "noPageBoundHint": "A flow needs a connected Page before it can run. Add one on the Integrations page.",
+  "empty": "No flows yet",
+  "emptyHint": "Create your first flow to automate replies and conversations.",
+  "colName": "Name",
+  "colPage": "Page",
+  "colStatus": "Status",
+  "colCreated": "Created",
+  "colActions": "Actions",
+  "statusActive": "Active",
+  "statusInactive": "Inactive",
+  "edit": "Edit",
+  "delete": "Delete",
+  "deleting": "Deleting…",
+  "confirm": "Confirm",
+  "cancel": "Cancel",
+  "back": "Back",
+  "backToFlows": "Back to flows",
+  "notFound": "Flow not found",
+  "flowNamePlaceholder": "Flow name",
+  "palette": "Nodes",
+  "canvasHint": "Add nodes from the palette to start building.",
+  "activate": "Active",
+  "save": "Save",
+  "saving": "Saving…",
+  "saveSuccess": "Saved",
+  "saveError": "Could not save the flow.",
+  "validationOneTrigger": "An active flow needs exactly one trigger node.",
+  "oneTrigger": "1 trigger",
+  "triggerCount": "{{count}} triggers",
+  "nodes": {
+    "trigger": "Trigger",
+    "commentTrigger": {
+      "label": "Comment Trigger",
+      "matchExact": "Exact match",
+      "matchContains": "Contains",
+      "matchAny": "Any comment",
+      "noKeyword": "No keyword set"
+    },
+    "dmTrigger": {
+      "label": "DM Trigger",
+      "noKeyword": "No keyword set"
+    },
+    "condition": {
+      "label": "Condition",
+      "true": "True",
+      "false": "False",
+      "noCondition": "No condition set"
+    },
+    "sendMessage": {
+      "label": "Send Message",
+      "noMessage": "No message set"
+    },
+    "waitForInput": {
+      "label": "Wait for Input",
+      "badge": "Waits for reply",
+      "noPrompt": "No prompt set",
+      "saveTo": "Save to",
+      "validate": "Validate"
+    }
+  }
+}
