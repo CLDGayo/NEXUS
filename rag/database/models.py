@@ -815,6 +815,97 @@ class ProcessedFbComment(Base):
     )
 
 
+class NexusFlow(Base):
+    """Phase 58 — NEXUS Flow canvas definition.
+
+    One row per visual automation flow per page. ``flow_state`` stores the
+    React Flow JSON ``{nodes, edges, viewport}`` round-tripped from the
+    canvas. The ``is_active`` flag controls whether the webhook dispatcher
+    evaluates this flow for inbound comments/DMs.
+
+    The partial index ``ix_nexus_flows_page_active`` (WHERE is_active)
+    keeps the per-comment webhook lookup O(active flows for page) instead
+    of O(all flows for tenant).
+    """
+
+    __tablename__ = "nexus_flows"
+    __table_args__ = {"schema": "app"}
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    page_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    flow_state: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    runs: Mapped[list["FlowRun"]] = relationship(
+        "FlowRun", back_populates="flow", cascade="all, delete-orphan"
+    )
+
+
+class FlowRun(Base):
+    """Phase 58 — per-user execution state for a NEXUS Flow.
+
+    A row is created when a trigger node fires for a (page_id, sender_id)
+    pair.  ``current_node_id`` tracks where a ``waitForInput`` node has
+    parked the traversal; ``status`` drives the resume logic in the webhook
+    DM branch.
+
+    The partial unique index ``uq_flow_run_live`` enforces at most one live
+    (active|waiting) run per user per page, which is the resume target.
+    """
+
+    __tablename__ = "flow_runs"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('active','waiting','completed','failed')",
+            name="ck_flow_run_status",
+        ),
+        {"schema": "app"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    flow_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.nexus_flows.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    page_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    sender_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    current_node_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="active"
+    )
+    context: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    flow: Mapped["NexusFlow"] = relationship("NexusFlow", back_populates="runs")
+
+
 class ProductImage(Base):
     """Phase 32 — ordered image attachment for a product.
 

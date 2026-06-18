@@ -86,6 +86,14 @@ async def _send_once(
 
         return await run_private_reply_job(client, item.payload)
 
+    if target == "fb_flow":
+        # Phase 58 — stateful NEXUS Flow traversal engine.
+        # Opens its own DB session; dead-letters immediately on any error
+        # (retryable=False always — mirrors Phase 57 discipline).
+        from rag.messenger.flow_engine import run_flow_job
+
+        return await run_flow_job(client, item.payload)
+
     if target == "graph_api":
         token = current_page_access_token()
         if not token:
