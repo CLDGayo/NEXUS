@@ -1,4 +1,5 @@
 import MessengerPanel from '../components/integrations/MessengerPanel.jsx';
+import FacebookAutomationsPanel from '../components/integrations/FacebookAutomationsPanel.jsx';
 import WebhookIntegrationsList from '../components/integrations/WebhookIntegrationsList.jsx';
 import ApiTokensList from '../components/integrations/ApiTokensList.jsx';
 import PremiumIntegrationsGrid from '../components/integrations/PremiumIntegrationsGrid.jsx';
@@ -11,6 +12,9 @@ export default function IntegrationsPage() {
       <div className="mx-auto max-w-4xl space-y-4 p-6">
         <div data-animate>
           <MessengerPanel />
+        </div>
+        <div data-animate>
+          <FacebookAutomationsPanel />
         </div>
         <div data-animate>
           <WebhookIntegrationsList />
