@@ -58,7 +58,7 @@ python scripts/gemini_batch_process.py \
   --files docs/inspiration/competitor-hero.png \
   --task analyze \
   --prompt "[use extraction prompt from extraction-prompts.md]" \
-  --output process/features/<feature>/references/competitor-analysis.md \
+  --output process/features/<feature>/active/{task-folder}/competitor-analysis.md \
   --model gemini-2.5-flash
 
 # 2. Generate asset based on extracted guidelines

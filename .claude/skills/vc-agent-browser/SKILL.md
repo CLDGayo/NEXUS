@@ -1,10 +1,12 @@
 ---
-name: vc:agent-browser
+name: vc-agent-browser
 description: AI-optimized browser automation CLI with context-efficient snapshots. Use for long autonomous sessions, self-verifying workflows, video recording, and cloud browser testing (Browserbase).
 license: Apache-2.0
 argument-hint: "[url or task]"
+trigger_keywords: browser, screenshot, scrape, automation, web automation, agent-browser, browserbase, cloud browser, headless, playwright, snapshot
+layer: helper
 metadata:
-  author: claudekit
+  author: vibecode-pro-max-kit
   version: "1.0.0"
 ---
 
@@ -50,7 +52,7 @@ agent-browser snapshot -i
 
 ## Project-Specific Setup
 
-For Flowser-specific connection patterns, logged-in session reuse through `chrome-debug`, and when to use `agent-browser` vs `chrome-devtools` vs direct non-browser verification, see `process/context/tests/browser-automation.md` in the consuming repo. This skill file stays a generic tool reference only and should not redefine Flowser's broader testing policy.
+For project-specific connection patterns, logged-in session reuse through `chrome-debug`, and when to use `agent-browser` vs `chrome-devtools` vs direct non-browser verification, see the project's browser-automation testing notes in the consuming repo, if present. This skill file stays a generic tool reference only and should not redefine the project's broader testing policy.
 
 ---
 

@@ -1,7 +1,9 @@
 ---
-name: vc:security
-description: "STRIDE + OWASP-based security audit with optional auto-fix. Scans code for vulnerabilities, categorizes by severity, and can iteratively fix findings using vc:autoresearch pattern."
+name: vc-security
+description: "STRIDE + OWASP-based security audit with optional auto-fix. Scans code for vulnerabilities, categorizes by severity, and can iteratively fix findings using vc-autoresearch pattern."
 argument-hint: "<scope glob or 'full'> [--fix] [--iterations N]"
+trigger_keywords: security, vulnerability, auth, XSS, SQL injection
+layer: helper
 metadata:
   author: claudekit
   attribution: "Security audit pattern adapted from autoresearch by Udit Goenka (MIT)"
@@ -9,9 +11,11 @@ metadata:
   version: "1.0.0"
 ---
 
-# vc:security — Security Audit
+# vc-security — Security Audit
 
-Runs a structured STRIDE + OWASP security audit on a given scope. Produces a severity-ranked findings report. With `--fix`, applies fixes iteratively using the vc:autoresearch guard pattern.
+> **Output style:** Follow `process/development-protocols/communication-standards.md` — answer-first, plain language, no unexplained jargon, TL;DR on long responses.
+
+Runs a structured STRIDE + OWASP security audit on a given scope. Produces a severity-ranked findings report. With `--fix`, applies fixes iteratively using the vc-autoresearch guard pattern.
 
 ## When to Use
 
@@ -31,9 +35,9 @@ Runs a structured STRIDE + OWASP security audit on a given scope. Produces a sev
 
 | Mode | Invocation | Behavior |
 |------|-----------|----------|
-| Audit only | `/vc:security <scope>` | Scan → categorize → report |
-| Audit + Fix | `/vc:security <scope> --fix` | Scan → categorize → fix iteratively |
-| Bounded fix | `/vc:security <scope> --fix --iterations N` | Limit fix iterations to N |
+| Audit only | `/vc-security <scope>` | Scan → categorize → report |
+| Audit + Fix | `/vc-security <scope> --fix` | Scan → categorize → fix iteratively |
+| Bounded fix | `/vc-security <scope> --fix --iterations N` | Limit fix iterations to N |
 
 ---
 
@@ -99,7 +103,7 @@ When `--fix` is provided, apply fixes iteratively after the audit:
    c. Commit: `security(fix-N): <short description>`
    d. Advance to next finding
 3. Stop early if guard fails — report the failure instead of proceeding
-4. Uses `vc:autoresearch` guard pattern for regression prevention
+4. Uses `vc-autoresearch` guard pattern for regression prevention
 
 > Tip: Use `--iterations N` to cap total fix iterations when scope is large.
 
@@ -119,9 +123,9 @@ When `--fix` is provided, apply fixes iteratively after the audit:
 
 ## Integration with Other Skills
 
-- Run after `vc:predict` when the security persona flags concerns
-- Feed Critical/High findings into `vc:autoresearch --fix` for automated remediation
-- Use `vc:scenario` with `--focus authorization` for deeper auth flow testing
+- Run after `vc-predict` when the security persona flags concerns
+- Feed Critical/High findings into `vc-autoresearch --fix` for automated remediation
+- Use `vc-scenario` with `--focus authorization` for deeper auth flow testing
 - Pair with `generate-plan` / `plan-agent` to schedule Medium/Low findings as sprint tasks
 
 ---
@@ -130,13 +134,13 @@ When `--fix` is provided, apply fixes iteratively after the audit:
 
 ```bash
 # Audit API layer only
-/vc:security src/api/**/*.ts
+/vc-security src/api/**/*.ts
 
 # Audit entire src/ and auto-fix, max 15 iterations
-/vc:security src/ --fix --iterations 15
+/vc-security src/ --fix --iterations 15
 
 # Full codebase audit (no fix)
-/vc:security full
+/vc-security full
 ```
 
 ---

@@ -25,6 +25,11 @@ const catalog = {
     description: skill.frontmatter.description || "",
     aliases: skill.aliases,
     normalizedName: normalizeSkillName(skill.frontmatter.name || skill.folder),
+    triggerKeywords: (skill.frontmatter.trigger_keywords || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    layer: skill.frontmatter.layer || "",
     routedFrom: skill.routedFrom,
     allowlisted: skill.allowlisted,
     allowlistReason: skill.allowlistReason,

@@ -1,14 +1,18 @@
 ---
-name: vc:sequential-thinking
+name: vc-sequential-thinking
 description: Apply step-by-step analysis for complex problems with revision capability. Use for multi-step reasoning, hypothesis verification, adaptive planning, problem decomposition, course correction.
 license: MIT
 argument-hint: "[problem to analyze step-by-step]"
+trigger_keywords: complex problem, think through, analyze step by step
+layer: helper
 metadata:
   author: claudekit
   version: "1.0.0"
 ---
 
 # Sequential Thinking
+
+> **Output style:** Follow `process/development-protocols/communication-standards.md` — answer-first, plain language, no unexplained jargon, TL;DR on long responses.
 
 Structured problem-solving via manageable, reflective thought sequences with dynamic adjustment.
 

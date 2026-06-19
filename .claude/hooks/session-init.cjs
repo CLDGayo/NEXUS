@@ -262,7 +262,7 @@ async function main() {
         writeEnv(envFile, 'CK_RESPONSE_LANGUAGE', config.locale.responseLanguage);
       }
 
-      // Plan validation config for Flowser plan generation and validation workflows
+      // Plan validation config for vc-kit RIPER-5 plan generation and validation workflows
       const validation = config.plan?.validation || {};
       writeEnv(envFile, 'CK_VALIDATION_MODE', validation.mode || 'prompt');
       writeEnv(envFile, 'CK_VALIDATION_MIN_QUESTIONS', validation.minQuestions || 3);

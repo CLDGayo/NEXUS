@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 
-const root = process.cwd();
+let root;
+try {
+  root = execSync('git rev-parse --show-toplevel', { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+} catch {
+  // Not a git repository — fall back to process.cwd() so the script still works on new projects.
+  root = process.cwd();
+}
 const failures = [];
 const warnings = [];
 const ignoredSkillFrontmatter = new Set(["sync-from-riper5", "sync-to-riper5"]);
@@ -71,6 +78,11 @@ function getGroupEntrypoint(group) {
 
 const legacyEntrypoints = [
   "process/context/README.md",
+  // Legacy flat tests entrypoint. The canonical path is the grouped tests router;
+  // a flat process/context/tests.md file is a
+  // migrated-away legacy shape and must NOT be re-created. (Kept as a guard — this
+  // literal flags the legacy flat file if it reappears, and does NOT match the
+  // canonical grouped path.)
   "process/context/tests.md",
   ...walk("process/context", (rel) => /\/README\.md$/.test(rel) || /\/[^/]+-README\.md$/.test(rel)),
 ];
@@ -108,9 +120,8 @@ for (const skill of ["vc-audit-context", "vc-audit-plans", "vc-generate-context"
   if (!exists(codexPath)) fail(`${codexPath} missing`);
   if (exists(file)) {
     const fm = parseFrontmatter(file);
-    // YAML name uses colon (vc:audit-context), folder uses dash (vc-audit-context)
-    const expectedName = skill.replace("vc-", "vc:");
-    if (fm.name !== skill && fm.name !== expectedName) fail(`${file} frontmatter name is ${fm.name || "missing"}, expected ${expectedName}`);
+    // YAML name uses vc- prefix matching folder name convention
+    if (fm.name !== skill) fail(`${file} frontmatter name is ${fm.name || "missing"}, expected ${skill}`);
     if (!fm.description) fail(`${file} frontmatter description missing`);
   }
 }
@@ -145,50 +156,110 @@ for (const agent of codexAgents) {
   if (!claudeAgents.includes(agent)) fail(`.claude/agents/${agent}.md missing`);
 }
 
+// Bare-kit mode: process/context/all-context.md is intentionally absent in a freshly
+// cloned kit template. Skip all per-project context-doc checks in that case — they
+// require a populated context tree that vc-setup creates after install.
 const router = "process/context/all-context.md";
-if (!exists(router)) fail(`${router} missing`);
-const routerText = exists(router) ? read(router) : "";
+const bareKitMode = !exists(router);
 
-const contextDocs = walk("process/context", (rel) => rel.endsWith(".md")).sort();
-for (const doc of contextDocs) {
-  if (doc === router) continue;
-  const relFromContext = doc.replace(/^process\/context\//, "");
-  const group = relFromContext.split("/")[0];
-  const groupEntrypoint = getGroupEntrypoint(group);
-  const indexedByRouter = routerText.includes(relFromContext) || routerText.includes(doc);
-  const indexedByGroup = groupEntrypoint && read(groupEntrypoint).includes(path.basename(doc));
-
-  if (relFromContext.includes("/") && !groupEntrypoint) {
-    fail(`context group ${group} is missing all-${group}.md`);
-  }
-  if (!indexedByRouter && !indexedByGroup) {
-    fail(`${doc} is not indexed by process/context/all-context.md or its group entrypoint`);
-  }
+if (bareKitMode) {
+  process.stderr.write(
+    "[bare-kit mode] process/context/all-context.md absent — skipping per-project context-doc checks (kit template not yet set up).\n",
+  );
 }
 
-for (const dir of fs.readdirSync(path.join(root, "process/context"), { withFileTypes: true })) {
-  if (dir.isDirectory() && !getGroupEntrypoint(dir.name)) {
-    fail(`process/context/${dir.name}/ is missing all-${dir.name}.md`);
-  }
-}
+const routerText = bareKitMode ? "" : read(router);
 
-for (const legacy of legacyEntrypoints) {
-  if (exists(legacy)) {
-    fail(`legacy context entrypoint still exists: ${legacy}`);
-  }
-}
+if (!bareKitMode) {
+  const contextDocs = walk("process/context", (rel) => rel.endsWith(".md")).sort();
+  for (const doc of contextDocs) {
+    if (doc === router) continue;
+    const relFromContext = doc.replace(/^process\/context\//, "");
+    const group = relFromContext.split("/")[0];
+    const groupEntrypoint = getGroupEntrypoint(group);
+    const indexedByRouter = routerText.includes(relFromContext) || routerText.includes(doc);
+    const indexedByGroup = groupEntrypoint && read(groupEntrypoint).includes(path.basename(doc));
 
-for (const file of [
-  "AGENTS.md",
-  "CLAUDE.md",
-  ".claude/agents/vc-update-process-agent.md",
-  ".codex/agents/vc-update-process-agent.toml",
-  ".claude/agents/vc-research-agent.md",
-  ".codex/agents/vc-research-agent.toml",
-  ".claude/skills/vc-generate-context/SKILL.md",
-  ".claude/skills/vc-generate-context/references/generate-context.md",
-]) {
-  assertContains(file, "process/context/all-context.md");
+    if (relFromContext.includes("/") && !groupEntrypoint) {
+      fail(`context group ${group} is missing all-${group}.md`);
+    }
+    if (!indexedByRouter && !indexedByGroup) {
+      fail(`${doc} is not indexed by process/context/all-context.md or its group entrypoint`);
+    }
+  }
+
+  // --- frontmatter routing contract: keyword coverage + related-link integrity ---
+  // Build a slug registry (context:{slug}) across all context docs first.
+  const contextDocNames = new Set();
+  for (const doc of contextDocs) {
+    if (doc === router) continue;
+    const name = parseFrontmatter(doc).name;
+    if (name) contextDocNames.add(name);
+  }
+  for (const doc of contextDocs) {
+    if (doc === router) continue;
+    const fm = parseFrontmatter(doc);
+    // keywords: required, non-empty — this is the --match routing surface.
+    const keywords = (fm.keywords || "")
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean);
+    if (keywords.length === 0) {
+      // Warn, not fail: pre-existing context docs created before the keyword-routing
+      // contract should not break a project's lint on sync. New docs get keywords from
+      // the seeds; backfill old ones at UPDATE-PROCESS. Dangling `related` and routing
+      // drift below remain hard failures (real breakage, opt-in only).
+      warn(`${doc} has empty/missing 'keywords' frontmatter (recommended for keyword routing; backfill at UPDATE-PROCESS — see vc-context-discovery)`);
+    }
+    // related: every listed slug must resolve to a real context: doc (no dangling cross-links).
+    const related = (fm.related || "")
+      .replace(/^\[|\]$/g, "")
+      .split(",")
+      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+    for (const slug of related) {
+      if (!contextDocNames.has(slug)) {
+        fail(`${doc} 'related' references ${slug} which resolves to no context doc (dangling cross-link)`);
+      }
+    }
+  }
+
+  // --- generated routing block must be in sync with frontmatter on disk ---
+  if (routerText.includes("<!-- GENERATED:routing -->")) {
+    try {
+      execSync(
+        `node ${JSON.stringify(path.join(root, ".claude/skills/vc-context-discovery/scripts/discover-context.mjs"))} --check-routing`,
+        { cwd: root, stdio: ["pipe", "pipe", "pipe"] },
+      );
+    } catch {
+      fail(`${router} GENERATED:routing block is stale — run discover-context.mjs --emit-routing to rebuild`);
+    }
+  }
+
+  for (const dir of fs.readdirSync(path.join(root, "process/context"), { withFileTypes: true })) {
+    if (dir.isDirectory() && !getGroupEntrypoint(dir.name)) {
+      fail(`process/context/${dir.name}/ is missing all-${dir.name}.md`);
+    }
+  }
+
+  for (const legacy of legacyEntrypoints) {
+    if (exists(legacy)) {
+      fail(`legacy context entrypoint still exists: ${legacy}`);
+    }
+  }
+
+  for (const file of [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".claude/agents/vc-update-process-agent.md",
+    ".codex/agents/vc-update-process-agent.toml",
+    ".claude/agents/vc-research-agent.md",
+    ".codex/agents/vc-research-agent.toml",
+    ".claude/skills/vc-generate-context/SKILL.md",
+    ".claude/skills/vc-generate-context/references/generate-context.md",
+  ]) {
+    assertContains(file, "process/context/all-context.md");
+  }
 }
 
 const criticalHookParityPairs = [
@@ -206,10 +277,10 @@ for (const [claudeFile, codexFile] of criticalHookParityPairs) {
 }
 
 const staleWorkflowPatterns = [
-  { pattern: "docs-manager", reason: "use update-process-agent for Flowser context/process docs" },
+  { pattern: "docs-manager", reason: "use update-process-agent for project context/process docs" },
   { pattern: "project-manager", reason: "use update-process-agent for plan/process sync" },
   { pattern: "docs/codebase-summary", reason: "use process/context/all-context.md routing" },
-  { pattern: "docs/design-guidelines", reason: "use process/context/uxui/uiux.md or feature references" },
+  { pattern: "docs/design-guidelines", reason: "use process/context/ui/ or relevant feature context references" },
   { pattern: "validate-docs", reason: "use audit-context validator" },
   { pattern: "process/context/<group>", reason: "placeholder should not look like a concrete ref" },
   { pattern: ".claude/commands/", reason: "Claude command aliases are retired from the active shared workflow surface" },
@@ -220,6 +291,9 @@ const staleWorkflowPatterns = [
   { pattern: "vc:code-review", reason: "review ownership was absorbed into code-reviewer" },
   { pattern: "/vc:journal", reason: "journal handoff is not part of the surviving default workflow surface" },
 ];
+// In bare-kit mode, skip scanning process/context/ files for stale patterns
+// (the directory may not exist yet). Kit-structural files (.claude, .codex, AGENTS.md)
+// are always scanned.
 const staleWorkflowFiles = [
   "AGENTS.md",
   "CLAUDE.md",
@@ -228,7 +302,7 @@ const staleWorkflowFiles = [
   ...walk(".claude/skills", (rel) => rel.endsWith(".md") && !rel.includes("/scripts/")),
   ...walk(".claude/hooks", (rel) => rel.endsWith(".cjs") || rel.endsWith(".json")),
   ...walk(".codex/hooks", (rel) => rel.endsWith(".cjs") || rel.endsWith(".json")),
-  ...walk("process/context", (rel) => rel.endsWith(".md")),
+  ...(bareKitMode ? [] : walk("process/context", (rel) => rel.endsWith(".md"))),
 ];
 
 for (const file of staleWorkflowFiles) {
@@ -248,6 +322,7 @@ for (const file of staleWorkflowFiles) {
       ) {
         continue;
       }
+      if (pattern === "vc:plan" && /vc:plan-\w/.test(line)) continue;
       if (pattern === "docs-manager" && line.includes("not `./docs`")) continue;
       fail(`${file}:${index + 1} contains stale ${pattern} reference (${reason})`);
     }
@@ -257,38 +332,45 @@ for (const file of staleWorkflowFiles) {
   }
 }
 
-const filesWithRefs = [
-  "AGENTS.md",
-  ...walk(".claude", (rel) => rel.endsWith(".md") || rel.endsWith(".json")),
-  ...walk(".codex", (rel) => rel.endsWith(".toml") || rel.endsWith(".json")),
-  ...walk("process/context", (rel) => rel.endsWith(".md")),
-];
+// Concrete-ref validation: in bare-kit mode, process/context/ docs are absent by design,
+// so refs from .claude/.codex files pointing to them would false-fail. Skip in bare-kit mode.
+let concreteRefs = [];
+if (!bareKitMode) {
+  const filesWithRefs = [
+    "AGENTS.md",
+    ...walk(".claude", (rel) => rel.endsWith(".md") || rel.endsWith(".json")),
+    ...walk(".codex", (rel) => rel.endsWith(".toml") || rel.endsWith(".json")),
+    ...walk("process/context", (rel) => rel.endsWith(".md")),
+  ];
 
-const concreteRefs = [];
-for (const file of filesWithRefs) {
-  if (!exists(file)) continue;
-  const text = read(file);
-  for (const match of text.matchAll(/`(process\/context\/[^`\s]+)`/g)) {
-    const ref = match[1].replace(/[.,;:]$/, "");
-    if (/[{}[*\]]/.test(ref)) continue;
-    concreteRefs.push({ file, ref });
+  for (const file of filesWithRefs) {
+    if (!exists(file)) continue;
+    // Strip HTML comments (including multi-line) before scanning for backtick refs.
+    // Commented-out example content is not live routing and must not trigger path checks.
+    const text = read(file).replace(/<!--[\s\S]*?-->/g, "");
+    for (const match of text.matchAll(/`(process\/context\/[^`\s]+)`/g)) {
+      const ref = match[1].replace(/[.,;:]$/, "");
+      if (/[{}[*\]]/.test(ref)) continue;
+      concreteRefs.push({ file, ref });
+    }
+  }
+
+  for (const { file, ref } of concreteRefs) {
+    if (!exists(ref)) fail(`${file} references missing ${ref}`);
+  }
+
+  const contextDocsForCheck = walk("process/context", (rel) => rel.endsWith(".md")).sort();
+  if (contextDocsForCheck.length > 0 && !routerText.includes("Context Group Lifecycle")) {
+    fail(`${router} missing Context Group Lifecycle section`);
+  }
+
+  if (routerText.includes("Suggested future groups")) {
+    warn("context group migration is planned but not fully executed yet");
   }
 }
 
-for (const { file, ref } of concreteRefs) {
-  if (!exists(ref)) fail(`${file} references missing ${ref}`);
-}
-
-if (contextDocs.length > 0 && !routerText.includes("Context Group Lifecycle")) {
-  fail(`${router} missing Context Group Lifecycle section`);
-}
-
-if (routerText.includes("Suggested future groups")) {
-  warn("context group migration is planned but not fully executed yet");
-}
-
 const result = {
-  checkedContextDocs: contextDocs.length,
+  checkedContextDocs: bareKitMode ? 0 : walk("process/context", (rel) => rel.endsWith(".md")).length,
   checkedConcreteRefs: concreteRefs.length,
   checkedSkills,
   checkedClaudeAgents: claudeAgents.length,

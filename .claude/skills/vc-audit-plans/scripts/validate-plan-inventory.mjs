@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 
-const root = process.cwd();
+let root;
+try {
+  root = execSync('git rev-parse --show-toplevel', { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+} catch {
+  // Not a git repository — fall back to process.cwd() so the script still works on new projects.
+  root = process.cwd();
+}
 const strict = process.argv.includes("--strict");
 const failures = [];
 const warnings = [];
@@ -56,9 +63,19 @@ const samples = {
   likelyReferenceInActive: [],
 };
 
+// Co-located task-folder artifacts are valid non-plan files inside active/ task subfolders.
+// Skip _REPORT_, _REF_, and _SPEC_ files from plan-specific checks to prevent false positives.
+function isColocatedArtifact(name) {
+  return /_REPORT_|_REF_|_SPEC_/.test(name);
+}
+
 for (const file of activePlans) {
   const name = path.basename(file);
   duplicateNames.set(name, (duplicateNames.get(name) || 0) + 1);
+
+  // Skip _REPORT_, _REF_, _SPEC_ files — valid co-located artifacts, not misplaced plans.
+  if (isColocatedArtifact(name)) continue;
+
   const text = read(file);
 
   if (!hasDateStamp(name)) samples.nameNotDateStamped.push(file);

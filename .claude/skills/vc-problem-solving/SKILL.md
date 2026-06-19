@@ -1,13 +1,17 @@
 ---
-name: vc:problem-solving
+name: vc-problem-solving
 description: Apply systematic problem-solving techniques when stuck. Use for complexity spirals, innovation blocks, recurring patterns, assumption constraints, simplification cascades, scale uncertainty.
 argument-hint: "[problem description]"
+trigger_keywords: stuck, can't figure out, complex, spiral
+layer: helper
 metadata:
   author: claudekit
   version: "2.0.0"
 ---
 
 # Problem-Solving Techniques
+
+> **Output style:** Follow `process/development-protocols/communication-standards.md` — answer-first, plain language, no unexplained jargon, TL;DR on long responses.
 
 Systematic approaches for different types of stuck-ness. Each technique targets specific problem patterns.
 

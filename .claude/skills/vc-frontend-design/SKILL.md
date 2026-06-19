@@ -1,11 +1,15 @@
 ---
-name: vc:frontend-design
+name: vc-frontend-design
 description: Create polished frontend interfaces from designs/screenshots/videos. Use for web components, 3D experiences, replicating UI designs, quick prototypes, immersive interfaces, avoiding AI slop.
 license: Complete terms in LICENSE.txt
+trigger_keywords: UI, design, layout, component, page, interface, visual, CSS, Tailwind, login page, dashboard
+layer: helper
 metadata:
   author: claudekit
   version: "1.0.0"
 ---
+
+> **Output style:** Follow `process/development-protocols/communication-standards.md` — answer-first, plain language, no unexplained jargon, TL;DR on long responses.
 
 This skill guides creation of distinctive, production-grade frontend interfaces that avoid generic "AI slop" aesthetics. Implement real working code with exceptional attention to aesthetic details and creative choices.
 
@@ -36,7 +40,7 @@ Choose workflow based on input type:
 2. **Plan** with `ui-ux-designer` subagent - create phased implementation
 3. **Implement** - match source precisely
 4. **Verify** - compare to original
-5. **Document** - read `process/context/all-context.md`, then update `process/context/all-context.md`, `process/context/uxui/uiux.md`, or the relevant grouped context file if approved
+5. **Document** - read `process/context/all-context.md`, then update `process/context/all-context.md`, the project's UI/UX context doc (if present), or the relevant grouped context file if approved
 
 See specific workflow files for detailed steps.
 

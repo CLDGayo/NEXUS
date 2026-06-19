@@ -95,10 +95,10 @@ Extract design systems systematically from high-quality references:
 ## Integration with Other Skills
 
 ### With `aesthetic` Skill
-Use `aesthetic` for overall design system guidance and quality evaluation framework. Then use `vc:frontend-design` with Claude's built-in multimodal vision for asset generation and analysis that follows those guidelines.
+Use `aesthetic` for overall design system guidance and quality evaluation framework. Then use `vc-frontend-design` with Claude's built-in multimodal vision for asset generation and analysis that follows those guidelines.
 
-### With `vc:chrome-devtools` Skill
-Use `vc:chrome-devtools` to capture full-screen screenshots from inspiration websites for design extraction. Capture at actual viewport size, not full-page scrolls.
+### With `vc-agent-browser` Skill
+Use `vc-agent-browser` to capture full-screen screenshots from inspiration websites for design extraction. Capture at actual viewport size, not full-page scrolls.
 
 ### With `ui-styling` Skill
 Generate and analyze assets first, then implement using shadcn/ui + Tailwind with colors/styles that complement the generated imagery.
@@ -148,7 +148,7 @@ python scripts/gemini_batch_process.py \
   --files docs/inspiration/[reference].png \
   --task analyze \
   --prompt "[extraction criteria from design-extraction.md]" \
-  --output process/features/<feature>/references/extracted-design-guidelines.md \
+  --output process/features/<feature>/active/{task-folder}/extracted-design-guidelines.md \
   --model gemini-2.5-flash
 ```
 

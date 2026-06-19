@@ -73,7 +73,8 @@ List anything that remains unclear:
 
 Use naming pattern from `## Naming` section injected by hooks. Pattern includes full path and computed date.
 
-**Examples:** `process/general-plans/reports/debugger-260205-2215-api-500-investigation.md` or `process/features/{feature}/reports/debugger-260205-2215-api-500-investigation.md`
+**Examples (new convention — inside task folder):** `process/general-plans/active/api-500-investigation_05-02-26/api-500-investigation_REPORT_05-02-26.md` or `process/features/{feature}/active/api-500-investigation_05-02-26/api-500-investigation_REPORT_05-02-26.md`
+**Legacy path (deprecated sibling dir):** `process/general-plans/reports/debugger-260205-2215-api-500-investigation.md`
 
 ## Writing Guidelines
 

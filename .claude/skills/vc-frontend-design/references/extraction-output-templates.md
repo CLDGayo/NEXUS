@@ -147,8 +147,8 @@ Based on analysis, recommend:
    - Example: Extract "generous white space" principle, apply with your colors
 
 3. **Document Decisions**
-   - Save feature-specific extraction reports under `process/features/<feature>/references/`
-   - Promote durable shared UI guidance to `process/context/uxui/uiux.md` through `process/context/all-context.md`
+   - Save feature-specific extraction reports under `process/features/<feature>/active/{task-folder}/`
+   - Promote durable shared UI guidance to the project's UI/UX context doc (if present) through `process/context/all-context.md`
    - Create design system spec from extraction
    - Reference when generating new assets
 

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/descriptive-name.cjs\""
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/descriptive-name.cjs\""
           }
         ]
       },
@@ -15,11 +15,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/scout-block.cjs\""
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/scout-block.cjs\""
           },
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/privacy-block.cjs\""
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/privacy-block.cjs\""
           }
         ]
       }
@@ -30,11 +30,39 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/session-state.cjs\""
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/session-state.cjs\""
           },
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/post-edit-simplify-reminder.cjs\""
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/post-edit-simplify-reminder.cjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/post-write-plan-check.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/post-commit-lint.mjs\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/stop-validator-sweep.cjs\""
           }
         ]
       }
@@ -44,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/session-init.cjs\""
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/session-init.cjs\""
           }
         ]
       }
@@ -55,7 +83,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/subagent-init.cjs\""
+            "command": "node \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.codex/hooks/subagent-init.cjs\""
           }
         ]
       }

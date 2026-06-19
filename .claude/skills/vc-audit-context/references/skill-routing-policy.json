@@ -1,9 +1,8 @@
 {
   "canonicalRoutingSurfaces": [
     "AGENTS.md",
-    "CLAUDE.md"
+    "CLAUDE.md",
+    "process/context/generated-skills-catalog.json"
   ],
-  "allowlistedSkills": {
-    "vc-merge-worktree": "Operational utility intentionally surfaced only on explicit worktree merge/cleanup requests instead of default step-0 routing."
-  }
+  "allowlistedSkills": {}
 }

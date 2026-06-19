@@ -1,13 +1,17 @@
 ---
-name: vc:scout
+name: vc-scout
 description: "Fast codebase scouting using shell search and optional parallel research agents. Use for file discovery, task context gathering, and quick scoped searches across directories."
 argument-hint: "[search-target] [ext]"
+trigger_keywords: find files, where is, search codebase
+layer: helper
 metadata:
   author: claudekit
   version: "1.0.0"
 ---
 
 # Scout
+
+> **Output style:** Follow `process/development-protocols/communication-standards.md` — answer-first, plain language, no unexplained jargon, TL;DR on long responses.
 
 Fast, token-efficient codebase scouting using parallel agents to find files needed for tasks.
 
@@ -32,7 +36,7 @@ Fast, token-efficient codebase scouting using parallel agents to find files need
 
 ## Configuration
 
-Read from `.claude/.ck.json`:
+Read from `.claude/.vc.json` (falls back to legacy `.claude/.ck.json` if present):
 - `gemini.model` - Gemini model (default: `gemini-3-flash-preview`)
 
 ## Workflow

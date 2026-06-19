@@ -1,13 +1,17 @@
 ---
-name: vc:docs-seeker
+name: vc-docs-seeker
 description: Search library/framework documentation via llms.txt (context7.com). Use for API docs, GitHub repository analysis, technical documentation lookup, latest library features.
 argument-hint: "[library-name] [topic]"
+trigger_keywords: how does X work, API docs, version, syntax
+layer: helper
 metadata:
   author: claudekit
   version: "3.1.0"
 ---
 
 # Documentation Discovery
+
+> **Output style:** Follow `process/development-protocols/communication-standards.md` — answer-first, plain language, no unexplained jargon, TL;DR on long responses.
 
 ## Overview
 
@@ -99,6 +103,6 @@ cat llms.txt | node scripts/analyze-llms-txt.js -  # → {totalUrls, distributio
 
 ## Environment
 
-Scripts load `.env`: `process.env` > `.claude/skills/docs-seeker/.env` > `.claude/skills/.env` > `.claude/.env`
+Scripts load `.env`: `process.env` > `.claude/skills/vc-docs-seeker/.env` > `.claude/skills/.env` > `.claude/.env`
 
-See `.env.example` for configuration options.
+Optional env vars: `CONTEXT7_API_KEY` (Bearer token for Context7 API), `DEBUG=true` (verbose logging).

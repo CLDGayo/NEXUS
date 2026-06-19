@@ -1,6 +1,6 @@
 # Frontend Verification
 
-Visual verification of frontend implementations using Chrome MCP (Claude Chrome Extension) or `vc:chrome-devtools` skill fallback.
+Visual verification of frontend implementations using Chrome MCP (Claude Chrome Extension) or `vc-agent-browser` skill fallback.
 
 ## Applicability Check
 
@@ -13,7 +13,7 @@ If none match, skip this technique.
 
 ## Step 1: Detect Chrome MCP Availability
 
-Check if Chrome MCP server is available via `vc:mcp-management` skill or `ListMcpResourcesTool`:
+Check if Chrome MCP server is available via `ListMcpResourcesTool` directly:
 
 ```
 Use ListMcpResourcesTool to check for Chrome MCP tools.
@@ -21,7 +21,7 @@ Look for tools prefixed with "chrome__" (e.g., chrome__navigate, chrome__screens
 ```
 
 **Available** → Proceed to Step 2A (Chrome MCP)
-**Not available** → Proceed to Step 2B (chrome-devtools fallback)
+**Not available** → Proceed to Step 2B (`vc-agent-browser` fallback)
 
 ## Step 2A: Chrome MCP Available — Direct Verification
 
@@ -58,12 +58,12 @@ Or navigate and observe any error output from Chrome MCP tool responses.
 chrome__get_content → extract DOM/text to verify rendered output matches expectations
 ```
 
-## Step 2B: Chrome MCP NOT Available — Fallback to chrome-devtools Skill
+## Step 2B: Chrome MCP NOT Available — Fallback to `vc-agent-browser`
 
-When Chrome MCP is not configured, use `vc:chrome-devtools` skill (Puppeteer with bundled Chromium):
+When Chrome MCP is not configured, use `vc-agent-browser` skill (CLI browser automation with bundled Puppeteer helpers):
 
 ```bash
-SKILL_DIR="$HOME/.claude/skills/chrome-devtools/scripts"
+SKILL_DIR="$HOME/.claude/skills/vc-agent-browser/scripts"
 
 # Install deps if first time
 npm install --prefix "$SKILL_DIR" 2>/dev/null
@@ -73,8 +73,8 @@ node "$SKILL_DIR/screenshot.js" --url http://localhost:3000 --output ./verificat
 node "$SKILL_DIR/console.js" --url http://localhost:3000 --types error,pageerror --duration 5000
 ```
 
-If `vc:chrome-devtools` skill is also unavailable, skip visual verification and note in report:
-> "Visual verification skipped — no Chrome MCP or chrome-devtools available."
+If `vc-agent-browser` is also unavailable, skip visual verification and note in report:
+> "Visual verification skipped — no Chrome MCP or vc-agent-browser available."
 
 ## Step 3: Analyze Results
 
@@ -95,7 +95,7 @@ Standard verification → Tests pass → Build succeeds → Frontend visual veri
 Report format:
 ```
 ## Frontend Verification
-- Method: [Chrome MCP | chrome-devtools | skipped]
+- Method: [Chrome MCP | vc-agent-browser | skipped]
 - Screenshot: ./verification-screenshot.png
 - Console errors: [none | list]
 - Visual check: [pass | issues found]

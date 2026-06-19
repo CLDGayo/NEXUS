@@ -20,7 +20,7 @@ const seedsDir = path.join(root, "process/_seeds");
 
 // 1. Check seeds directory exists
 if (!fs.existsSync(seedsDir)) {
-  fail("process/_seeds/ directory does not exist");
+  warn("process/_seeds/ directory does not exist (optional in live repo; required only for scaffold/export audits)");
 } else {
   // 2. Check expected subdirectory structure
   const expectedDirs = [
@@ -28,8 +28,6 @@ if (!fs.existsSync(seedsDir)) {
     "general-plans/active",
     "general-plans/completed",
     "general-plans/backlog",
-    "general-plans/reports",
-    "general-plans/references",
     "features/_feature-template",
   ];
 

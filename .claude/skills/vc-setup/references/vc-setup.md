@@ -9,10 +9,14 @@ After running DETECT, classify the project before choosing a flow:
 | Signal | Classification |
 |--------|---------------|
 | No `process/` directory, no `all-context.md`, no meaningful CLAUDE.md content | **New project** -- use Flow A |
-| Has `process/` directory with any content | **Existing project** -- use Flow B |
+| `process/` exists but contains ONLY kit-installed files (`_seeds/`, `development-protocols/`, `context/generated-skills-catalog.json`) and no user content (`all-context.md` absent, `general-plans/` absent, `features/` absent or empty) | **New project** -- use Flow A (install.sh ran but vc-setup has not yet run; this is a fresh install) |
+| Has `process/` directory with user content (e.g. `all-context.md`, `general-plans/` with plans, `features/` with entries) | **Existing project** -- use Flow B |
 | Has `all-context.md` with real (non-placeholder) content | **Existing project** -- use Flow B |
+| Has `all-context.md` but its non-comment body is entirely placeholder/stub (e.g. contains `<!-- STUDY:` markers throughout, all sections say "pending", no real stack or routing content) | **New project** -- use Flow A (SCAFFOLD ran but STUDY was interrupted; treat as fresh and continue from STUDY) |
 | Has CLAUDE.md with project-specific sections (beyond managed protocol) | **Existing project** -- use Flow B |
 | Has `.vibecode-backup/` (just ran install.sh over an existing setup) | **Existing project** -- use Flow B |
+
+**Classification is based on USER content, not kit-installed files.** `_seeds/`, `development-protocols/`, and `context/generated-skills-catalog.json` are always present after install.sh and do not indicate an existing project setup. Check for user-created files before routing to Flow B.
 
 When in doubt, treat as existing. It is always safer to study first and ask before changing things.
 
@@ -105,9 +109,18 @@ Before proposing any changes, build a complete picture of what is already there.
 - `process/development-protocols/` -- check if protocol docs exist and their version
 - Any `CLAUDE.md` content beyond the managed protocol (some users add project-specific sections)
 
+**Cross-check against the expected target directory tree.** Any directory from the following list that does not exist on disk is classified as MISSING:
+
+- `process/general-plans/active/`, `process/general-plans/completed/`, `process/general-plans/backlog/`
+- `process/features/`
+- `process/context/planning/`
+- `process/context/tests/`
+
+Record MISSING directories in the PRESENT & ASK findings under "MISSING" so the user can approve their creation during SCAFFOLD.
+
 **Produce an internal assessment:**
 
-For each file/directory found, classify it as:
+For each file/directory found (or expected), classify it as:
 - **Good**: has real, detailed, useful content. Keep as-is.
 - **Stale**: has content but it is outdated, incomplete, or has unfilled placeholders. Candidate for update.
 - **Placeholder**: seed template text with no real content. Candidate for replacement.
@@ -169,6 +182,19 @@ The combination of existing context + fresh user input produces the best results
 ---
 
 ## DETECT Phase
+
+> **Non-JS projects:** If the manifest detected is NOT `package.json` (i.e. the project is Python, Go, Ruby, or Rust), skip the Package Manager Detection, Framework Detection, and Test Setup Detection subsections below — those read `package.json` and are JS-only. Use the runtime-specific heuristics in each manifest entry instead. Derive the project name from the runtime manifest (`module` line in `go.mod`, `name` field in `Cargo.toml` or `pyproject.toml`, directory name for Ruby/Gemfile projects) rather than `package.json`.
+
+### Project Manifest Detection
+
+Before reading `package.json`, check which project manifest is present. Use this fallback chain:
+
+1. `package.json` → Node/Bun/Deno project (JS/TS); proceed with full JS detection below.
+2. `pyproject.toml` or `requirements.txt` → Python project; adapt detection heuristics (skip package manager / framework checks, detect test runner from `pytest`/`unittest`, detect ORM from `sqlalchemy`/`django`).
+3. `go.mod` → Go project; detect module name from `module` directive, infer test runner (`go test`); skip Package Manager / Framework / Test Setup subsections below.
+4. `Gemfile` → Ruby project; detect framework (`rails`/`sinatra`), test runner (`rspec`/`minitest`); skip Package Manager / Framework / Test Setup subsections below.
+5. `Cargo.toml` → Rust project; detect workspace members, test runner (`cargo test`); skip Package Manager / Framework / Test Setup subsections below.
+6. None found → Ask the user: "I couldn't find a project manifest (package.json, pyproject.toml, go.mod, Gemfile, Cargo.toml). What language/runtime does this project use? I'll adapt the setup to match."
 
 ### Package Manager Detection
 
@@ -286,26 +312,20 @@ process/_seeds/
     _feature-template/
       _GUIDE.md.seed                     -- template for new feature folder guides
       active/
-        _GUIDE.md                        -- active plans guide
+        _GUIDE.md                        -- active plans guide (task-folder convention)
       completed/
         _GUIDE.md                        -- completed plans guide
       backlog/
         _GUIDE.md                        -- backlog guide
-      reports/
-        _GUIDE.md                        -- reports guide
-      references/
-        _GUIDE.md                        -- references guide
+      (no reports/ or references/ — these are deprecated sibling dirs; artifacts colocate inside task folders)
   general-plans/
     active/
-      _GUIDE.md                          -- active plans guide
+      _GUIDE.md                          -- active plans guide (task-folder convention)
     completed/
       _GUIDE.md                          -- completed plans guide
     backlog/
       _GUIDE.md                          -- backlog guide
-    reports/
-      _GUIDE.md                          -- reports guide
-    references/
-      _GUIDE.md                          -- references guide
+    (no reports/ or references/ — deprecated; artifacts go inside task folders under active/ or completed/)
 ```
 
 ### Target Directory Tree (after SCAFFOLD)
@@ -327,36 +347,28 @@ process/
     planning/
       all-planning.md
       all-planning.md.seed           -- structural reference companion
-      example-simple-prd.md
-      example-complex-prd.md
     tests/
       all-tests.md
       all-tests.md.seed              -- structural reference companion
   general-plans/
     active/
-      _GUIDE.md
+      _GUIDE.md                      -- documents task-folder convention
     completed/
       _GUIDE.md
     backlog/
       _GUIDE.md
-    reports/
-      _GUIDE.md
-    references/
-      _GUIDE.md
+    (reports/ and references/ are NOT created for new repos — deprecated sibling dirs)
   features/
     _GUIDE.md
     _feature-template/
       _GUIDE.md.seed                 -- template for new feature folder guides
       active/
-        _GUIDE.md
+        _GUIDE.md                    -- documents task-folder convention
       completed/
         _GUIDE.md
       backlog/
         _GUIDE.md
-      reports/
-        _GUIDE.md
-      references/
-        _GUIDE.md
+      (reports/ and references/ are NOT created for new repos — deprecated sibling dirs)
 ```
 
 ### Migration Mode Decision Logic
@@ -391,9 +403,11 @@ Detect old directory layouts and reorganize them into the harness standard struc
 |------------|-----------------|
 | `process/plans/` exists, no `process/general-plans/` | Create `process/general-plans/active/` and `process/general-plans/completed/`. For each file in `process/plans/`: scan for "COMPLETE", "DONE", or checkmark markers -- move matches to `completed/`, move the rest to `active/`. Remove empty `process/plans/`. |
 | `process/reports/` exists at top level | Move `process/reports/*` to `process/general-plans/reports/`. Remove empty `process/reports/`. |
-| `process/skills/` exists at top level | Move `process/skills/*` to `process/general-plans/references/`. Remove empty `process/skills/`. |
-| `process/context/example-*.md` outside `planning/` | Move to `process/context/planning/`. |
+| `process/skills/` exists at top level | Move `process/skills/*` to `process/general-plans/backlog/`. Remove empty `process/skills/`. |
+| Example PRDs at old locations (under `process/context/`, `process/context/planning/`, or `process/development-protocols/references/`) | Move to `.claude/skills/vc-generate-plan/references/`. |
 | process/context/backlog.md | Move to `process/general-plans/backlog/backlog.md` |
+| Flat `*_PLAN_*.md` file directly in `process/general-plans/active/` or `process/features/*/active/` (pre-v3.0.0 layout) | Create a `{slug}_{date}/` task subfolder and move the plan file inside it. Scan the plan for "COMPLETE"/"DONE" markers; if found, create under `completed/{slug}_{date}/` instead. Never overwrite if a task folder with the same name exists — add `-migrated` suffix. |
+| `process/general-plans/reports/`, `process/general-plans/references/`, or `process/features/*/reports/`, `process/features/*/references/` sibling directories | **Not auto-migrated.** List their contents to the user in the LAYOUT CHANGES section and recommend moving files into the nearest task folder manually. Leave in place if the user prefers — they are read-only legacy artifacts and do not break the harness. Do NOT create new `reports/` or `references/` sibling dirs during scaffold. |
 
 **Migration rules:**
 - Never overwrite existing files at the destination. If a same-name file exists, keep both (rename the migrated copy with a `-migrated` suffix).
@@ -414,11 +428,17 @@ Detect old directory layouts and reorganize them into the harness standard struc
 
 Update protocols, preserve user content (read from `process/_seeds/`, never modify seeds):
 
-1. Overwrite development protocol files from `process/development-protocols/` (these are managed system files that live in the real directory, not in `_seeds/`)
-2. Add missing seed files (do not overwrite existing ones)
-3. Add missing `_GUIDE.md` files from `process/_seeds/`
-4. Update `.seed` companion files to latest versions from `process/_seeds/` (these are structural references, not user content)
-5. Preserve all user-created plans, reports, references, and context docs
+1. Create any missing target-tree working directories (sourcing each `_GUIDE.md` from `process/_seeds/` where applicable):
+   - `process/general-plans/active/`, `process/general-plans/completed/`, `process/general-plans/backlog/`
+   - `process/features/`
+   - `process/context/planning/`
+   - `process/context/tests/`
+   Skip directories that already exist.
+2. Overwrite development protocol files from `process/development-protocols/` (these are managed system files that live in the real directory, not in `_seeds/`)
+3. Add missing seed files: for each `.seed` file in `process/_seeds/`, if the corresponding target (same path with the `.seed` extension removed) does NOT exist, copy it with `.seed` removed and `{{project_name}}` replaced with the detected project name. Never overwrite an existing target file.
+4. Add missing `_GUIDE.md` files from `process/_seeds/`
+5. Update `.seed` companion files to latest versions from `process/_seeds/` (these are structural references, not user content)
+6. Preserve all user-created plans, reports, references, and context docs
 
 ### Placeholder Reference
 
@@ -472,7 +492,7 @@ Spawn up to 4 parallel subagents. Each writes to a distinct set of files with no
 |----------|----------|-----------|
 | E: all-context.md Writer | Findings from A + C + user answers | `process/context/all-context.md` |
 | F: all-tests.md Writer | Findings from B | `process/context/tests/all-tests.md` |
-| G: Context Group Scaffolder | Findings from C | `process/context/{group}/all-{group}.md` for each group |
+| G: vc-generate-context (delegation) | Findings from C (approved-groups list) | DELEGATION: invoke `vc-generate-context` skill in `setup-delegation` mode, passing the approved-groups list from Subagent C. Context-group detection and per-group file authoring is owned by `vc-generate-context` — see `.claude/skills/vc-generate-context/references/generate-context.md` for the detection table and per-mode instructions. |
 | H: Feature Folder Scaffolder | Findings from D + user answers | `process/features/{feature}/` dirs + `_GUIDE.md` files |
 
 Wait for all Round 2 subagents to complete. Proceed to VALIDATE.
@@ -516,17 +536,7 @@ The agent (or Subagent A) must scan and document:
 
 ### Context Group Detection Table
 
-| Project Signal | Context Group | all-*.md Content |
-|---|---|---|
-| Prisma/Drizzle/TypeORM/Sequelize + DB config | `database/` | Schema location, migration commands, client setup, key models |
-| Docker/Dockerfile/docker-compose present | `container/` | Image structure, services, ports, build commands |
-| Auth dependency (Clerk/NextAuth/Auth.js/Passport/Lucia) | `auth/` | Provider, config location, protected routes pattern |
-| CI/CD config (.github/workflows, .circleci, .gitlab-ci) | `cicd/` | Pipeline stages, deployment targets, required secrets |
-| Infrastructure code (terraform, pulumi, CDK, SST) | `infra/` | Provider, resource types, deployment commands |
-| 3+ UI component directories or design system | `uxui/` | Component library, styling approach, design tokens |
-| Workflow/queue system (BullMQ, Temporal, Inngest, etc.) | `workflows/` | Queue config, worker setup, job types |
-
-**Rule:** Only create a group when the project has SUBSTANTIAL content for it -- at minimum 2+ source files dedicated to that domain. A single config file is not enough.
+Context Group Detection Table: see `.claude/skills/vc-generate-context/references/generate-context.md` section "Context Group Detection Table" for the canonical detection signals, group names, and creation rules. That file is the single source of truth for group detection — do not duplicate the table here.
 
 ### Feature Detection Heuristics
 
@@ -545,7 +555,7 @@ Scan these locations for feature identification:
 - For single apps: each major route group with its own components/API is a candidate
 
 **Each feature folder gets:**
-- `active/`, `completed/`, `backlog/`, `reports/`, `references/` subdirectories
+- `active/`, `completed/`, `backlog/` subdirectories (do NOT create `reports/` or `references/` — these are deprecated sibling dirs; new artifacts go inside task folders)
 - `_GUIDE.md` explaining the feature scope, key files, and current state
 
 ### all-context.md Population Instructions
@@ -614,7 +624,8 @@ When existing `process/` content is found, follow these rules:
 Verify all directories from the target tree exist:
 
 ```bash
-ls -d process/development-protocols/ process/context/ process/context/planning/ process/context/tests/ process/general-plans/active/ process/general-plans/completed/ process/general-plans/backlog/ process/general-plans/reports/ process/general-plans/references/ process/features/
+ls -d process/development-protocols/ process/context/ process/context/planning/ process/context/tests/ process/general-plans/active/ process/general-plans/completed/ process/general-plans/backlog/ process/features/
+# process/general-plans/reports/ and process/general-plans/references/ are deprecated sibling dirs — do NOT create them for new repos; skip if absent on existing repos
 ```
 
 ### STUDY Output Quality Checks

@@ -17,9 +17,9 @@ You MUST:
 - For complex plans, use a phase system with status markers and sequential RFCs
 - Keep standard complex work inside ONE file when one execution stream is enough
 - Split true phase programs into a plan set so each phase can be reattached, researched, executed, and validated independently across sessions
-- For direct `*_PLAN_*.md` plans, make execution trust explicit with first-class sections for `Touchpoints`, `Public Contracts`, `Blast Radius`, `Verification Evidence`, and `Resume and Execution Handoff`
+- For direct `*_PLAN_*.md` plans, make execution trust explicit with first-class sections for `Touchpoints`, `Public Contracts`, `Blast Radius`, `Verification Evidence` (table: `| Gate / Scenario | Strategy | Proves SPEC criterion |`), `Test Infra Improvement Notes`, and `Resume and Execution Handoff`
 
-IMPORTANT FOR COMPLEX MODE: Use `process/context/planning/example-complex-prd.md` as a reference for the expected level of depth and structure. Mirror that level of specificity when generating the complex plan.
+IMPORTANT FOR COMPLEX MODE: Use `.claude/skills/vc-generate-plan/references/example-complex-prd.md` as a reference for the expected level of depth and structure. Mirror that level of specificity when generating the complex plan.
 
 IMPORTANT FOR LARGE PROGRAMS: If the work will actually execute as a sequence of separately
 validated phases, do not force everything into one giant plan file. Use the repo's phase-program
@@ -101,9 +101,9 @@ In the Implementation Checklist, interleave test steps with code steps:
 - Provide a brief description of your idea/feature/project
 - Specify complexity: simple or complex (if omitted, you MUST ask)
 - The assistant will ask 3–5 questions per round (max 2–3 rounds) only if needed
-- Output is saved to `process/general-plans/active/[name]_PLAN_[dd-mm-yy].md` (general) or `process/features/{feature}/active/[name]_PLAN_[dd-mm-yy].md` (feature-scoped)
+- Output is saved inside a task folder: `process/general-plans/active/{slug}_{dd-mm-yy}/{slug}_PLAN_{dd-mm-yy}.md` (general) or `process/features/{feature}/active/{slug}_{dd-mm-yy}/{slug}_PLAN_{dd-mm-yy}.md` (feature-scoped)
 - Read `process/context/all-context.md` first when it exists, then load only the relevant context docs or groups for the feature
-- For complex initiatives, review `process/context/planning/example-complex-prd.md` for how detailed the output should be
+- For complex initiatives, review `.claude/skills/vc-generate-plan/references/example-complex-prd.md` for how detailed the output should be
 
 ## Complexity selection
 
@@ -227,8 +227,9 @@ After each phase, document:
 13. Touchpoints
 14. Public Contracts
 15. Blast Radius
-16. Verification Evidence
-17. Resume and Execution Handoff
+16. Verification Evidence — table: `| Gate / Scenario | Strategy | Proves SPEC criterion |`
+17. Test Infra Improvement Notes — placeholder at plan-write time; updated during EVL
+18. Resume and Execution Handoff
 18. Cursor + RIPER-5 Guidance
 
 - Use Cursor Plan mode: import this checklist
@@ -238,7 +239,7 @@ After each phase, document:
 
 ### If COMPLEX (multi-phase)
 
-Before generating, review `process/context/planning/example-complex-prd.md` to calibrate the expected depth. Your output should be comparable in structure and specificity.
+Before generating, review `.claude/skills/vc-generate-plan/references/example-complex-prd.md` to calibrate the expected depth. Your output should be comparable in structure and specificity.
 
 1. Context and Goals
 2. **Phase Completion Rules** (copy from above - REQUIRED)
@@ -268,7 +269,7 @@ Before generating, review `process/context/planning/example-complex-prd.md` to c
        ```
        User manually tests using the steps provided, confirms working, and approves to proceed.
    - **CRITICAL: Do NOT proceed to next phase until current phase is ✅ VERIFIED**
-   - Include example phase execution showing the complete workflow — the example MUST show the PAUSE between research and implementation (see `process/context/planning/example-complex-prd.md` lines 132-166 for the pattern to match)
+   - Include example phase execution showing the complete workflow — the example MUST show the PAUSE between research and implementation (see `.claude/skills/vc-generate-plan/references/example-complex-prd.md` lines 132-166 for the pattern to match)
 
 ### If COMPLEX and also a phase program
 
@@ -373,7 +374,8 @@ For new or newly touched direct `*_PLAN_*.md` files, treat the following section
 - `Touchpoints`
 - `Public Contracts`
 - `Blast Radius`
-- `Verification Evidence`
+- `Verification Evidence` — table: `| Gate / Scenario | Strategy | Proves SPEC criterion |`
+- `Test Infra Improvement Notes` — placeholder at plan-write time; updated during EVL
 - `Resume and Execution Handoff`
 
 The goal is that EXECUTE can answer:
@@ -419,9 +421,9 @@ For legacy active structures such as `PLAN.md` plus `phase-*.md`:
 
 ### Deliverable
 
-- Create target directory if it doesn't exist (`process/general-plans/active/` or `process/features/{feature}/active/`)
+- Create the task subfolder first: `process/general-plans/active/{slug}_{dd-mm-yy}/` (or the feature-scoped equivalent)
 - Before naming the new plan, list existing completed plans to avoid duplicate feature names (check both `process/general-plans/completed/` and `process/features/*/completed/`)
-- Save to `process/general-plans/active/[name]_PLAN_[dd-mm-yy].md` (general) or `process/features/{feature}/active/[name]_PLAN_[dd-mm-yy].md` (feature-scoped)
+- Save to `process/general-plans/active/{slug}_{dd-mm-yy}/{slug}_PLAN_{dd-mm-yy}.md` (general) or `process/features/{feature}/active/{slug}_{dd-mm-yy}/{slug}_PLAN_{dd-mm-yy}.md` (feature-scoped)
 - Use `process/context/all-context.md` to pick context files. Do not bulk-load every context doc when a focused group or entrypoint is enough.
 - Validate the saved plan before reporting it as ready:
   ```bash
@@ -435,7 +437,7 @@ For legacy active structures such as `PLAN.md` plus `phase-*.md`:
 2. Is this SIMPLE (one-session) or COMPLEX (multi-phase)?
 3. If information is missing, ask up to 3–5 questions, then proceed.
 4. Generate [feature or system's name]\_PLAN\_[dd-mm-yy].md per the selected mode.
-5. For COMPLEX, cross-check structure and depth against `process/context/planning/example-complex-prd.md`.
+5. For COMPLEX, cross-check structure and depth against `.claude/skills/vc-generate-plan/references/example-complex-prd.md`.
 6. Run `validate-plan-artifact.mjs` against the generated plan and fix blocking failures.
 7. Conclude with a one-line next-step instruction for Cursor Plan mode.
 8. **Remind user: Each phase requires verification before proceeding to next.**

@@ -2,13 +2,13 @@
 
 Detailed reference for the vc-update skill.
 
-## vc-manifest.json Schema Reference (v2.1.0)
+## vc-manifest.json Schema Reference (v3.0.0)
 
 The manifest uses glob-based patterns resolved by `resolve-manifest.mjs`.
 
 ```json
 {
-  "version": "2.1.0",
+  "version": "3.0.0",
   "include": [
     ".claude/agents/**",
     ".claude/skills/**",
@@ -18,12 +18,7 @@ The manifest uses glob-based patterns resolved by `resolve-manifest.mjs`.
     ".codex/**",
     "CLAUDE.md",
     "AGENTS.md",
-    "process/development-protocols/**",
-    "process/context/planning/example-*.md",
-    "process/_seeds/**",
-    "process/_seeds/**/.gitkeep",
-    "process/_seeds/**/.gitignore",
-    "process/_seeds/**/.env.example"
+    "process/development-protocols/**"
   ],
   "exclude": [
     "process/context/all-context.md",
@@ -32,11 +27,11 @@ The manifest uses glob-based patterns resolved by `resolve-manifest.mjs`.
     "**/.git/**",
     "**/.logs/**",
     ".codex/statusline.cjs",
-    ".claude/skills/vc-chrome-devtools/scripts/node_modules/**"
+    ".claude/skills/vc-agent-browser/scripts/node_modules/**"
   ],
-  "strip": ["CLAUDE.md", "AGENTS.md"],
+  "strip": [],
   "merge": [".claude/settings.json"],
-  "copyIfMissing": ["process/context/planning/example-*.md"],
+  "copyIfMissing": [],
   "symlinks": { ".agents/skills": "../.claude/skills" },
   "kitOnly": [
     "README.md", "README-preview*.html", "CONTRIBUTING.md", "SECURITY.md",
@@ -58,6 +53,7 @@ The manifest uses glob-based patterns resolved by `resolve-manifest.mjs`.
 | `copyIfMissing` | string[] | Glob patterns for files only installed if they don't already exist locally. |
 | `symlinks` | object | Symlink path -> target mappings to create/verify. |
 | `kitOnly` | string[] | Glob patterns for files in the kit repo but NOT installed into user projects. |
+| `legacyDeletions` | string[] | Paths to delete from user projects during migration (removed from kit but may linger on disk). Top-level key in `vc-manifest.json`; emitted in `resolve-manifest --json` output. |
 
 ### Legacy Schema (v2.0.x)
 
@@ -68,7 +64,7 @@ Old manifests use explicit file lists instead of glob patterns:
 | `version` | string | Semver version (< 2.1.0) |
 | `managed` | string[] | Individual files overwritten on update |
 | `managedDirs` | string[] | Directories synced entirely (rsync-style replace) |
-| `seedsDir` | string | Path to seeds directory (always `process/_seeds/`) |
+| `seedsDir` | string | Path to legacy seeds directory when a pre-2.1.0 kit release still ships one |
 | `symlinks` | object | Symlink path -> target mappings |
 | `deletions` | string[] | Paths to delete (accumulated across versions) |
 
@@ -96,11 +92,15 @@ node "$TMPDIR/resolve-manifest.mjs" --root "$TMPDIR" --kit-only
   "files": ["...sorted managed file paths..."],
   "kitOnly": ["...sorted kit-exclusive file paths..."],
   "merge": [".claude/settings.json"],
-  "copyIfMissing": ["process/context/planning/example-simple-prd.md", "process/context/planning/example-complex-prd.md"],
-  "strip": ["CLAUDE.md", "AGENTS.md"],
-  "symlinks": { ".agents/skills": "../.claude/skills" }
+  "copyIfMissing": [],
+  "strip": [],
+  "symlinks": { ".agents/skills": "../.claude/skills" },
+  "legacyDeletions": ["...paths to delete on migration..."],
+  "ownedPaths": ["...union of files + legacyDeletions, sorted..."]
 }
 ```
+
+`ownedPaths` is the union of `files` and `legacyDeletions` (deduplicated, sorted). It is the full set of paths the kit claims ownership of; `compute-sync-plan.mjs` uses it for stale-removal checks. `legacyDeletions` lists paths that no longer belong in the kit and should be deleted from user projects during migration.
 
 ## .vc-installed-files
 
@@ -131,10 +131,11 @@ A snapshot file written to the user project root after each install/update. Cont
 | Malformed vc-manifest.json | Step 4 | Print JSON parse error, clean up, stop |
 | Missing vc-manifest.json | Step 4 | Print "vc-manifest.json not found in remote", clean up, stop |
 | .vc-version missing | Step 2 | Not an error -- treat as `0.0.0` (first update) |
-| .vc-installed-files missing | Step 6 | Build synthetic snapshot from current filesystem, proceed |
-| Permission denied on copy | Step 10 | Print which file, suggest `chmod`, **continue** with remaining |
+| .vc-installed-files missing | Step 6 | `priorSnapshot` set to `[]` (no disk scan); no stale removal via snapshot path; `legacyDeletions` still applied; snapshot written at apply time |
+| Permission denied on copy | Step 10 | Print which file + error, note original recoverable from `.vibecode-backup/`, **continue** with remaining |
 | Permission denied on delete | Step 10 | Print which file, suggest `chmod`, **continue** |
 | Symlink creation fails | Step 10 | Print error, suggest checking if target exists, **continue** |
+| Declared kit file missing from kit clone | Step 4 | `resolve-manifest` emits a `missingDeclared` list; `compute-sync-plan` prints a loud stderr warning and **preserves** any project copies that would have been deleted — prevents data loss from a partial/corrupt kit clone. Re-clone the kit to resolve. |
 
 ## Edge Cases
 
@@ -151,6 +152,8 @@ If the user has intentional local changes to a managed file:
 
 Files in the `merge` list are NEVER overwritten if they exist locally. The dry-run shows the diff so the user can manually reconcile. On fresh install (no existing file), the kit version is installed.
 
+`CLAUDE.md` and `AGENTS.md` are harness-only files — overwritten freely on update like any other managed file. Project-specific content (context groups, tech stack, features) belongs in `process/context/all-context.md`, which vc-update never touches.
+
 ### Copy-if-missing files (example PRDs)
 
 Files in the `copyIfMissing` list are only installed if they don't already exist locally. This prevents overwriting user-customized planning examples while still providing them on fresh install.
@@ -158,10 +161,10 @@ Files in the `copyIfMissing` list are only installed if they don't already exist
 ### First update with v2.1.0 (no .vc-installed-files)
 
 Users upgrading from v2.0.x have no `.vc-installed-files` snapshot. The algorithm:
-1. Builds a synthetic snapshot from the local filesystem (files matching the remote file list that exist locally).
-2. Applies legacy deletions from v2.0.4 (embedded in the resolver).
-3. Writes the synthetic snapshot.
-4. Proceeds with normal diff logic.
+1. Sets `priorSnapshot = []` (empty — no disk scan). Files on disk that are not in the prior snapshot but are in the remote file list are treated as user-owned and placed in `toPreserve` (not modified). Files not on disk at all are added via `toAdd`.
+2. Applies `legacyDeletions` from the resolver (embedded LEGACY_DELETIONS in older kits, or `manifest.legacyDeletions` in v3.0.0+) independently — entries that exist on disk and pass the namespace guard are deleted.
+3. Writes the snapshot (sorted `ownedPaths`) at apply time.
+4. Subsequent updates use normal diff logic.
 
 ### Remote has new files not in local snapshot
 
@@ -196,8 +199,7 @@ MERGE (preserved, manual review needed):
   [differs]   .claude/settings.json  (+2 -1)
 
 COPY-IF-MISSING (skipped, already present):
-  [skipped]   process/context/planning/example-simple-prd.md
-  [skipped]   process/context/planning/example-complex-prd.md
+  (none)
 
 SYMLINKS:
   [ok]  .agents/skills -> ../.claude/skills

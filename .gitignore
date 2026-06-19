@@ -34,3 +34,4 @@ rag/data/traces/
 rag/data/.password_override.json
 rag/data/.messenger_override.json
 rag/.ingest_state.json
+.vibecode-backup*/

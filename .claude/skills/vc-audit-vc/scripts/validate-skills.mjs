@@ -1,13 +1,23 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { parseFrontmatter, listSkillDirs, exists, abs } from "../../vc-audit-context/scripts/shared-skill-utils.mjs";
 
-const root = process.cwd();
+let root;
+try {
+  root = execSync('git rev-parse --show-toplevel', { stdio: ['pipe', 'pipe', 'pipe'] }).toString().trim();
+} catch {
+  // Not a git repository — fall back to process.cwd() so the script still works on new projects.
+  root = process.cwd();
+}
 const failures = [];
 const warnings = [];
 const blockingKeys = new Set(["name", "description", "license", "allowed-tools", "metadata", "argument-hint", "languages"]);
 const advisoryKeys = new Set(["user-invocable", "when_to_use", "category", "keywords"]);
+// Canonical richer keys: recognized + enforced elsewhere (validate-skill-keywords.mjs).
+// Known, not optional-expansion candidates, so they do not fire the Codex-compat advisory reminder.
+const canonicalRicherKeys = new Set(["trigger_keywords", "layer"]);
 const intentionallyIgnored = new Set(["sync-from-riper5", "sync-to-riper5"]);
 const staleOwnershipPatterns = [
   "default workflow owner",
@@ -76,11 +86,11 @@ for (const skill of skillNames) {
     if (intentionallyIgnored.has(skill)) warn(`${message} but intentionally ignored`);
     else fail(message);
   }
-  if (fields.name && fields.name !== skill && !fields.name.startsWith("vc:")) {
+  if (fields.name && fields.name !== skill && !fields.name.startsWith("vc-") && !fields.name.startsWith("vc:")) {
     warn(`${file} frontmatter name ${fields.name} differs from folder ${skill}`);
   }
   if (fields.name && !/^[a-z0-9:-]+$/.test(fields.name)) {
-    fail(`${file} frontmatter name is not lowercase/hyphen/colon safe`);
+    fail(`${file} frontmatter name is not lowercase/hyphen safe`);
   }
   if (fields.description && fields.description.length > 1024) {
     fail(`${file} description is longer than 1024 characters`);
@@ -101,7 +111,9 @@ for (const skill of skillNames) {
     warn(`${file} description sounds maintainer-facing; prefer user/invocation trigger language`);
   }
 
-  const unexpected = keys.filter((key) => !blockingKeys.has(key) && !advisoryKeys.has(key));
+  const unexpected = keys.filter(
+    (key) => !blockingKeys.has(key) && !advisoryKeys.has(key) && !canonicalRicherKeys.has(key),
+  );
   if (unexpected.length > 0) warn(`${file} has non-system frontmatter keys: ${unexpected.join(", ")}`);
 
   for (const key of keys.filter((item) => advisoryKeys.has(item))) {

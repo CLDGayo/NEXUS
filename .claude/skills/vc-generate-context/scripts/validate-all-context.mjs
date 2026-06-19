@@ -25,10 +25,17 @@ function read(relPath) {
 }
 
 const contextFile = "process/context/all-context.md";
-const routerFile = "process/context/all-context.md";
 
-if (!exists(contextFile)) fail(`${contextFile} missing`);
-if (!exists(routerFile)) fail(`${routerFile} missing`);
+// Bare-kit mode: process/context/all-context.md is intentionally absent in a freshly
+// cloned kit template. All checks in this validator require a populated context file,
+// so skip them entirely and exit 0 with a clear notice.
+if (!exists(contextFile)) {
+  process.stderr.write(
+    "[bare-kit mode] process/context/all-context.md absent — skipping per-project context-doc checks (kit template not yet set up).\n",
+  );
+  console.log(JSON.stringify({ checkedFile: contextFile, lineCount: 0, strict, warnings: [], failures: [] }, null, 2));
+  process.exit(0);
+}
 
 let lineCount = 0;
 if (exists(contextFile)) {
@@ -36,7 +43,12 @@ if (exists(contextFile)) {
   const lines = text.split("\n");
   lineCount = lines.length;
 
-  if (!/^#\s+/.test(text)) fail(`${contextFile} missing top-level heading`);
+  // Strip leading YAML frontmatter (---\n...\n---\n) before checking for heading,
+  // so files that begin with frontmatter are not falsely flagged.
+  const textWithoutFrontmatter = text.startsWith("---")
+    ? text.replace(/^---\n[\s\S]*?\n---\n/, "")
+    : text;
+  if (!/^#\s+/.test(textWithoutFrontmatter)) fail(`${contextFile} missing top-level heading`);
   for (const section of ["Repository Structure", "Technology Stack"]) {
     if (!text.includes(`## ${section}`)) fail(`${contextFile} missing ${section} section`);
   }
@@ -51,7 +63,7 @@ if (exists(contextFile)) {
   if (!/Repo HEAD|git rev-parse HEAD|commit/i.test(text)) {
     warn(`${contextFile} does not include repo HEAD or commit metadata`);
   }
-  if (!/References|Source references|Key files|OpenClaw Documentation/i.test(text)) {
+  if (!/References|Source references|Key files/i.test(text)) {
     warn(`${contextFile} does not include an obvious source references section`);
   }
   if (!/Open Questions|Outstanding Work/i.test(text)) {

@@ -1,14 +1,18 @@
 ---
-name: vc:web-testing
+name: vc-web-testing
 description: Web testing with Playwright, Vitest, k6. E2E/unit/integration/load/security/visual/a11y testing. Use for test automation, flakiness, Core Web Vitals, mobile gestures, cross-browser.
 license: Apache-2.0
 argument-hint: "[test-type] [target]"
+trigger_keywords: tests, e2e, integration test, performance test
+layer: helper
 metadata:
   author: claudekit
   version: "3.0.0"
 ---
 
 # Web Testing Skill
+
+> **Output style:** Follow `process/development-protocols/communication-standards.md` — answer-first, plain language, no unexplained jargon, TL;DR on long responses.
 
 Comprehensive web testing: unit, integration, E2E, load, security, visual regression, accessibility.
 
