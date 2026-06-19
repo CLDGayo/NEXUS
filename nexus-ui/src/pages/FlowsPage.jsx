@@ -13,7 +13,7 @@ import Switch from '../components/ui/Switch.jsx';
 export default function FlowsPage() {
   const { t } = useTranslation('flows');
   const navigate = useNavigate();
-  const { flows, pages, loading, error, busyId, createFlow, toggleActive, deleteFlow } = useFlows();
+  const { flows, pages, analytics, loading, error, busyId, createFlow, toggleActive, deleteFlow } = useFlows();
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -126,6 +126,7 @@ export default function FlowsPage() {
                 <th className="px-4 py-2.5 font-medium">{t('colName')}</th>
                 <th className="px-4 py-2.5 font-medium">{t('colPage')}</th>
                 <th className="px-4 py-2.5 font-medium">{t('colStatus')}</th>
+                <th className="px-4 py-2.5 font-medium">{t('colRuns')}</th>
                 <th className="px-4 py-2.5 font-medium">{t('colCreated')}</th>
                 <th className="px-4 py-2.5 text-right font-medium">{t('colActions')}</th>
               </tr>
@@ -168,6 +169,37 @@ export default function FlowsPage() {
                           {flow.is_active ? t('statusActive') : t('statusInactive')}
                         </span>
                       </div>
+                    </td>
+
+                    {/* Runs / success (Phase 58.4a analytics, last 7d) */}
+                    <td className="px-4 py-2.5">
+                      {(() => {
+                        const stat = analytics[flow.id];
+                        if (!stat || stat.total === 0) {
+                          return (
+                            <span className="text-xs text-nexus-muted">
+                              {t('noRuns')}
+                            </span>
+                          );
+                        }
+                        const pct = Math.round((stat.success_rate || 0) * 100);
+                        const tone =
+                          pct >= 80
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : pct >= 50
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-red-600 dark:text-red-400';
+                        return (
+                          <span className="inline-flex items-center gap-1.5 text-xs">
+                            <span className="font-medium text-slate-700 dark:text-slate-300">
+                              {t('runsCount', { count: stat.total })}
+                            </span>
+                            <span className={`font-semibold ${tone}`}>
+                              {t('successRate', { pct })}
+                            </span>
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     {/* Created */}

@@ -365,6 +365,134 @@ def test_flows_router_lockdown_uses_require_manager() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Phase 58.4a — analytics endpoints (DB-less, sequenced execute results)
+# ---------------------------------------------------------------------------
+
+
+class _SeqResult:
+    """Execute-result double exposing both .all() and .scalar_one_or_none()."""
+
+    def __init__(self, *, all_rows: Any = None, scalar: Any = None) -> None:
+        self._all = all_rows or []
+        self._scalar = scalar
+
+    def all(self) -> list[Any]:
+        return self._all
+
+    def scalar_one_or_none(self) -> Any:
+        return self._scalar
+
+
+def _install_analytics_overrides(app: Any, results: list[_SeqResult]) -> None:
+    """Override the session so each db.execute() returns the next _SeqResult."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from rag.auth import current_active_user
+    from rag.database.engine import get_async_session
+    from rag.routers.deps import require_manager
+
+    seq = list(results)
+    calls = {"i": 0}
+
+    async def _execute(_stmt: Any) -> Any:
+        i = calls["i"]
+        calls["i"] += 1
+        return seq[i] if i < len(seq) else _SeqResult()
+
+    session = AsyncMock()
+    session.execute = AsyncMock(side_effect=_execute)
+    session.add = MagicMock()
+    session.commit = AsyncMock()
+
+    async def _session_override() -> AsyncGenerator[Any, None]:
+        yield session
+
+    app.dependency_overrides[current_active_user] = lambda: _FakeUser()
+    app.dependency_overrides[require_manager] = lambda: _FakeTenant()
+    app.dependency_overrides[get_async_session] = _session_override
+
+
+def test_analytics_summary_aggregates_per_flow(client: TestClient, app: Any) -> None:
+    f1 = uuid.UUID("11111111-0000-0000-0000-000000000001")
+    f2 = uuid.UUID("22222222-0000-0000-0000-000000000002")
+    # (flow_id, status, count) rows — F1: 3 completed + 1 failed; F2: 1 active.
+    rows = [
+        (f1, "completed", 3),
+        (f1, "failed", 1),
+        (f2, "active", 1),
+    ]
+    _install_analytics_overrides(app, [_SeqResult(all_rows=rows)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/analytics/summary"
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["window_days"] == 7
+        by_id = {row["flow_id"]: row for row in body["flows"]}
+        assert by_id[str(f1)] == {
+            "flow_id": str(f1),
+            "total": 4,
+            "completed": 3,
+            "failed": 1,
+            "success_rate": 0.75,
+        }
+        # In-flight-only flow: no terminal runs → 0.0 success rate.
+        assert by_id[str(f2)]["total"] == 1
+        assert by_id[str(f2)]["success_rate"] == 0.0
+    finally:
+        _clear_overrides(app)
+
+
+def test_flow_analytics_404_when_flow_not_owned(
+    client: TestClient, app: Any
+) -> None:
+    # 1st execute = ownership check → scalar None → 404 (never reaches the
+    # run-aggregation query).
+    _install_analytics_overrides(app, [_SeqResult(scalar=None)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/analytics"
+        )
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "flow_not_found"
+    finally:
+        _clear_overrides(app)
+
+
+def test_flow_analytics_node_aggregation(client: TestClient, app: Any) -> None:
+    # 1st execute = ownership (returns the flow id), 2nd = run rows.
+    run_rows = [
+        ("completed", ["n1", "n2"], None),
+        ("failed", ["n1", "n3"], "n3"),
+    ]
+    _install_analytics_overrides(
+        app,
+        [_SeqResult(scalar=FLOW_ID), _SeqResult(all_rows=run_rows)],
+    )
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/analytics"
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["runs"] == {
+            "total": 2,
+            "active": 0,
+            "waiting": 0,
+            "completed": 1,
+            "failed": 1,
+            "success_rate": 0.5,
+        }
+        nodes = {n["node_id"]: n for n in body["nodes"]}
+        assert nodes["n1"] == {"node_id": "n1", "visits": 2, "failures": 0}
+        assert nodes["n2"] == {"node_id": "n2", "visits": 1, "failures": 0}
+        assert nodes["n3"] == {"node_id": "n3", "visits": 1, "failures": 1}
+    finally:
+        _clear_overrides(app)
+
+
+# ---------------------------------------------------------------------------
 # Layer B — pg_required integration tests
 # ---------------------------------------------------------------------------
 

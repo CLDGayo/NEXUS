@@ -941,6 +941,14 @@ class FlowRun(Base):
     context: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
+    # Phase 58.4a — analytics instrumentation. ``path`` is the ordered trail
+    # of visited node ids (appended in ``_traverse``); ``failed_node_id`` is
+    # the node that drove ``status='failed'``. Aggregating these across runs
+    # yields per-node visit + failure counts without a dedicated events table.
+    path: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    failed_node_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

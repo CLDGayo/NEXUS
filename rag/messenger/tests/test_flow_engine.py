@@ -1382,3 +1382,76 @@ class TestWorkerDispatch:
 
         assert result == (True, None, None, False)
         assert len(called) == 1
+
+
+# ---------------------------------------------------------------------------
+# Phase 58.4a — analytics instrumentation (_traverse records path + failure)
+# ---------------------------------------------------------------------------
+
+
+def _make_run(sender_id: str = "u_1", page_id: str = "page_1") -> Any:
+    """Lightweight FlowRun double for direct _traverse calls. ``path`` starts
+    as None — matching an unpersisted SQLAlchemy instance before flush."""
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        id=uuid.uuid4(),
+        tenant_id=uuid.uuid4(),
+        sender_id=sender_id,
+        page_id=page_id,
+        status="active",
+        current_node_id=None,
+        context={},
+        path=None,
+        failed_node_id=None,
+    )
+
+
+@pytest.mark.unit
+class TestTraverseAnalytics:
+    """_traverse records the executed node trail and the failing node id."""
+
+    async def test_path_records_visited_nodes_on_success(self) -> None:
+        trigger = _comment_trigger_node("n_trigger")
+        send = _send_message_node("n_send", "Our price is $99")
+        flow = _make_flow(nodes=[trigger, send], edges=[_edge("n_trigger", "n_send")])
+        run = _make_run()
+        client = _HttpClient(_Resp(200, {"message_id": "m1"}))
+
+        success, error = await _fe._traverse(
+            client,
+            flow=flow,
+            run=run,
+            start_node=trigger,
+            token="tok",
+            db=MagicMock(),
+        )
+
+        assert success is True
+        assert error is None
+        assert run.status == "completed"
+        assert run.path == ["n_trigger", "n_send"]
+        assert run.failed_node_id is None
+
+    async def test_failed_node_id_set_on_send_failure(self) -> None:
+        trigger = _comment_trigger_node("n_trigger")
+        send = _send_message_node("n_send", "boom")
+        flow = _make_flow(nodes=[trigger, send], edges=[_edge("n_trigger", "n_send")])
+        run = _make_run()
+        client = _HttpClient(_Resp(500, {"error": {"message": "graph down"}}))
+
+        success, _error = await _fe._traverse(
+            client,
+            flow=flow,
+            run=run,
+            start_node=trigger,
+            token="tok",
+            db=MagicMock(),
+        )
+
+        assert success is False
+        assert run.status == "failed"
+        # Failing node recorded for attribution; still present in the visited
+        # path (appended before execution).
+        assert run.failed_node_id == "n_send"
+        assert run.path == ["n_trigger", "n_send"]
