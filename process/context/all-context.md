@@ -194,10 +194,10 @@ Migrated from the old CLAUDE.md. Every PR in `rag/` should close a gap or harden
 
 ## Deploy & Ops
 
-- **RAG deploy:** `./deploy-rag.sh` — rsync vault+code, full reindex, restart `nexus-chat` systemd unit → https://chat.nexus.gayo-sphere.cloud. Unit `ExecStart=uv run uvicorn app:app --host 127.0.0.1 --port 8501`, `EnvironmentFile=/home/nexus-rag/.env`, `Restart=always`. nginx proxies (CloudPanel + Let's Encrypt). `.env` preserved (`rsync --exclude='.env'`).
+- **RAG deploy:** `./deploy-rag.sh` — **Docker Compose v2 architecture** (the legacy `nexus-chat` systemd unit + `/home/nexus-rag` tree are DECOMMISSIONED). rsyncs vault → `/home/nexus-vault`, `rag/` + `nexus-ui/` + infra → `/home/nexus-rag-v2`, rebuilds the **`nexus-api`** container (`docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build api`), waits healthy, then runs `docker exec -w /app/rag nexus-api alembic upgrade head`. **Env lives in `/home/nexus-rag-v2/.env.prod`** (NOT `/home/nexus-rag/.env`) — set runtime flags there and **recreate** the container (`--force-recreate`; a restart does NOT reload `--env-file`). `.env`/`.env.prod` preserved (rsync excludes). nginx proxies (CloudPanel + Let's Encrypt).
 - **Quartz publish:** `./deploy-nexus.sh` — `nvm use 22` then rsync built `_publish/public/` → https://nexus.gayo-sphere.cloud.
 - **Qdrant:** Docker container `qdrant-nexus` on VPS `72.62.196.231`, port 6333, data `/home/nexus-qdrant/storage/`. Public HTTPS `https://qdrant.nexus.gayo-sphere.cloud:443` (Mac path); VPS talks to `127.0.0.1:6333` directly.
-- **Post-deploy verify:** `curl -sSI https://chat.nexus.gayo-sphere.cloud/` → 200; `systemctl is-active nexus-chat` → active; `journalctl -u nexus-chat -n 50`.
+- **Post-deploy verify:** `curl -sSI https://chat.nexus.gayo-sphere.cloud/` → 200; `docker inspect --format '{{.State.Health.Status}}' nexus-api` → healthy; `docker logs nexus-api --tail 50`; current migration `docker exec -w /app/rag nexus-api alembic current`.
 - **MCP servers in play:** Playwright (E2E), `gayo-vps` SSH (deploy/logs), `wordpress-cms`.
 
 ## Current Features
@@ -208,6 +208,7 @@ Feature folders with 5+ artifacts or multi-phase programs. Stored under `process
 |---|---|---|
 | `tenant-ai-customization` | ✅ SHIPPED (2026-06-04) | Phases 45–49 ALL shipped: Lifecycle Persona Engine, Knowledge Boundary Harden, Workflow Toggles, Model Params, Prompt Studio frontend + GET/PUT /workspace/ai-settings |
 | `workspace-manager` | ✅ SHIPPED (2026-06-12) | Phases 50–53 ALL shipped: 3-tier RBAC (owner/admin/member), token-based invites + n8n emails + `/join` flow, workspace lifecycle (rename/slug/avatar, archive, ownership transfer, hard-delete with Qdrant cascade), usage telemetry dashboard. Plan archived at `process/features/workspace-manager/completed/` |
+| `nexus-flow` | 🟡 58.1 + 58.2 SHIPPED + DEPLOYED (2026-06-19) | Visual node-based FB automation builder (supersedes Phase 57 keyword engine, coexists-w-precedence via `nexus_flows_enabled`). 58.1: migration 0015 (`nexus_flows` + `flow_runs`), stateful JSON-graph engine (`rag/messenger/flow_engine.py`) w/ Wait-for-Input resume, CRUD API, React Flow (`@xyflow/react`) canvas `/flows`. 58.2: AI Intent Router (`chat_complete` classify → dynamic intent handles, strict `other` fallback) + Pause (`set_bot_paused` 24h, terminal) + reusable Node Inspector (`useReactFlow().setNodes`). Core V1 = 7 nodes + Inspector. PR #3. Remaining: 58.3 CRM + Webhook action nodes, 58.4 Story Mention (needs Instagram). |
 
 ## Context Group Lifecycle
 

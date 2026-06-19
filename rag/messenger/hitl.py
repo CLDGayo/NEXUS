@@ -42,13 +42,21 @@ async def is_bot_paused(sender_id: str) -> bool:
         return False
 
 
-async def set_bot_paused(sender_id: str) -> None:
-    """Pause the bot for this sender. TTL = ``settings.hitl_pause_duration_s``."""
+async def set_bot_paused(
+    sender_id: str,
+    duration_s: int | None = None,
+) -> None:
+    """Pause the bot for this sender.
+
+    TTL defaults to ``settings.hitl_pause_duration_s`` when *duration_s* is
+    ``None``, preserving the existing caller behaviour.  Pass an explicit
+    *duration_s* (e.g. 86400 from the ``pause`` flow node) to override.
+    """
 
     if not sender_id:
         return
     redis = get_redis()
-    ttl = settings.hitl_pause_duration_s
+    ttl = duration_s if duration_s is not None else settings.hitl_pause_duration_s
     try:
         await redis.set(_PAUSED_KEY.format(sender_id=sender_id), "1", ex=ttl)
         _log.info("hitl.paused sender=%s ttl=%d", sender_id, ttl)

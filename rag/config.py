@@ -298,6 +298,14 @@ class Settings(BaseSettings):
     # ``comment_triage_enabled`` path for back-compat.
     fb_automations_enabled: bool = Field(default=True)
 
+    # Phase 58 — NEXUS Flow visual automation engine.
+    # When True, inbound feed/comment/add events are dispatched to the
+    # stateful flow traversal engine (``fb_flow`` worker target).  Active
+    # flows are matched first; no-match falls through to the Phase 57
+    # ``fb_private_reply`` engine (coexist with precedence).
+    # Default False — zero behaviour change until a tenant activates a flow.
+    nexus_flows_enabled: bool = Field(default=False)
+
     # ---- Phase 55/56 — token encryption at rest ----
     # urlsafe-base64 32-byte Fernet key. Encrypts Facebook page/user tokens and
     # Google OAuth access tokens before they touch Postgres. Empty in dev/tests;

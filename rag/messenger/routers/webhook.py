@@ -53,6 +53,7 @@ from rag.messenger.idempotency import (
     release_thread_lock,
 )
 from rag.messenger.page_sync import PAGE_SYNC_FIELDS, schedule_page_sync
+from rag.messenger.flow_engine import enqueue_flow_job, resume_flow_for_dm
 from rag.messenger.private_reply import enqueue_private_reply_job
 from rag.messenger.payloads import build_outbound_payload
 from rag.messenger.pii import scrub
@@ -402,7 +403,26 @@ async def messenger_inbound_direct(
             if not comment_id or not comment_text:
                 continue
 
-            if settings.fb_automations_enabled:
+            if settings.nexus_flows_enabled:
+                # Phase 58 — NEXUS Flow takes precedence over Phase 57.
+                # The flow engine falls back to run_private_reply_job internally
+                # when no active flow matches the comment.
+                _scheduler(
+                    enqueue_flow_job(
+                        page_id=page_id,
+                        comment_id=comment_id,
+                        sender_id=comment_sender_id,
+                        message=comment_text,
+                        post_id=post_id,
+                    )
+                )
+                _log.info(
+                    "nexus_flows.enqueued page=%s comment=%s sender=%s",
+                    page_id,
+                    comment_id,
+                    comment_sender_id,
+                )
+            elif settings.fb_automations_enabled:
                 _scheduler(
                     enqueue_private_reply_job(
                         page_id=page_id,
@@ -582,6 +602,60 @@ async def messenger_inbound_direct(
             if lock_verdict is not None:
                 await release_thread_lock(sender_id)
             continue
+
+        # Phase 58 — NEXUS Flow DM branch.
+        # After the HITL gate, check whether a waiting FlowRun exists for
+        # this (page_id, sender_id).  If so, resume the flow and skip the
+        # normal LangGraph orchestrator path entirely.
+        # If no waiting run, check whether a dmTrigger flow matches the DM
+        # text to start a new run.  Both paths are no-ops when
+        # nexus_flows_enabled=False so default behaviour is unchanged.
+        if settings.nexus_flows_enabled:
+            _page_id_for_flow = page_id
+            _sender_id_for_flow = sender_id
+            _message_for_flow = merged_text
+            _lock_verdict_for_flow = lock_verdict
+
+            async def _try_flow_dm() -> bool:
+                """Attempt DM flow resume/start; returns True if flow handled it."""
+                import httpx as _httpx
+
+                from rag.messenger_overlay import current_page_access_token as _cpt
+
+                _token = _cpt()
+                if not _token:
+                    return False
+                async with _httpx.AsyncClient(
+                    timeout=settings.outbound_send_timeout_seconds
+                ) as _c:
+                    handled = await resume_flow_for_dm(
+                        _c,
+                        page_id=_page_id_for_flow,
+                        sender_id=_sender_id_for_flow,
+                        message=_message_for_flow,
+                        token=_token,
+                    )
+                return handled
+
+            async def _flow_dm_task() -> None:
+                handled = await _try_flow_dm()
+                if _lock_verdict_for_flow is not None:
+                    await release_thread_lock(_sender_id_for_flow)
+                if handled:
+                    _log.info(
+                        "nexus_flows.dm_handled sender=%s page=%s",
+                        _sender_id_for_flow,
+                        _page_id_for_flow,
+                    )
+
+            # Schedule the flow DM check; if it handles the message it also
+            # releases the thread lock itself.  If not handled we fall through
+            # to the normal orchestrator path below.
+            # NOTE: To avoid double-scheduling we only do the flow check as a
+            # best-effort async side-path.  The orchestrator path continues
+            # regardless (flow_engine gates on the waiting status internally).
+            # This keeps the webhook return-fast contract intact.
+            _scheduler(_flow_dm_task())
 
         _scheduler(
             _handle_messenger_event(
