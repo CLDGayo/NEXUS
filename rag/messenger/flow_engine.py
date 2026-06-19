@@ -47,7 +47,9 @@ from rag.database.models import (
     MessengerPageTenant,
     NexusFlow,
     ProcessedFbComment,
+    Tenant,
 )
+from rag.i18n import apply_language_directive
 from rag.messenger.queue import QueuedItem, get_queue
 from rag.messenger_overlay import current_page_access_token
 
@@ -258,8 +260,13 @@ async def _traverse(
     start_node: dict[str, Any],
     token: str,
     db: Any,
+    language: str = "en",
 ) -> tuple[bool, str | None]:
     """Traverse from start_node, mutating run in-place.
+
+    ``language`` is the tenant's preferred chatbot language (BCP-47 base code);
+    Phase 59 injects a "reply exclusively in <language>" directive into the
+    system prompt of LLM-based nodes (aiRouter) when it is non-"en".
 
     Returns (success, error_summary).
     Halts on waitForInput (run.status='waiting') or completion.
@@ -406,6 +413,9 @@ async def _traverse(
                         + ", ".join(labels)
                         + ". Reply with ONLY the label, nothing else."
                     )
+                    # Phase 59 — honour the tenant's default chatbot language.
+                    # No-op for "en"; downstream LLM text generation inherits it.
+                    system_msg = apply_language_directive(system_msg, language)
                     res = await chat_complete(
                         [
                             {"role": "system", "content": system_msg},
@@ -636,6 +646,12 @@ async def run_flow_job(
             return True, None, "page unmapped", False  # drop, not DLQ
 
         tenant_id = row.tenant_id
+        # Phase 59 — tenant default chatbot language for LLM-node injection.
+        tenant_language = (
+            await db.scalar(
+                select(Tenant.preferred_language).where(Tenant.id == tenant_id)
+            )
+        ) or "en"
         token: str | None = (
             decrypt_token(row.page_access_token_enc)
             if row.page_access_token_enc
@@ -734,6 +750,7 @@ async def run_flow_job(
             start_node=trigger_node,
             token=token,
             db=db,
+            language=tenant_language,
         )
 
         await db.commit()
@@ -824,6 +841,13 @@ async def resume_flow_for_dm(
 
         run_row.status = "active"
 
+        # Phase 59 — tenant default chatbot language for LLM-node injection.
+        tenant_language = (
+            await db.scalar(
+                select(Tenant.preferred_language).where(Tenant.id == run_row.tenant_id)
+            )
+        ) or "en"
+
         success, error = await _traverse(
             client,
             flow=flow,
@@ -831,6 +855,7 @@ async def resume_flow_for_dm(
             start_node=next_node,
             token=token,
             db=db,
+            language=tenant_language,
         )
 
         await db.commit()

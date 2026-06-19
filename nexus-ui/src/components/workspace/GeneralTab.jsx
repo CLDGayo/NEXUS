@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Camera, Settings2, Trash2 } from 'lucide-react';
+import { Camera, Languages, Settings2, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTenant } from '../../hooks/useTenant.js';
 import { api, HTTPError } from '../../lib/api.js';
+import Select from '../ui/Select.jsx';
+import { LANGUAGES } from '../../i18n/languages.js';
 
 // Phase 52 — General settings tab: editable name, slug, and avatar upload.
 // Managers (owner | admin) can edit; plain members see the read-only view.
@@ -12,6 +14,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
 
   const [name, setName] = useState(tenant?.name ?? '');
   const [slug, setSlug] = useState(tenant?.slug ?? '');
+  const [language, setLanguage] = useState(tenant?.preferred_language ?? 'en');
   const [avatarPreview, setAvatarPreview] = useState(tenant?.avatar_url ?? null);
   const [pendingFile, setPendingFile] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -24,6 +27,7 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
   useEffect(() => {
     setName(tenant?.name ?? '');
     setSlug(tenant?.slug ?? '');
+    setLanguage(tenant?.preferred_language ?? 'en');
     setAvatarPreview(tenant?.avatar_url ?? null);
     setPendingFile(null);
     setError(null);
@@ -74,13 +78,15 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
         setPendingFile(null);
       }
 
-      // 2. PATCH name/slug if changed
+      // 2. PATCH name/slug/language if changed
       const nameChanged = name.trim() !== tenant?.name;
       const slugChanged = slug.trim() !== tenant?.slug;
-      if (nameChanged || slugChanged) {
+      const langChanged = language !== (tenant?.preferred_language ?? 'en');
+      if (nameChanged || slugChanged || langChanged) {
         const patch = {};
         if (nameChanged) patch.name = name.trim();
         if (slugChanged) patch.slug = slug.trim().toLowerCase();
+        if (langChanged) patch.preferred_language = language;
         const updated = await api.patch(`/tenants/${tenantId}`, patch);
         if (onSaved) onSaved(updated);
       }
@@ -245,6 +251,34 @@ export default function GeneralTab({ tenantId, tenant, onSaved }) {
             </dd>
           </div>
         </div>
+      </div>
+
+      {/* Phase 59 — default chatbot language */}
+      <div className="glass-card space-y-3 p-5">
+        <div className="flex items-center gap-2">
+          <Languages size={14} className="text-nexus-accent" />
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            {t('general.languageTitle', { defaultValue: 'Chatbot language' })}
+          </h3>
+        </div>
+        <p className="text-xs text-nexus-muted">
+          {t('general.languageHint', {
+            defaultValue:
+              'The default language your AI assistant replies in across automation flows.',
+          })}
+        </p>
+        {canManage ? (
+          <Select
+            value={language}
+            onValueChange={setLanguage}
+            options={LANGUAGES.map((l) => ({ value: l.code, label: l.native }))}
+            className="sm:max-w-xs"
+          />
+        ) : (
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+            {LANGUAGES.find((l) => l.code === language)?.native ?? language}
+          </p>
+        )}
       </div>
 
       {/* Feedback */}

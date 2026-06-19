@@ -140,6 +140,14 @@ class Tenant(Base):
         ),
     )
 
+    # Phase 59 — workspace default chatbot language (BCP-47 base code, e.g.
+    # "en", "es", "ja"). The flow engine injects a "reply exclusively in
+    # <language>" directive into LLM node prompts when this is non-"en".
+    # NOT NULL with server_default "en" so existing tenants are unchanged.
+    preferred_language: Mapped[str] = mapped_column(
+        String(8), nullable=False, server_default="en"
+    )
+
 
 class TenantUser(Base):
     """Membership table — composite PK (tenant_id, user_id).
