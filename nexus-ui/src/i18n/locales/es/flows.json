@@ -75,6 +75,17 @@
       "durationBadge": "Pause {{hours}}h",
       "noMessage": "No handoff message",
       "terminal": "Terminal — bot paused"
+    },
+    "webhook": {
+      "label": "Trigger Webhook",
+      "noUrl": "No URL configured"
+    },
+    "updateCrm": {
+      "label": "Update CRM",
+      "actionAddTag": "Add Tag",
+      "actionRemoveTag": "Remove Tag",
+      "actionSetField": "Set Field",
+      "actionSetHotLead": "Flag Hot Lead"
     }
   },
   "inspector": {
@@ -109,6 +120,18 @@
     "durationSeconds": "Duration (seconds)",
     "durationHint": "≈ {{hours}} hour(s)",
     "handoffMessage": "Handoff message (optional)",
-    "handoffMessagePlaceholder": "e.g. A human agent will contact you soon."
+    "handoffMessagePlaceholder": "e.g. A human agent will contact you soon.",
+    "webhookUrl": "Webhook URL",
+    "webhookBody": "Body template",
+    "webhookBodyHint": "Tokens: {{ _input }}, {{ _intent }}, {{ sender_id }}, {{ page_id }}",
+    "crmAction": "Action",
+    "crmActionAddTag": "Add Tag",
+    "crmActionRemoveTag": "Remove Tag",
+    "crmActionSetField": "Set Field",
+    "crmActionSetHotLead": "Flag Hot Lead",
+    "crmValue": "Value",
+    "crmValuePlaceholder": "e.g. VIP",
+    "crmField": "Field name",
+    "crmFieldPlaceholder": "e.g. plan"
   }
 }

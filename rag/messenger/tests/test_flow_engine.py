@@ -65,7 +65,7 @@ class _HttpClient:
     async def __aexit__(self, *_: object) -> None:
         return None
 
-    async def post(self, url: str, *, params: dict | None = None, json: dict | None = None) -> _Resp:
+    async def post(self, url: str, *, params: dict | None = None, json: dict | None = None, **kwargs: Any) -> _Resp:
         self.posts.append({"url": url, "params": params or {}, "json": json or {}})
         if self._exc is not None:
             raise self._exc
@@ -1023,6 +1023,324 @@ class TestResumeFlowForDm:
         )
 
         assert handled is False
+
+
+# ---------------------------------------------------------------------------
+# 58.3 helper node builders
+# ---------------------------------------------------------------------------
+
+
+def _webhook_node(
+    node_id: str = "n_webhook",
+    url: str = "https://n8n.example.com/webhook/test",
+    body_template: str = '{"text": "{{ _input }}"}',
+) -> dict:
+    return {
+        "id": node_id,
+        "type": "webhook",
+        "position": {"x": 200, "y": 0},
+        "data": {"url": url, "bodyTemplate": body_template},
+    }
+
+
+def _update_crm_node(
+    node_id: str = "n_crm",
+    action: str = "add_tag",
+    value: Any = "VIP",
+    field: str = "",
+) -> dict:
+    return {
+        "id": node_id,
+        "type": "updateCrm",
+        "position": {"x": 200, "y": 0},
+        "data": {"action": action, "value": value, "field": field},
+    }
+
+
+def _make_contact(
+    tags: list | None = None,
+    attributes: dict | None = None,
+    hot_lead: bool = False,
+) -> MagicMock:
+    """Build a minimal FlowContact stub."""
+    contact = MagicMock()
+    contact.tags = list(tags or [])
+    contact.attributes = dict(attributes or {})
+    contact.hot_lead = hot_lead
+    return contact
+
+
+# ---------------------------------------------------------------------------
+# Webhook node tests (Phase 58.3)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestWebhookNode:
+    """Tests for the webhook flow node executor."""
+
+    @pytest.fixture(autouse=True)
+    def _patch_decrypt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "decrypt_token", lambda enc: "decrypted-tok")
+
+    @pytest.fixture(autouse=True)
+    def _patch_overlay(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "current_page_access_token", lambda: "overlay-tok")
+
+    async def test_webhook_posts_with_interpolated_body(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """webhook node POSTs to configured URL with {{ _input }} interpolated."""
+        trigger = _comment_trigger_node(keyword="price", match_type="exact")
+        webhook = _webhook_node(
+            node_id="n_wh",
+            url="https://n8n.example.com/webhook/test",
+            body_template='{"text": "{{ _input }}", "sender": "{{ sender_id }}"}',
+        )
+        flow = _make_flow(
+            nodes=[trigger, webhook],
+            edges=[_edge("n_trigger", "n_wh")],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": "c_wh_1",
+                "message": "price",
+                "sender_id": "u_wh",
+            },
+        )
+
+        assert delivered is True
+        assert error is None
+        assert retryable is False
+
+        # One POST to the webhook URL (Graph sendMessage is NOT called — only webhook)
+        assert len(client.posts) == 1
+        post = client.posts[0]
+        assert post["url"] == "https://n8n.example.com/webhook/test"
+        assert post["json"]["text"] == "price"       # {{ _input }} interpolated
+        assert post["json"]["sender"] == "u_wh"      # {{ sender_id }} interpolated
+
+    async def test_webhook_non2xx_continues_traversal(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Webhook returning 4xx → traversal continues (best-effort); run not failed."""
+        trigger = _comment_trigger_node(keyword="price", match_type="exact")
+        webhook = _webhook_node(node_id="n_wh", url="https://n8n.example.com/hook")
+        send = _send_message_node(node_id="n_send_after", message="Done!")
+        flow = _make_flow(
+            nodes=[trigger, webhook, send],
+            edges=[
+                _edge("n_trigger", "n_wh"),
+                _edge("n_wh", "n_send_after"),
+            ],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        # Webhook returns 500 — engine must NOT dead-letter; subsequent node must fire.
+        # Use a two-response client: first call returns 500, second 200.
+        responses = [_Resp(500, {}), _Resp(200, {})]
+        call_count = [0]
+
+        class _TwoRespClient(_HttpClient):
+            async def post(self, url, *, params=None, json=None, **kwargs):  # type: ignore[override]
+                self.posts.append({"url": url, "params": params or {}, "json": json or {}})
+                resp = responses[call_count[0]]
+                call_count[0] += 1
+                return resp
+
+        client = _TwoRespClient()
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": "c_wh_non2xx",
+                "message": "price",
+                "sender_id": "u_wh2",
+            },
+        )
+
+        assert delivered is True
+        assert error is None
+        # Both webhook + sendMessage were called
+        assert len(client.posts) == 2
+        # The second call is the sendMessage POST to Graph API
+        assert client.posts[1]["json"]["message"]["text"] == "Done!"
+
+    async def test_webhook_exception_continues_traversal(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """client.post raising → traversal continues; run NOT failed."""
+        trigger = _comment_trigger_node(keyword="price", match_type="exact")
+        webhook = _webhook_node(node_id="n_wh", url="https://n8n.example.com/hook")
+        send = _send_message_node(node_id="n_send_after", message="Still here!")
+        flow = _make_flow(
+            nodes=[trigger, webhook, send],
+            edges=[
+                _edge("n_trigger", "n_wh"),
+                _edge("n_wh", "n_send_after"),
+            ],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        call_count = [0]
+
+        class _ErrThenOkClient(_HttpClient):
+            async def post(self, url, *, params=None, json=None, **kwargs):  # type: ignore[override]
+                self.posts.append({"url": url, "params": params or {}, "json": json or {}})
+                if call_count[0] == 0:
+                    call_count[0] += 1
+                    raise httpx.ConnectError("connection refused")
+                call_count[0] += 1
+                return _Resp(200, {})
+
+        client = _ErrThenOkClient()
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": "c_wh_exc",
+                "message": "price",
+                "sender_id": "u_wh3",
+            },
+        )
+
+        assert delivered is True
+        assert error is None
+        # Both attempted; second is Graph sendMessage
+        assert len(client.posts) == 2
+        assert client.posts[1]["json"]["message"]["text"] == "Still here!"
+
+
+# ---------------------------------------------------------------------------
+# UpdateCrm node tests (Phase 58.3)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestUpdateCrmNode:
+    """Tests for the updateCrm flow node executor."""
+
+    @pytest.fixture(autouse=True)
+    def _patch_decrypt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "decrypt_token", lambda enc: "decrypted-tok")
+
+    @pytest.fixture(autouse=True)
+    def _patch_overlay(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "current_page_access_token", lambda: "overlay-tok")
+
+    async def test_add_tag_creates_contact_with_tag(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """add_tag action creates a FlowContact and applies the tag."""
+        trigger = _comment_trigger_node(keyword="price", match_type="exact")
+        crm = _update_crm_node(node_id="n_crm", action="add_tag", value="VIP")
+        flow = _make_flow(
+            nodes=[trigger, crm],
+            edges=[_edge("n_trigger", "n_crm")],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        # Patch _get_or_create_contact to return a controllable contact stub.
+        contact = _make_contact()
+        async def _mock_get_or_create(db_arg, tenant_id, page_id, sender_id):
+            return contact
+
+        monkeypatch.setattr(_fe, "_get_or_create_contact", _mock_get_or_create)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": "c_crm_add",
+                "message": "price",
+                "sender_id": "u_crm",
+            },
+        )
+
+        assert delivered is True
+        assert error is None
+        assert "VIP" in contact.tags
+
+    async def test_set_hot_lead_sets_flag(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """set_hot_lead action sets hot_lead=True on the contact."""
+        trigger = _comment_trigger_node(keyword="price", match_type="exact")
+        crm = _update_crm_node(node_id="n_crm", action="set_hot_lead", value=True)
+        flow = _make_flow(
+            nodes=[trigger, crm],
+            edges=[_edge("n_trigger", "n_crm")],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        contact = _make_contact()
+
+        async def _mock_get_or_create(db_arg, tenant_id, page_id, sender_id):
+            return contact
+
+        monkeypatch.setattr(_fe, "_get_or_create_contact", _mock_get_or_create)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": "c_crm_hl",
+                "message": "price",
+                "sender_id": "u_crm2",
+            },
+        )
+
+        assert delivered is True
+        assert error is None
+        assert contact.hot_lead is True
+
+    async def test_remove_tag_removes_from_list(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """remove_tag action removes the tag from the contact's tag list."""
+        trigger = _comment_trigger_node(keyword="price", match_type="exact")
+        crm = _update_crm_node(node_id="n_crm", action="remove_tag", value="VIP")
+        flow = _make_flow(
+            nodes=[trigger, crm],
+            edges=[_edge("n_trigger", "n_crm")],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        contact = _make_contact(tags=["VIP", "premium"])
+
+        async def _mock_get_or_create(db_arg, tenant_id, page_id, sender_id):
+            return contact
+
+        monkeypatch.setattr(_fe, "_get_or_create_contact", _mock_get_or_create)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": "c_crm_rm",
+                "message": "price",
+                "sender_id": "u_crm3",
+            },
+        )
+
+        assert delivered is True
+        assert error is None
+        assert "VIP" not in contact.tags
+        assert "premium" in contact.tags
 
 
 # ---------------------------------------------------------------------------

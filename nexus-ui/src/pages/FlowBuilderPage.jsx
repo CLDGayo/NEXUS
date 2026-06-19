@@ -12,7 +12,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck } from 'lucide-react';
+import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck, Webhook, UserCog } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlows } from '../hooks/useFlows.js';
 import CommentTriggerNode from '../components/flows/nodes/CommentTriggerNode.jsx';
@@ -22,6 +22,8 @@ import SendMessageNode from '../components/flows/nodes/SendMessageNode.jsx';
 import WaitForInputNode from '../components/flows/nodes/WaitForInputNode.jsx';
 import AiRouterNode from '../components/flows/nodes/AiRouterNode.jsx';
 import PauseNode from '../components/flows/nodes/PauseNode.jsx';
+import WebhookNode from '../components/flows/nodes/WebhookNode.jsx';
+import UpdateCrmNode from '../components/flows/nodes/UpdateCrmNode.jsx';
 import NodeInspector from '../components/flows/NodeInspector.jsx';
 
 /** Registry of custom node types — must be defined outside render to avoid re-registration */
@@ -33,6 +35,8 @@ const NODE_TYPES = {
   waitForInput: WaitForInputNode,
   aiRouter: AiRouterNode,
   pause: PauseNode,
+  webhook: WebhookNode,
+  updateCrm: UpdateCrmNode,
 };
 
 /**
@@ -248,6 +252,20 @@ export default function FlowBuilderPage() {
       color: 'text-rose-500',
       defaultData: { durationSeconds: 86400, message: '' },
     },
+    {
+      type: 'webhook',
+      label: t('nodes.webhook.label'),
+      Icon: Webhook,
+      color: 'text-sky-500',
+      defaultData: { url: '', bodyTemplate: '{\n  "text": "{{ _input }}"\n}' },
+    },
+    {
+      type: 'updateCrm',
+      label: t('nodes.updateCrm.label'),
+      Icon: UserCog,
+      color: 'text-teal-500',
+      defaultData: { action: 'add_tag', value: '', field: '' },
+    },
   ];
 
   if (hookLoading && !hydrated) {
@@ -403,6 +421,8 @@ export default function FlowBuilderPage() {
                   if (n.type === 'waitForInput') return '#f97316';
                   if (n.type === 'aiRouter') return '#8b5cf6';
                   if (n.type === 'pause') return '#f43f5e';
+                  if (n.type === 'webhook') return '#0ea5e9';
+                  if (n.type === 'updateCrm') return '#14b8a6';
                   return '#94a3b8';
                 }}
                 className="!bottom-4 !right-4 !top-auto rounded-lg border border-nexus-border bg-white/80 dark:bg-slate-900/80"

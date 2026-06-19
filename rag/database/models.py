@@ -857,6 +857,51 @@ class NexusFlow(Base):
     )
 
 
+class FlowContact(Base):
+    """Phase 58.3 — durable per-sender CRM contact record.
+
+    One row per ``(page_id, sender_id)`` pair, tenant-scoped.  Created lazily
+    by the ``updateCrm`` flow node executor on first contact with a sender.
+
+    ``tags``       — list[str] of label strings (JSONB array).
+    ``attributes`` — dict[str, Any] of arbitrary custom fields (JSONB object).
+    ``hot_lead``   — boolean flag settable by the ``set_hot_lead`` CRM action.
+
+    The ``uq_flow_contact`` UNIQUE constraint on ``(page_id, sender_id)``
+    makes the upsert pattern safe under concurrent flow executions.
+    """
+
+    __tablename__ = "flow_contacts"
+    __table_args__ = (
+        UniqueConstraint("page_id", "sender_id", name="uq_flow_contact"),
+        {"schema": "app"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    page_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    sender_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    tags: Mapped[list[Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+    hot_lead: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class FlowRun(Base):
     """Phase 58 — per-user execution state for a NEXUS Flow.
 

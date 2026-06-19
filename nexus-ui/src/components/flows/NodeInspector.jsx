@@ -49,14 +49,14 @@ function TextInput({ value, onChange, placeholder, className = '' }) {
 /**
  * Shared textarea.
  */
-function TextArea({ value, onChange, placeholder, rows = 3 }) {
+function TextArea({ value, onChange, placeholder, rows = 3, className = '' }) {
   return (
     <textarea
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="w-full rounded-lg border border-white/60 bg-white/55 px-2.5 py-1.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-nexus-accent dark:border-white/10 dark:bg-white/5 dark:text-slate-100 resize-none"
+      className={`w-full rounded-lg border border-white/60 bg-white/55 px-2.5 py-1.5 text-xs text-slate-800 outline-none placeholder:text-slate-400 focus:border-nexus-accent dark:border-white/10 dark:bg-white/5 dark:text-slate-100 resize-none ${className}`}
     />
   );
 }
@@ -282,6 +282,67 @@ function AiRouterInspector({ data, patch, nodeId, setEdges }) {
   );
 }
 
+function WebhookInspector({ data, patch }) {
+  const { t } = useTranslation('flows');
+  return (
+    <>
+      <Field label={t('inspector.webhookUrl')}>
+        <TextInput
+          value={data.url}
+          onChange={(v) => patch({ url: v })}
+          placeholder="https://n8n.example.com/webhook/…"
+        />
+      </Field>
+      <Field label={t('inspector.webhookBody')}>
+        <TextArea
+          value={data.bodyTemplate}
+          onChange={(v) => patch({ bodyTemplate: v })}
+          placeholder={'{\n  "text": "{{ _input }}"\n}'}
+          rows={5}
+          className="font-mono"
+        />
+        <span className="text-[10px] text-nexus-muted">
+          {t('inspector.webhookBodyHint')}
+        </span>
+      </Field>
+    </>
+  );
+}
+
+function CrmInspector({ data, patch }) {
+  const { t } = useTranslation('flows');
+  return (
+    <>
+      <Field label={t('inspector.crmAction')}>
+        <Select value={data.action} onChange={(v) => patch({ action: v })}>
+          <option value="add_tag">{t('inspector.crmActionAddTag')}</option>
+          <option value="remove_tag">{t('inspector.crmActionRemoveTag')}</option>
+          <option value="set_field">{t('inspector.crmActionSetField')}</option>
+          <option value="set_hot_lead">{t('inspector.crmActionSetHotLead')}</option>
+        </Select>
+      </Field>
+      <Field label={t('inspector.crmValue')}>
+        <TextInput
+          value={data.value}
+          onChange={(v) => patch({ value: v })}
+          placeholder={
+            data.action === 'set_hot_lead' ? 'true' : t('inspector.crmValuePlaceholder')
+          }
+        />
+      </Field>
+      {data.action === 'set_field' && (
+        <Field label={t('inspector.crmField')}>
+          <TextInput
+            value={data.field}
+            onChange={(v) => patch({ field: v })}
+            placeholder={t('inspector.crmFieldPlaceholder')}
+          />
+        </Field>
+      )}
+    </>
+  );
+}
+
 function PauseInspector({ data, patch }) {
   const { t } = useTranslation('flows');
   return (
@@ -376,6 +437,10 @@ export default function NodeInspector({ selectedNode, setEdges, onClose }) {
         );
       case 'pause':
         return <PauseInspector data={data} patch={patch} />;
+      case 'webhook':
+        return <WebhookInspector data={data} patch={patch} />;
+      case 'updateCrm':
+        return <CrmInspector data={data} patch={patch} />;
       default:
         return (
           <p className="text-[11px] text-nexus-muted italic">

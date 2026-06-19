@@ -46,7 +46,9 @@ NodeType = Literal[
     "waitForInput",
     "aiRouter",
     "pause",
-    # 58.3+: "updateCrm", "webhook", "storyTrigger"
+    "webhook",
+    "updateCrm",
+    # 58.4+: "storyTrigger"
 ]
 
 _TRIGGER_TYPES: frozenset[str] = frozenset(

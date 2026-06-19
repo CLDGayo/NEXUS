@@ -29,7 +29,9 @@ waiting FlowRun exists for the (page_id, sender_id) pair.
 
 from __future__ import annotations
 
+import json
 import logging
+import re
 from typing import Any
 
 import httpx
@@ -40,6 +42,7 @@ from rag.config import settings
 from rag.crypto import decrypt_token
 from rag.database.engine import get_sessionmaker
 from rag.database.models import (
+    FlowContact,
     FlowRun,
     MessengerPageTenant,
     NexusFlow,
@@ -52,9 +55,72 @@ _log = logging.getLogger(__name__)
 
 _NODE_VISIT_CAP = 50
 
+# Regex for template token substitution: {{ token }} or {{ nested.key }}
+_TEMPLATE_TOKEN_RE = re.compile(r"{{\s*([\w.]+)\s*}}")
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _render_template(text: str, run: FlowRun) -> str:
+    """Replace ``{{ token }}`` placeholders with values from run context.
+
+    Exposed tokens:
+        * Any key in ``run.context`` (e.g. ``_input``, ``email``, ...).
+        * ``sender_id`` / ``page_id`` from the run row.
+        * ``_intent`` — stored in context by the aiRouter executor.
+
+    Missing tokens are replaced with an empty string.  Values are coerced to
+    ``str`` so numeric/boolean context values render cleanly.
+    """
+    ctx: dict[str, Any] = {
+        **(run.context or {}),
+        "sender_id": run.sender_id,
+        "page_id": run.page_id,
+    }
+
+    def _replace(match: re.Match[str]) -> str:
+        key = match.group(1)
+        val = ctx.get(key)
+        return str(val) if val is not None else ""
+
+    return _TEMPLATE_TOKEN_RE.sub(_replace, text)
+
+
+async def _get_or_create_contact(
+    db: Any,
+    tenant_id: Any,
+    page_id: str,
+    sender_id: str,
+) -> FlowContact:
+    """Return the FlowContact row for (page_id, sender_id), creating it if absent.
+
+    The caller is responsible for flushing/committing.  JSONB columns are
+    initialised to empty list/dict so downstream mutations can rely on them
+    being non-None.
+    """
+    row = (
+        await db.execute(
+            select(FlowContact).where(
+                FlowContact.page_id == page_id,
+                FlowContact.sender_id == sender_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if row is None:
+        row = FlowContact(
+            tenant_id=tenant_id,
+            page_id=page_id,
+            sender_id=sender_id,
+            tags=[],
+            attributes={},
+            hot_lead=False,
+        )
+        db.add(row)
+
+    return row
 
 
 def _graph_base() -> str:
@@ -363,6 +429,9 @@ async def _traverse(
                 node_id,
                 picked,
             )
+            # Store the picked intent in context so downstream nodes
+            # (webhook, updateCrm, condition) can branch on it.
+            run.context = {**run.context, "_intent": picked}
             source_handle = picked
             current_node = _next_node(flow, node_id, source_handle)
             continue
@@ -402,6 +471,58 @@ async def _traverse(
                 duration_s,
             )
             return True, None
+
+        if node_type == "webhook":
+            url = str(node_data.get("url") or "")
+            if url:
+                rendered = _render_template(
+                    str(node_data.get("bodyTemplate") or "{}"), run
+                )
+                try:
+                    payload = json.loads(rendered)
+                except json.JSONDecodeError:
+                    payload = {"raw": rendered}
+                try:
+                    resp = await client.post(
+                        url,
+                        json=payload,
+                        timeout=settings.outbound_send_timeout_seconds,
+                    )
+                    if resp.status_code >= 400:
+                        _log.warning(
+                            "flow_engine.webhook_non2xx node=%s status=%s",
+                            node_id,
+                            resp.status_code,
+                        )
+                except Exception as exc:  # noqa: BLE001 — best-effort, never strand user
+                    _log.warning(
+                        "flow_engine.webhook_failed node=%s err=%s", node_id, exc
+                    )
+            source_handle = None
+            current_node = _next_node(flow, node_id)
+            continue
+
+        if node_type == "updateCrm":
+            action = str(node_data.get("action") or "")
+            value = node_data.get("value")
+            field = str(node_data.get("field") or "")
+            contact = await _get_or_create_contact(
+                db, run.tenant_id, run.page_id, run.sender_id
+            )
+            if action == "add_tag" and value:
+                # Reassign JSONB — do NOT mutate in place; SQLAlchemy needs a
+                # new object to detect the column as dirty.
+                contact.tags = sorted(set([*(contact.tags or []), str(value)]))
+            elif action == "remove_tag" and value:
+                contact.tags = [t for t in (contact.tags or []) if t != str(value)]
+            elif action == "set_field" and field:
+                contact.attributes = {**(contact.attributes or {}), field: value}
+            elif action == "set_hot_lead":
+                contact.hot_lead = bool(value) if value is not None else True
+            await db.flush()
+            source_handle = None
+            current_node = _next_node(flow, node_id)
+            continue
 
         # Unknown node type — fail-safe stop.
         _log.warning(
