@@ -637,6 +637,295 @@ class TestRunFlowJob:
 
 
 # ---------------------------------------------------------------------------
+# Helpers for 58.2 tests
+# ---------------------------------------------------------------------------
+
+
+def _ai_router_node(
+    node_id: str = "n_router",
+    intents: list[dict] | None = None,
+    fallback_handle: str = "other",
+    input_variable: str = "_input",
+) -> dict:
+    return {
+        "id": node_id,
+        "type": "aiRouter",
+        "position": {"x": 200, "y": 0},
+        "data": {
+            "intents": intents
+            or [
+                {"id": "sales", "label": "Sales"},
+                {"id": "support", "label": "Support"},
+            ],
+            "fallbackHandle": fallback_handle,
+            "inputVariable": input_variable,
+        },
+    }
+
+
+def _pause_node(
+    node_id: str = "n_pause",
+    duration_seconds: int = 86400,
+    message: str = "",
+) -> dict:
+    return {
+        "id": node_id,
+        "type": "pause",
+        "position": {"x": 200, "y": 0},
+        "data": {
+            "durationSeconds": duration_seconds,
+            "message": message,
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# AI Router tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestAiRouterNode:
+    """Tests for the aiRouter node executor."""
+
+    @pytest.fixture(autouse=True)
+    def _patch_decrypt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "decrypt_token", lambda enc: "decrypted-tok")
+
+    @pytest.fixture(autouse=True)
+    def _patch_overlay(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "current_page_access_token", lambda: "overlay-tok")
+
+    def _make_llm_result(content: str) -> "Any":
+        """Build a minimal LLMResult for mocking (all required fields)."""
+        from rag.orchestrator.llm import LLMResult
+
+        return LLMResult(
+            content=content,
+            model="test-model",
+            prompt_tokens=1,
+            completion_tokens=1,
+            total_tokens=2,
+            latency_ms=0,
+        )
+
+    async def test_airouter_picks_matching_intent(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """aiRouter follows the sourceHandle matching the LLM-classified intent."""
+        from unittest.mock import AsyncMock
+        import rag.orchestrator.llm as _llm_mod
+
+        trigger = _comment_trigger_node(keyword="hi", match_type="contains")
+        router = _ai_router_node(
+            node_id="n_router",
+            intents=[{"id": "sales", "label": "Sales"}, {"id": "support", "label": "Support"}],
+        )
+        send_sales = _send_message_node(node_id="n_sales", message="Sales here!")
+        send_support = _send_message_node(node_id="n_support", message="Support here!")
+
+        flow = _make_flow(
+            nodes=[trigger, router, send_sales, send_support],
+            edges=[
+                _edge("n_trigger", "n_router"),
+                _edge("n_router", "n_sales", handle="sales"),
+                _edge("n_router", "n_support", handle="support"),
+            ],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        # The engine does: from rag.orchestrator.llm import chat_complete
+        # Patch the module attribute so the inline import picks it up.
+        mock_chat = AsyncMock(return_value=TestAiRouterNode._make_llm_result("sales"))
+        monkeypatch.setattr(_llm_mod, "chat_complete", mock_chat)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_ai_1", "message": "hi", "sender_id": "u_ai"},
+        )
+
+        assert delivered is True
+        assert error is None
+        # Only the sales branch sendMessage should be sent
+        assert len(client.posts) == 1
+        assert client.posts[0]["json"]["message"]["text"] == "Sales here!"
+
+    async def test_airouter_garbage_llm_output_uses_fallback(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Unrecognised LLM output → fallback 'other' handle is used."""
+        from unittest.mock import AsyncMock
+        import rag.orchestrator.llm as _llm_mod
+
+        trigger = _comment_trigger_node(keyword="hi", match_type="contains")
+        router = _ai_router_node(node_id="n_router")
+        send_other = _send_message_node(node_id="n_other", message="Fallback response")
+
+        flow = _make_flow(
+            nodes=[trigger, router, send_other],
+            edges=[
+                _edge("n_trigger", "n_router"),
+                _edge("n_router", "n_other", handle="other"),
+            ],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        # LLM returns garbage that matches no intent
+        mock_chat = AsyncMock(
+            return_value=TestAiRouterNode._make_llm_result("GIBBERISH_LABEL_XYZ")
+        )
+        monkeypatch.setattr(_llm_mod, "chat_complete", mock_chat)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_ai_2", "message": "hi", "sender_id": "u_ai2"},
+        )
+
+        assert delivered is True
+        assert error is None
+        assert len(client.posts) == 1
+        assert client.posts[0]["json"]["message"]["text"] == "Fallback response"
+
+    async def test_airouter_llm_exception_uses_fallback_no_crash(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """chat_complete raising → fallback 'other' handle; engine does NOT crash."""
+        from unittest.mock import AsyncMock
+        import rag.orchestrator.llm as _llm_mod
+
+        trigger = _comment_trigger_node(keyword="hi", match_type="contains")
+        router = _ai_router_node(node_id="n_router")
+        send_other = _send_message_node(node_id="n_other", message="Safe fallback")
+
+        flow = _make_flow(
+            nodes=[trigger, router, send_other],
+            edges=[
+                _edge("n_trigger", "n_router"),
+                _edge("n_router", "n_other", handle="other"),
+            ],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        # LLM raises an error
+        mock_chat = AsyncMock(side_effect=RuntimeError("LLM unavailable"))
+        monkeypatch.setattr(_llm_mod, "chat_complete", mock_chat)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_ai_3", "message": "hi", "sender_id": "u_ai3"},
+        )
+
+        assert delivered is True
+        assert error is None
+        # Fallback branch should have fired
+        assert len(client.posts) == 1
+        assert client.posts[0]["json"]["message"]["text"] == "Safe fallback"
+
+
+# ---------------------------------------------------------------------------
+# Pause node tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestPauseNode:
+    """Tests for the pause node executor."""
+
+    @pytest.fixture(autouse=True)
+    def _patch_decrypt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "decrypt_token", lambda enc: "decrypted-tok")
+
+    @pytest.fixture(autouse=True)
+    def _patch_overlay(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "current_page_access_token", lambda: "overlay-tok")
+
+    async def test_pause_node_calls_set_bot_paused_with_86400(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """pause node calls set_bot_paused(duration_s=86400) and marks run completed."""
+        import rag.messenger.hitl as _hitl
+
+        trigger = _comment_trigger_node(keyword="help", match_type="contains")
+        pause = _pause_node(node_id="n_pause", duration_seconds=86400)
+
+        flow = _make_flow(
+            nodes=[trigger, pause],
+            edges=[_edge("n_trigger", "n_pause")],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        paused_calls: list[dict] = []
+
+        async def _mock_set_paused(sender_id: str, duration_s: int | None = None) -> None:
+            paused_calls.append({"sender_id": sender_id, "duration_s": duration_s})
+
+        # The pause executor does: from rag.messenger.hitl import set_bot_paused
+        # Patching the attribute on the module intercepts the import at call time.
+        monkeypatch.setattr(_hitl, "set_bot_paused", _mock_set_paused)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_pause_1", "message": "help", "sender_id": "u_pause"},
+        )
+
+        assert delivered is True
+        assert error is None
+        assert retryable is False
+
+        # set_bot_paused must have been called with duration_s=86400
+        assert len(paused_calls) == 1
+        assert paused_calls[0]["duration_s"] == 86400
+        assert paused_calls[0]["sender_id"] == "u_pause"
+
+        # Run must be completed
+        added_runs = [r for r in db._added if hasattr(r, "status")]
+        assert any(r.status == "completed" for r in added_runs)
+
+    async def test_pause_node_sends_handoff_message(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """pause node sends the optional handoff message before completing."""
+        import rag.messenger.hitl as _hitl
+
+        trigger = _comment_trigger_node(keyword="agent", match_type="contains")
+        pause = _pause_node(
+            node_id="n_pause", duration_seconds=86400, message="A human will contact you soon."
+        )
+
+        flow = _make_flow(
+            nodes=[trigger, pause],
+            edges=[_edge("n_trigger", "n_pause")],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        async def _mock_set_paused(sender_id: str, duration_s: int | None = None) -> None:
+            pass
+
+        monkeypatch.setattr(_hitl, "set_bot_paused", _mock_set_paused)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_pause_2", "message": "agent", "sender_id": "u_pause2"},
+        )
+
+        assert delivered is True
+        assert error is None
+        # Handoff message should have been sent via Graph API
+        assert len(client.posts) == 1
+        assert client.posts[0]["json"]["message"]["text"] == "A human will contact you soon."
+
+
+# ---------------------------------------------------------------------------
 # resume_flow_for_dm tests
 # ---------------------------------------------------------------------------
 

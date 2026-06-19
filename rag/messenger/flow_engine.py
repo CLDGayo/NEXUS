@@ -312,6 +312,97 @@ async def _traverse(
             )
             return True, None
 
+        if node_type == "aiRouter":
+            # Classify the user's message into one of the tenant-defined intents.
+            # Mirrors the sentiment_analysis_node pattern: temp=0.0, tiny max_tokens,
+            # validate against allowed set, fallback-on-any-error (never raise).
+            intents: list[dict[str, Any]] = list(node_data.get("intents") or [])
+            labels: list[str] = [str(i.get("id")) for i in intents if i.get("id")]
+            input_var = str(node_data.get("inputVariable") or "_input")
+            fallback = str(node_data.get("fallbackHandle") or "other")
+            user_text = str(run.context.get(input_var) or "")
+
+            picked = fallback
+            if labels and user_text:
+                try:
+                    from rag.orchestrator.llm import chat_complete
+
+                    system_msg = (
+                        "Classify the user message into exactly one of these labels: "
+                        + ", ".join(labels)
+                        + ". Reply with ONLY the label, nothing else."
+                    )
+                    res = await chat_complete(
+                        [
+                            {"role": "system", "content": system_msg},
+                            {"role": "user", "content": user_text},
+                        ],
+                        model=settings.followup_model,
+                        temperature=0.0,
+                        max_tokens=8,
+                    )
+                    cand = (res.content or "").strip().lower()
+                    labels_lower = [lb.lower() for lb in labels]
+                    if cand in labels_lower:
+                        # normalise back to the original-cased label id
+                        picked = labels[labels_lower.index(cand)]
+                    else:
+                        picked = fallback
+                except Exception as exc:  # noqa: BLE001 — fail-safe, never crash engine
+                    _log.warning(
+                        "flow_engine.airouter_llm_failed flow=%s node=%s err=%s",
+                        flow.id,
+                        node_id,
+                        exc,
+                    )
+                    picked = fallback
+
+            _log.debug(
+                "flow_engine.airouter_picked flow=%s node=%s picked=%s",
+                flow.id,
+                node_id,
+                picked,
+            )
+            source_handle = picked
+            current_node = _next_node(flow, node_id, source_handle)
+            continue
+
+        if node_type == "pause":
+            # Pause the bot for this sender and optionally send a handoff message.
+            # This is a terminal node — the run is marked completed immediately.
+            from rag.messenger.hitl import set_bot_paused
+
+            duration_s = int(node_data.get("durationSeconds") or 86400)
+            await set_bot_paused(run.sender_id, duration_s=duration_s)
+
+            handoff_msg = str(node_data.get("message") or "")
+            if handoff_msg:
+                success, _status, error = await _send_graph_message(
+                    client,
+                    sender_id=run.sender_id,
+                    text=handoff_msg,
+                    token=token,
+                )
+                if not success:
+                    _log.warning(
+                        "flow_engine.pause_msg_failed flow=%s run=%s err=%s",
+                        flow.id,
+                        run.id,
+                        error,
+                    )
+                    # Non-fatal — pause is already set; proceed to complete.
+
+            run.status = "completed"
+            run.current_node_id = None
+            _log.info(
+                "flow_engine.paused_and_completed flow=%s run=%s sender=%s duration_s=%d",
+                flow.id,
+                run.id,
+                run.sender_id,
+                duration_s,
+            )
+            return True, None
+
         # Unknown node type — fail-safe stop.
         _log.warning(
             "flow_engine.unknown_node_type flow=%s node=%s type=%s",
@@ -498,7 +589,7 @@ async def run_flow_job(
             page_id=page_id,
             sender_id=sender_id,
             status="active",
-            context={},
+            context={"_input": message},
         )
         db.add(run)
         await db.flush()  # assign run.id
@@ -587,9 +678,10 @@ async def resume_flow_for_dm(
             return False
 
         # Store the user's reply in context using the variable name from the node.
+        # Also update _input so downstream aiRouter nodes always have the latest message.
         node_data = waiting_node.get("data") or {}
         var_name = str(node_data.get("variable") or node_data.get("saveAs") or "input")
-        run_row.context = {**run_row.context, var_name: message}
+        run_row.context = {**run_row.context, var_name: message, "_input": message}
 
         # Resume from the next node after the waitForInput.
         next_node = _next_node(flow, waiting_node_id or "")

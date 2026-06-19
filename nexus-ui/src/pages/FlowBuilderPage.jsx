@@ -9,9 +9,10 @@ import {
   useNodesState,
   useEdgesState,
   BackgroundVariant,
+  ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlows } from '../hooks/useFlows.js';
 import CommentTriggerNode from '../components/flows/nodes/CommentTriggerNode.jsx';
@@ -19,6 +20,9 @@ import DmTriggerNode from '../components/flows/nodes/DmTriggerNode.jsx';
 import ConditionNode from '../components/flows/nodes/ConditionNode.jsx';
 import SendMessageNode from '../components/flows/nodes/SendMessageNode.jsx';
 import WaitForInputNode from '../components/flows/nodes/WaitForInputNode.jsx';
+import AiRouterNode from '../components/flows/nodes/AiRouterNode.jsx';
+import PauseNode from '../components/flows/nodes/PauseNode.jsx';
+import NodeInspector from '../components/flows/NodeInspector.jsx';
 
 /** Registry of custom node types — must be defined outside render to avoid re-registration */
 const NODE_TYPES = {
@@ -27,6 +31,8 @@ const NODE_TYPES = {
   condition: ConditionNode,
   sendMessage: SendMessageNode,
   waitForInput: WaitForInputNode,
+  aiRouter: AiRouterNode,
+  pause: PauseNode,
 };
 
 /**
@@ -75,6 +81,7 @@ export default function FlowBuilderPage() {
   const [saveStatus, setSaveStatus] = useState(null); // { kind: 'success'|'error', text: string }
   const [hydrated, setHydrated] = useState(false);
   const [isNew, setIsNew] = useState(false);
+  const [selectedNode, setSelectedNode] = useState(null);
 
   // Hydrate canvas from flow_state when the flows list loads
   useEffect(() => {
@@ -107,6 +114,13 @@ export default function FlowBuilderPage() {
   const onConnect = useCallback(
     (connection) => setEdges((eds) => addEdge(connection, eds)),
     [setEdges],
+  );
+
+  const onSelectionChange = useCallback(
+    ({ nodes: selected }) => {
+      setSelectedNode(selected.length === 1 ? selected[0] : null);
+    },
+    [],
   );
 
   /**
@@ -212,6 +226,27 @@ export default function FlowBuilderPage() {
       Icon: Clock,
       color: 'text-orange-500',
       defaultData: { prompt: '', captureVariable: '', validation: '' },
+    },
+    {
+      type: 'aiRouter',
+      label: t('nodes.aiRouter.label'),
+      Icon: Brain,
+      color: 'text-violet-500',
+      defaultData: {
+        intents: [
+          { id: 'sales', label: 'Sales' },
+          { id: 'support', label: 'Support' },
+        ],
+        fallbackHandle: 'other',
+        inputVariable: '_input',
+      },
+    },
+    {
+      type: 'pause',
+      label: t('nodes.pause.label'),
+      Icon: UserCheck,
+      color: 'text-rose-500',
+      defaultData: { durationSeconds: 86400, message: '' },
     },
   ];
 
@@ -321,63 +356,77 @@ export default function FlowBuilderPage() {
       </div>
 
       {/* Main canvas area */}
-      <div className="flex min-h-0 flex-1">
-        {/* Node palette sidebar */}
-        <aside className="flex w-44 shrink-0 flex-col gap-1 border-r border-nexus-border/60 bg-white/40 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-nexus-muted">
-            {t('palette')}
-          </p>
-          {palette.map(({ type, label, Icon, color, defaultData }) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => addNode(type, defaultData)}
-              className="glass-pressable flex items-center gap-2 rounded-lg border border-white/60 bg-white/55 px-2.5 py-2 text-left text-xs text-slate-700 hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+      <ReactFlowProvider>
+        <div className="flex min-h-0 flex-1">
+          {/* Node palette sidebar */}
+          <aside className="flex w-44 shrink-0 flex-col gap-1 border-r border-nexus-border/60 bg-white/40 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-nexus-muted">
+              {t('palette')}
+            </p>
+            {palette.map(({ type, label, Icon, color, defaultData }) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => addNode(type, defaultData)}
+                className="glass-pressable flex items-center gap-2 rounded-lg border border-white/60 bg-white/55 px-2.5 py-2 text-left text-xs text-slate-700 hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
+              >
+                <Icon size={13} className={color} />
+                {label}
+              </button>
+            ))}
+          </aside>
+
+          {/* React Flow canvas */}
+          <div className="relative flex-1">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onSelectionChange={onSelectionChange}
+              nodeTypes={NODE_TYPES}
+              onInit={(instance) => { reactFlowInstance.current = instance; }}
+              fitView
+              fitViewOptions={{ padding: 0.2 }}
+              deleteKeyCode="Delete"
+              className="bg-slate-50/60 dark:bg-slate-900/60"
             >
-              <Icon size={13} className={color} />
-              {label}
-            </button>
-          ))}
-        </aside>
+              <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="opacity-30" />
+              <Controls className="!bottom-4 !left-4 !top-auto" />
+              <MiniMap
+                nodeColor={(n) => {
+                  if (n.type === 'commentTrigger') return '#3b82f6';
+                  if (n.type === 'dmTrigger') return '#8b5cf6';
+                  if (n.type === 'condition') return '#f59e0b';
+                  if (n.type === 'sendMessage') return '#10b981';
+                  if (n.type === 'waitForInput') return '#f97316';
+                  if (n.type === 'aiRouter') return '#8b5cf6';
+                  if (n.type === 'pause') return '#f43f5e';
+                  return '#94a3b8';
+                }}
+                className="!bottom-4 !right-4 !top-auto rounded-lg border border-nexus-border bg-white/80 dark:bg-slate-900/80"
+              />
+            </ReactFlow>
 
-        {/* React Flow canvas */}
-        <div className="relative flex-1">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            nodeTypes={NODE_TYPES}
-            onInit={(instance) => { reactFlowInstance.current = instance; }}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
-            deleteKeyCode="Delete"
-            className="bg-slate-50/60 dark:bg-slate-900/60"
-          >
-            <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="opacity-30" />
-            <Controls className="!bottom-4 !left-4 !top-auto" />
-            <MiniMap
-              nodeColor={(n) => {
-                if (n.type === 'commentTrigger') return '#3b82f6';
-                if (n.type === 'dmTrigger') return '#8b5cf6';
-                if (n.type === 'condition') return '#f59e0b';
-                if (n.type === 'sendMessage') return '#10b981';
-                if (n.type === 'waitForInput') return '#f97316';
-                return '#94a3b8';
-              }}
-              className="!bottom-4 !right-4 !top-auto rounded-lg border border-nexus-border bg-white/80 dark:bg-slate-900/80"
+            {/* Empty canvas hint */}
+            {nodes.length === 0 && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <p className="text-sm text-nexus-muted opacity-60">{t('canvasHint')}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Node inspector — right sidebar, shown when a node is selected */}
+          {selectedNode && (
+            <NodeInspector
+              selectedNode={selectedNode}
+              setEdges={setEdges}
+              onClose={() => setSelectedNode(null)}
             />
-          </ReactFlow>
-
-          {/* Empty canvas hint */}
-          {nodes.length === 0 && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <p className="text-sm text-nexus-muted opacity-60">{t('canvasHint')}</p>
-            </div>
           )}
         </div>
-      </div>
+      </ReactFlowProvider>
     </div>
   );
 }

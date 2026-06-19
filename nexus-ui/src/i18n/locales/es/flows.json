@@ -64,6 +64,51 @@
       "noPrompt": "No prompt set",
       "saveTo": "Save to",
       "validate": "Validate"
+    },
+    "aiRouter": {
+      "label": "AI Intent Router",
+      "intentCount": "{{count}} intent(s)",
+      "noIntents": "No intents configured"
+    },
+    "pause": {
+      "label": "Human Handoff",
+      "durationBadge": "Pause {{hours}}h",
+      "noMessage": "No handoff message",
+      "terminal": "Terminal — bot paused"
     }
+  },
+  "inspector": {
+    "close": "Close inspector",
+    "unknownType": "No settings for this node type.",
+    "keyword": "Keyword",
+    "keywordPlaceholder": "e.g. price",
+    "matchType": "Match type",
+    "variable": "Variable",
+    "variablePlaceholder": "e.g. email",
+    "operator": "Operator",
+    "opEq": "equals",
+    "opNeq": "not equals",
+    "opContains": "contains",
+    "opExists": "exists",
+    "value": "Value",
+    "valuePlaceholder": "expected value",
+    "message": "Message",
+    "messagePlaceholder": "Type your message…",
+    "prompt": "Prompt",
+    "promptPlaceholder": "What would you like to ask?",
+    "captureVariable": "Save reply to variable",
+    "captureVariablePlaceholder": "e.g. email",
+    "validation": "Validation hint",
+    "validationPlaceholder": "e.g. must be email",
+    "intents": "Intents",
+    "intentLabelPlaceholder": "Intent label",
+    "addIntent": "Add intent",
+    "removeIntent": "Remove intent",
+    "inputVariable": "Input variable",
+    "fallbackHandle": "Fallback handle",
+    "durationSeconds": "Duration (seconds)",
+    "durationHint": "≈ {{hours}} hour(s)",
+    "handoffMessage": "Handoff message (optional)",
+    "handoffMessagePlaceholder": "e.g. A human agent will contact you soon."
   }
 }
