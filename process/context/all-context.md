@@ -1,6 +1,6 @@
 # NEXUS - All Context
 
-Last updated: 2026-06-12 (Phases 50–53 Workspace Manager shipped, HEAD 7d94036)
+Last updated: 2026-06-19 (vibecode-pro-max-kit harness upgraded v2.2.0 → v3.1.0; planning-example PRDs relocated into vc-generate-plan skill, intent-clarification/parallel-fan-out protocol docs removed by kit, backup-path refs reconciled)
 
 This file is the root context entrypoint for the repo.
 
@@ -24,8 +24,6 @@ process/context/
   all-context.md                      <-- THIS FILE: root router
   planning/
     all-planning.md                   <-- group router for planning
-    example-simple-prd.md
-    example-complex-prd.md
   tests/
     all-tests.md                      <-- group router for tests
 ```
@@ -50,7 +48,7 @@ This layered routing keeps context windows small. Never load the whole `process/
 - **Published surface (Quartz v4):** https://nexus.gayo-sphere.cloud
 - **RAG surface (FastAPI SPA + SSE chat):** https://chat.nexus.gayo-sphere.cloud
 
-> **Operating contract note:** This repo previously ran a bespoke "THE BUILDER / Command Chain" contract in `CLAUDE.md` (User → Gemini Director → Antigravity Inspector → Builder). That full contract is preserved at `.vibecode-backup/CLAUDE.md`. The repo now runs the **RIPER-5** harness (CLAUDE.md = managed protocol). The enterprise-RAG technical reference that used to live in CLAUDE.md has been migrated into this file. When the two conflict on *workflow*, RIPER-5 governs; when they conflict on *RAG architecture targets*, this file governs.
+> **Operating contract note:** This repo previously ran a bespoke "THE BUILDER / Command Chain" contract in `CLAUDE.md` (User → Gemini Director → Antigravity Inspector → Builder). That full contract is preserved in git history (pre-v3.1.0; local gitignored copy at `.vibecode-backup-1781876376/CLAUDE.md`). The repo now runs the **RIPER-5** harness (CLAUDE.md = managed protocol). The enterprise-RAG technical reference that used to live in CLAUDE.md has been migrated into this file. When the two conflict on *workflow*, RIPER-5 governs; when they conflict on *RAG architecture targets*, this file governs.
 
 ---
 
@@ -60,13 +58,13 @@ This layered routing keeps context windows small. Never load the whole `process/
 |---|---|
 | `process/context/all-context.md` | any substantial planning, research, review, or implementation task |
 | `process/context/tests/all-tests.md` | testing, verification, debugging test failures, execution planning |
-| `process/context/planning/all-planning.md` | plan-shape calibration, SIMPLE vs COMPLEX reference docs |
+| `process/context/planning/all-planning.md` | plan-shape calibration (SIMPLE vs COMPLEX); formats owned by the `vc-generate-plan` skill |
 
 ## Current Context Groups
 
 | Group | Entry point | Scope |
 |---|---|---|
-| `planning/` | `process/context/planning/all-planning.md` | plan-shape calibration, SIMPLE vs COMPLEX PRD examples |
+| `planning/` | `process/context/planning/all-planning.md` | plan-shape calibration; SIMPLE/COMPLEX example PRDs relocated to `.claude/skills/vc-generate-plan/references/` in kit v3.1.0 |
 | `tests/` | `process/context/tests/all-tests.md` | pytest runners, commands, markers, ruff/mypy gates, debugging, gaps |
 
 > Future groups to create as they reach the 3-doc / 800-line threshold: `rag-pipeline/` (the 5-stage retrieval spec), `messenger/` (Meta webhook + HITL), `infra/` (VPS, systemd, nginx, Qdrant, deploy), `auth/` (fastapi-users IAM).
@@ -78,7 +76,7 @@ This layered routing keeps context windows small. Never load the whole `process/
 | architecture or stack questions | this file | — |
 | RAG pipeline (ingest/retrieve/rerank/generate) | this file → "RAG Pipeline" section | the relevant `rag/` module |
 | testing or verification | this file, `tests/all-tests.md` | the specific test dir |
-| creating a new plan | this file, `planning/all-planning.md` | SIMPLE/COMPLEX PRD example |
+| creating a new plan | this file, `planning/all-planning.md` | `vc-generate-plan` skill (SIMPLE/COMPLEX format) |
 | messenger / Meta webhook / HITL | this file → "Subsystems" | `rag/messenger/` |
 | deploy / VPS / systemd / Qdrant | this file → "Deploy & Ops" | `deploy-rag.sh`, `deploy-nexus.sh` |
 
@@ -228,7 +226,7 @@ When durable project knowledge changes: (1) update the smallest relevant context
 
 This context was mined from, and should be reconciled against, these in-repo sources:
 
-- `.vibecode-backup/CLAUDE.md` — the original NEXUS "THE BUILDER" contract + full 5-stage RAG technical reference (primary source for this file).
+- git history (pre-v3.1.0; local gitignored copy at `.vibecode-backup-1781876376/CLAUDE.md`) — the original NEXUS "THE BUILDER" contract + full 5-stage RAG technical reference (primary source for this file).
 - `rag/pyproject.toml` — authoritative stack, dependency pins, pytest/ruff/mypy config.
 - `CHANGELOG.md` — Keep-a-Changelog history; phase-by-phase user-visible changes.
 - `Dev Logs/` — engineering work logs (`YYYY-MM-DD — <Title>.md`).
@@ -246,7 +244,7 @@ Real remaining gaps (verified against code at HEAD 3c4d7f2 — hybrid retrieval 
 - **Graph DB migration tail** — graph *retrieval* is Postgres now (Phase 31); the legacy SQLite `rag/data/nexus_graph.db` ingest-side resolver still exists, keeping the `aiosqlite` pin alive until it's folded in.
 - **Evals** — no RAGAS harness, golden set, or CI regression gate yet (`rag/scripts/eval/` planned).
 - **Observability** — append-only JSONL trace store + OTel spans only partially in place.
-- **Operating-contract reconciliation** — RESOLVED 2026-05-31: RIPER-5 (CLAUDE.md) is the chosen live workflow; the legacy "THE BUILDER / Command Chain" contract is archived at `.vibecode-backup/CLAUDE.md` for reference only.
+- **Operating-contract reconciliation** — RESOLVED 2026-05-31: RIPER-5 (CLAUDE.md) is the chosen live workflow; the legacy "THE BUILDER / Command Chain" contract is archived in git history (pre-v3.1.0; local gitignored copy at `.vibecode-backup-1781876376/CLAUDE.md`) for reference only.
 
 ---
 
@@ -254,6 +252,6 @@ Real remaining gaps (verified against code at HEAD 3c4d7f2 — hybrid retrieval 
 
 - Generated: 2026-05-31 (vc-setup STUDY phase)
 - HEAD: 3c4d7f2
-- Mode: existing project, fresh `process/` scaffold (context mined from `.vibecode-backup/CLAUDE.md` + codebase scan)
+- Mode: existing project, fresh `process/` scaffold (context mined from git history (pre-v3.1.0; local gitignored copy at `.vibecode-backup-1781876376/CLAUDE.md`) + codebase scan)
 - Primary package manager: **uv** (Python, `rag/`); secondary **npm** (Node ≥22, `_publish/`)
 - Real project test files: 96 (across 7 `tests/` dirs under `rag/`)

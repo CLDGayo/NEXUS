@@ -31,13 +31,16 @@ Read this entrypoint when:
 
 ## Quick Routing
 
-- use `process/context/planning/example-simple-prd.md` to calibrate a one-session plan
-- use `process/context/planning/example-complex-prd.md` to calibrate a complex or multi-phase plan
+- use `.claude/skills/vc-generate-plan/references/example-simple-prd.md` to calibrate a one-session plan
+- use `.claude/skills/vc-generate-plan/references/example-complex-prd.md` to calibrate a complex or multi-phase plan
+
+> Note: kit v3.1.0 (2026-06-19) moved the example PRDs out of `process/context/planning/` and into the `vc-generate-plan` skill's `references/`. This entrypoint stays as the project's planning router; the formats themselves are owned by `vc-generate-plan`.
 
 ## Source Paths
 
-- `process/context/planning/example-simple-prd.md`
-- `process/context/planning/example-complex-prd.md`
+- `.claude/skills/vc-generate-plan/references/example-simple-prd.md`
+- `.claude/skills/vc-generate-plan/references/example-complex-prd.md`
+- `.claude/skills/vc-generate-plan/references/generate-plan.md`
 
 ## Update Triggers
 
