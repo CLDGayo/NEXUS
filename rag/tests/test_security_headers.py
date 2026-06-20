@@ -36,6 +36,16 @@ def test_csp_header_present_on_spa(client: TestClient) -> None:
     assert "frame-ancestors 'self'" in csp
 
 
+def test_csp_img_src_has_no_wildcard_scheme(client: TestClient) -> None:
+    """ZAP 'CSP: Wildcard Directive' (alert 10055): img-src must not allow the
+    open ``https:`` scheme. All images are same-origin (/api/objects proxy) or
+    inline ``data:`` URIs."""
+    for path in ("/", "/widget"):
+        csp = client.get(path).headers.get("Content-Security-Policy", "")
+        assert "img-src 'self' data:" in csp, f"{path}: {csp}"
+        assert "https:" not in csp, f"{path} CSP still has a wildcard scheme: {csp}"
+
+
 def test_widget_csp_is_embeddable(client: TestClient) -> None:
     """The widget keeps a permissive frame-ancestors so it stays embeddable."""
     response = client.get("/widget")
@@ -60,6 +70,16 @@ def test_api_responses_are_not_cacheable(client: TestClient) -> None:
         "/api/users/me/password",
         json={"current_password": "x", "new_password": "yyyyyyyy"},
     )
+    cache_control = response.headers.get("Cache-Control", "")
+    assert "no-store" in cache_control, response.headers
+
+
+def test_spa_html_shell_is_not_cacheable(client: TestClient) -> None:
+    """ZAP 'Re-examine Cache-control' (alert 10015): the authed SPA HTML shell
+    must be revalidated, never replayed from cache. Hashed /assets/* stay
+    cacheable because they are not text/html."""
+    response = client.get("/")
+    assert response.headers.get("content-type", "").startswith("text/html")
     cache_control = response.headers.get("Cache-Control", "")
     assert "no-store" in cache_control, response.headers
 
