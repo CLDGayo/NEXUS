@@ -149,5 +149,30 @@
     "attribute": "Attribut",
     "tag": "Tag",
     "tagPlaceholder": "z. B. hot_lead"
+  },
+  "executions": {
+    "tab": "Ausführungen",
+    "editorTab": "Editor",
+    "title": "Ausführungen",
+    "colStatus": "Status",
+    "colStarted": "Gestartet",
+    "colRunTime": "Laufzeit",
+    "colId": "Ausführungs-ID",
+    "statusCompleted": "Erfolg",
+    "statusFailed": "Fehler",
+    "statusActive": "Läuft",
+    "statusWaiting": "Wartet",
+    "empty": "Noch keine Ausführungen",
+    "emptyHint": "Ausführungen erscheinen hier, sobald dieser Flow durch einen Kommentar oder eine DM ausgelöst wird.",
+    "viewing": "Ausführung anzeigen",
+    "readOnly": "Schreibgeschützt",
+    "backToList": "Zurück zu Ausführungen",
+    "loadError": "Ausführungen konnten nicht geladen werden.",
+    "refresh": "Aktualisieren",
+    "prev": "Zurück",
+    "next": "Weiter",
+    "showing": "{{from}}–{{to}} von {{total}}",
+    "legendSuccess": "Erfolgspfad",
+    "legendError": "Fehlerknoten"
   }
 }

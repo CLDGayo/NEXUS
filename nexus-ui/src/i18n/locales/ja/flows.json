@@ -149,5 +149,30 @@
     "attribute": "属性",
     "tag": "タグ",
     "tagPlaceholder": "例: hot_lead"
+  },
+  "executions": {
+    "tab": "実行履歴",
+    "editorTab": "エディター",
+    "title": "実行履歴",
+    "colStatus": "ステータス",
+    "colStarted": "開始",
+    "colRunTime": "実行時間",
+    "colId": "実行ID",
+    "statusCompleted": "成功",
+    "statusFailed": "エラー",
+    "statusActive": "実行中",
+    "statusWaiting": "待機中",
+    "empty": "実行履歴はまだありません",
+    "emptyHint": "このフローがコメントやDMでトリガーされると、ここに実行履歴が表示されます。",
+    "viewing": "実行を表示中",
+    "readOnly": "読み取り専用",
+    "backToList": "実行履歴に戻る",
+    "loadError": "実行履歴を読み込めませんでした。",
+    "refresh": "更新",
+    "prev": "前へ",
+    "next": "次へ",
+    "showing": "{{total}}件中 {{from}}–{{to}}",
+    "legendSuccess": "成功パス",
+    "legendError": "失敗ノード"
   }
 }

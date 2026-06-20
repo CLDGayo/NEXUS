@@ -149,5 +149,30 @@
     "attribute": "Attribute",
     "tag": "Tag",
     "tagPlaceholder": "e.g. hot_lead"
+  },
+  "executions": {
+    "tab": "Executions",
+    "editorTab": "Editor",
+    "title": "Executions",
+    "colStatus": "Status",
+    "colStarted": "Started",
+    "colRunTime": "Run Time",
+    "colId": "Execution ID",
+    "statusCompleted": "Success",
+    "statusFailed": "Error",
+    "statusActive": "Running",
+    "statusWaiting": "Waiting",
+    "empty": "No executions yet",
+    "emptyHint": "Runs appear here once this flow is triggered by a comment or DM.",
+    "viewing": "Viewing execution",
+    "readOnly": "Read-only",
+    "backToList": "Back to executions",
+    "loadError": "Could not load executions.",
+    "refresh": "Refresh",
+    "prev": "Previous",
+    "next": "Next",
+    "showing": "{{from}}–{{to}} of {{total}}",
+    "legendSuccess": "Success path",
+    "legendError": "Failed node"
   }
 }

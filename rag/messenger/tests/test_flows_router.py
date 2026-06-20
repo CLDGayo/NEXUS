@@ -493,6 +493,104 @@ def test_flow_analytics_node_aggregation(client: TestClient, app: Any) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Phase 61 — per-run execution history endpoints (DB-less, sequenced execute)
+# ---------------------------------------------------------------------------
+
+RUN_ID = uuid.UUID("eeeeeeee-0000-0000-0000-000000000005")
+
+
+def test_list_runs_returns_paginated_rows(client: TestClient, app: Any) -> None:
+    """ownership → count → run tuples; run_time_ms derived from timestamps."""
+    t0 = datetime(2026, 6, 20, 12, 0, 0, tzinfo=timezone.utc)
+    t_plus_1500ms = datetime(2026, 6, 20, 12, 0, 1, 500000, tzinfo=timezone.utc)
+    run_rows = [
+        (RUN_ID, "completed", None, None, t0, t_plus_1500ms),
+        (uuid.uuid4(), "failed", None, "n3", t0, t0),
+    ]
+    _install_analytics_overrides(
+        app,
+        [
+            _SeqResult(scalar=FLOW_ID),  # ownership
+            _SeqResult(scalar=2),        # total count
+            _SeqResult(all_rows=run_rows),  # page rows
+        ],
+    )
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/runs?limit=25&offset=0"
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["total"] == 2
+        assert body["limit"] == 25 and body["offset"] == 0
+        assert len(body["runs"]) == 2
+        first = body["runs"][0]
+        assert first["id"] == str(RUN_ID)
+        assert first["status"] == "completed"
+        assert first["run_time_ms"] == 1500
+        assert body["runs"][1]["status"] == "failed"
+        assert body["runs"][1]["failed_node_id"] == "n3"
+        assert body["runs"][1]["run_time_ms"] == 0
+    finally:
+        _clear_overrides(app)
+
+
+def test_list_runs_404_when_flow_not_owned(client: TestClient, app: Any) -> None:
+    # 1st execute = ownership check → None → 404 before any aggregation.
+    _install_analytics_overrides(app, [_SeqResult(scalar=None)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/runs"
+        )
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "flow_not_found"
+    finally:
+        _clear_overrides(app)
+
+
+def test_get_run_detail_returns_path(client: TestClient, app: Any) -> None:
+    from types import SimpleNamespace
+
+    t0 = datetime(2026, 6, 20, 12, 0, 0, tzinfo=timezone.utc)
+    t1 = datetime(2026, 6, 20, 12, 0, 1, 500000, tzinfo=timezone.utc)
+    run_obj = SimpleNamespace(
+        id=RUN_ID,
+        status="failed",
+        current_node_id="n3",
+        failed_node_id="n3",
+        created_at=t0,
+        updated_at=t1,
+        path=["n1", "n2", "n3"],
+    )
+    _install_analytics_overrides(app, [_SeqResult(scalar=run_obj)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/runs/{RUN_ID}"
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["id"] == str(RUN_ID)
+        assert body["status"] == "failed"
+        assert body["failed_node_id"] == "n3"
+        assert body["path"] == ["n1", "n2", "n3"]
+        assert body["run_time_ms"] == 1500
+    finally:
+        _clear_overrides(app)
+
+
+def test_get_run_detail_404_when_missing(client: TestClient, app: Any) -> None:
+    _install_analytics_overrides(app, [_SeqResult(scalar=None)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/runs/{RUN_ID}"
+        )
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "run_not_found"
+    finally:
+        _clear_overrides(app)
+
+
+# ---------------------------------------------------------------------------
 # Layer B — pg_required integration tests
 # ---------------------------------------------------------------------------
 
