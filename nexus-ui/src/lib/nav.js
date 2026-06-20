@@ -28,7 +28,6 @@ export const CORE_NAV = [
   { to: '/chat',          labelKey: 'nav.chat',          Icon: MessageSquare },
   { to: '/conversations', labelKey: 'nav.conversations', Icon: MessagesSquare },
   { to: '/logs',          labelKey: 'nav.logs',          Icon: ListChecks },
-  { to: '/integrations',  labelKey: 'nav.integrations',  Icon: Plug },
   { to: '/resources',     labelKey: 'nav.resources',     Icon: Library },
   { to: '/graph',         labelKey: 'nav.graph',         Icon: Network },
 ];
@@ -42,6 +41,11 @@ export const OWNER_NAV = [
 
 // MANAGER_NAV renders for owners AND admins (Phase 50 `canManage`).
 export const MANAGER_NAV = [
+  // Integrations is manager-class — every backend route under
+  // /api/integrations is gated by require_manager. Showing it to plain
+  // members triggered a 403 → forbidden-tenant reset → workspace-picker
+  // loop, so it lives here (FE hide is UX; the route is also guarded).
+  { to: '/integrations',        labelKey: 'nav.integrations', Icon: Plug },
   // `end: true` — exact-match only, so /settings does not prefix-match its own
   // nested routes (/settings/workspaces, /settings/ai-studio) and double-highlight.
   { to: '/settings',            labelKey: 'nav.settings',   Icon: Settings, end: true },
