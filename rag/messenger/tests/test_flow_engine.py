@@ -1540,3 +1540,140 @@ class TestTraverseAnalytics:
         # path (appended before execution).
         assert run.failed_node_id == "n_send"
         assert run.path == ["n_trigger", "n_send"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 60 — condition node routing on the durable flow_contacts row
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestConditionContactRules:
+    """Phase 60 — condition node evaluates flow_contacts (CRM) state.
+
+    Each test wires trigger → condition → {true: "Premium!", false: "Standard."}
+    and stubs ``_load_contact`` so the chosen branch is fully deterministic
+    (mirrors the TestUpdateCrmNode pattern of patching ``_get_or_create_contact``).
+    """
+
+    @pytest.fixture(autouse=True)
+    def _patch_decrypt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "decrypt_token", lambda enc: "decrypted-tok")
+
+    @pytest.fixture(autouse=True)
+    def _patch_overlay(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "current_page_access_token", lambda: "overlay-tok")
+
+    @staticmethod
+    def _branching_flow(
+        operator: str, value: Any = "hot_lead", variable: str = ""
+    ) -> MagicMock:
+        trigger = _comment_trigger_node(keyword="price", match_type="exact")
+        cond = _condition_node(
+            node_id="n_cond", variable=variable, operator=operator, value=value
+        )
+        send_true = _send_message_node(node_id="n_true", message="Premium!")
+        send_false = _send_message_node(node_id="n_false", message="Standard.")
+        return _make_flow(
+            nodes=[trigger, cond, send_true, send_false],
+            edges=[
+                _edge("n_trigger", "n_cond"),
+                _edge("n_cond", "n_true", handle="true"),
+                _edge("n_cond", "n_false", handle="false"),
+            ],
+        )
+
+    async def _run_branch(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        flow: MagicMock,
+        contact: Any,
+        comment_id: str,
+        sender_id: str,
+    ) -> _HttpClient:
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        async def _mock_load(_db: Any, _page_id: str, _sender_id: str) -> Any:
+            return contact
+
+        monkeypatch.setattr(_fe, "_load_contact", _mock_load)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, _retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": comment_id,
+                "message": "price",
+                "sender_id": sender_id,
+            },
+        )
+        assert delivered is True
+        assert error is None
+        assert len(client.posts) == 1
+        return client
+
+    async def test_tag_exists_routes_true_when_tag_present(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("tag_exists", value="hot_lead")
+        contact = _make_contact(tags=["hot_lead", "vip"])
+        client = await self._run_branch(monkeypatch, flow, contact, "c_tag_t", "u_tag_t")
+        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+
+    async def test_tag_exists_routes_false_when_tag_absent(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("tag_exists", value="hot_lead")
+        contact = _make_contact(tags=["newsletter"])
+        client = await self._run_branch(monkeypatch, flow, contact, "c_tag_f", "u_tag_f")
+        assert client.posts[0]["json"]["message"]["text"] == "Standard."
+
+    async def test_tag_exists_routes_false_when_no_contact_row(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No flow_contacts row yet → empty CRM state → false branch."""
+        flow = self._branching_flow("tag_exists", value="hot_lead")
+        client = await self._run_branch(monkeypatch, flow, None, "c_tag_none", "u_tag_none")
+        assert client.posts[0]["json"]["message"]["text"] == "Standard."
+
+    async def test_tag_not_exists_routes_true_when_tag_absent(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("tag_not_exists", value="banned")
+        contact = _make_contact(tags=["vip"])
+        client = await self._run_branch(monkeypatch, flow, contact, "c_ntag_t", "u_ntag_t")
+        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+
+    async def test_attribute_equals_routes_true_on_match(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("attribute_equals", variable="plan", value="pro")
+        contact = _make_contact(attributes={"plan": "pro"})
+        client = await self._run_branch(monkeypatch, flow, contact, "c_attr_t", "u_attr_t")
+        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+
+    async def test_attribute_equals_routes_false_on_mismatch(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("attribute_equals", variable="plan", value="pro")
+        contact = _make_contact(attributes={"plan": "free"})
+        client = await self._run_branch(monkeypatch, flow, contact, "c_attr_f", "u_attr_f")
+        assert client.posts[0]["json"]["message"]["text"] == "Standard."
+
+    async def test_is_hot_lead_routes_true_when_flagged(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("is_hot_lead", value="")
+        contact = _make_contact(hot_lead=True)
+        client = await self._run_branch(monkeypatch, flow, contact, "c_hl_t", "u_hl_t")
+        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+
+    async def test_is_hot_lead_routes_false_when_not_flagged(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("is_hot_lead", value="")
+        contact = _make_contact(hot_lead=False)
+        client = await self._run_branch(monkeypatch, flow, contact, "c_hl_f", "u_hl_f")
+        assert client.posts[0]["json"]["message"]["text"] == "Standard."

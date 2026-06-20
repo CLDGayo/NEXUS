@@ -14,7 +14,8 @@ Traversal decision tree (run_flow_job):
    * No match → **fall back to run_private_reply_job** (Phase 57 coexistence).
 4. Start a new FlowRun (or resume a waiting one for DM events).
 5. Traverse edges from the trigger node:
-   * ``condition``      — evaluate predicate over run.context; pick
+   * ``condition``      — evaluate predicate over run.context OR the durable
+                          flow_contacts row (Phase 60 contact rules); pick
                           true/false sourceHandle.
    * ``sendMessage``    — POST to Graph API via sender.py.
    * ``waitForInput``   — send prompt, persist current_node_id +
@@ -59,6 +60,12 @@ _NODE_VISIT_CAP = 50
 
 # Regex for template token substitution: {{ token }} or {{ nested.key }}
 _TEMPLATE_TOKEN_RE = re.compile(r"{{\s*([\w.]+)\s*}}")
+
+# Phase 60 — condition-node operators that evaluate the durable flow_contacts
+# row (written by the updateCrm node) rather than the in-memory run.context.
+_CONTACT_RULES = frozenset(
+    {"tag_exists", "tag_not_exists", "attribute_equals", "is_hot_lead"}
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -123,6 +130,27 @@ async def _get_or_create_contact(
         db.add(row)
 
     return row
+
+
+async def _load_contact(
+    db: Any,
+    page_id: str,
+    sender_id: str,
+) -> FlowContact | None:
+    """Return the FlowContact row for (page_id, sender_id), or ``None``.
+
+    Read-only counterpart to :func:`_get_or_create_contact`.  Phase 60's
+    ``condition`` executor inspects durable CRM state and must NOT create an
+    empty contact row as a side effect of merely evaluating a predicate.
+    """
+    return (
+        await db.execute(
+            select(FlowContact).where(
+                FlowContact.page_id == page_id,
+                FlowContact.sender_id == sender_id,
+            )
+        )
+    ).scalar_one_or_none()
 
 
 def _graph_base() -> str:
@@ -338,23 +366,44 @@ async def _traverse(
             continue
 
         if node_type == "condition":
-            # Evaluate predicate over run.context.
-            # Simple evaluator: compare context[variable] to value.
+            # Phase 60 — dual-mode predicate routing to the true/false handle:
+            #   * context rules (eq/neq/contains/exists) evaluate run.context.
+            #   * contact rules (tag_exists/tag_not_exists/attribute_equals/
+            #     is_hot_lead) evaluate the durable flow_contacts row written by
+            #     the updateCrm node — real-time, CRM-aware branching.
             variable = str(node_data.get("variable") or "")
             operator = str(node_data.get("operator") or "eq")
             expected = node_data.get("value")
-            actual = run.context.get(variable) if variable else None
 
-            if operator == "eq":
-                result = actual == expected
-            elif operator == "neq":
-                result = actual != expected
-            elif operator == "contains" and isinstance(actual, str):
-                result = str(expected or "") in actual
-            elif operator == "exists":
-                result = variable in run.context
+            if operator in _CONTACT_RULES:
+                contact = await _load_contact(db, run.page_id, run.sender_id)
+                tags = list(contact.tags or []) if contact is not None else []
+                attrs = dict(contact.attributes or {}) if contact is not None else {}
+                hot_lead = bool(contact.hot_lead) if contact is not None else False
+                expected_str = str(expected) if expected is not None else ""
+
+                if operator == "tag_exists":
+                    result = expected_str in tags
+                elif operator == "tag_not_exists":
+                    result = expected_str not in tags
+                elif operator == "attribute_equals":
+                    result = (
+                        variable in attrs and str(attrs.get(variable)) == expected_str
+                    )
+                else:  # is_hot_lead
+                    result = hot_lead
             else:
-                result = bool(actual)
+                actual = run.context.get(variable) if variable else None
+                if operator == "eq":
+                    result = actual == expected
+                elif operator == "neq":
+                    result = actual != expected
+                elif operator == "contains" and isinstance(actual, str):
+                    result = str(expected or "") in actual
+                elif operator == "exists":
+                    result = variable in run.context
+                else:
+                    result = bool(actual)
 
             source_handle = "true" if result else "false"
             current_node = _next_node(flow, node_id, source_handle)

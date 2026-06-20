@@ -56,7 +56,10 @@
       "label": "Condition",
       "true": "True",
       "false": "False",
-      "noCondition": "No condition set"
+      "noCondition": "No condition set",
+      "hasTag": "may tag na \"{{value}}\"",
+      "missingTag": "walang tag na \"{{value}}\"",
+      "isHotLead": "hot lead"
     },
     "sendMessage": {
       "label": "Send Message",
@@ -136,6 +139,15 @@
     "crmValue": "Value",
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
-    "crmFieldPlaceholder": "e.g. plan"
+    "crmFieldPlaceholder": "e.g. plan",
+    "ruleGroupContext": "Konteksto ng mensahe",
+    "ruleGroupContact": "Kontak (CRM)",
+    "opTagExists": "May tag",
+    "opTagNotExists": "Walang tag",
+    "opAttributeEquals": "Katumbas ang attribute",
+    "opIsHotLead": "Hot lead",
+    "attribute": "Attribute",
+    "tag": "Tag",
+    "tagPlaceholder": "hal. hot_lead"
   }
 }
