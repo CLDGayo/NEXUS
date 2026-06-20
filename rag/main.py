@@ -209,13 +209,74 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Cross-Domain Misconfiguration (ZAP Medium, 2026-06-20): the prior
+# ``allow_origins=["*"]`` exposed every API response to any origin. The SPA
+# and embeddable widget both call the API same-origin (relative URLs), so we
+# restrict CORS to an explicit, env-overridable allowlist (prod origins +
+# local Vite dev). ``allow_credentials`` stays on so cookie/JWT auth survives
+# for the allowed origins — invalid only when paired with a wildcard.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_allow_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Response security headers (ZAP 2026-06-20 remediation): CSP + HSTS +
+# anti-sniffing/referrer hardening on every response. Registered before the
+# CORS middleware in source so it sits *inside* the CORS layer and never
+# clobbers ``Access-Control-*`` headers on preflight responses. Widget routes
+# get a permissive ``frame-ancestors *`` CSP so the chat widget stays
+# embeddable; everything else is framed only by itself.
+@app.middleware("http")
+async def security_headers(request: Any, call_next: Any) -> Any:
+    response = await call_next(request)
+    if not settings.security_headers_enabled:
+        return response
+
+    path = request.url.path
+    is_widget = path == "/widget" or path.startswith("/widget-static")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        settings.security_csp_widget if is_widget else settings.security_csp,
+    )
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy", "geolocation=(), microphone=(), camera=()"
+    )
+    # X-Frame-Options is the legacy companion to frame-ancestors. Skip it for
+    # widget routes so cross-site framing of the embed is not blocked by old
+    # browsers that ignore CSP frame-ancestors.
+    if not is_widget:
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+
+    # HSTS only over HTTPS. We honour both the resolved scheme (set by uvicorn
+    # --proxy-headers) AND the raw X-Forwarded-Proto header, because behind
+    # nginx the container sees the docker-bridge source IP, which is outside
+    # uvicorn's default ``--forwarded-allow-ips=127.0.0.1`` trust list — so the
+    # scheme can stay ``http`` even on a genuine HTTPS request. An HSTS header
+    # delivered over plain HTTP is ignored by browsers, so this is safe.
+    forwarded_proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
+    is_https = request.url.scheme == "https" or forwarded_proto == "https"
+    if is_https and settings.hsts_max_age > 0:
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            f"max-age={settings.hsts_max_age}; includeSubDomains",
+        )
+
+    # Re-examine Cache-control (ZAP Info): API/auth responses may carry
+    # sensitive data and must not be cached by shared proxies. Static SPA
+    # assets (hashed, immutable) are left untouched so the CDN can cache them.
+    if path.startswith("/api/") or path.startswith("/webhook"):
+        response.headers.setdefault(
+            "Cache-Control", "no-store, no-cache, must-revalidate"
+        )
+        response.headers.setdefault("Pragma", "no-cache")
+
+    return response
+
 
 # OTEL + Langfuse bootstrap (no-op when keys absent).
 init_tracing(app, service_name="nexus-api")
