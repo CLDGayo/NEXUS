@@ -323,6 +323,14 @@ class Settings(BaseSettings):
     # Redis key the sync jobs share with the existing outbound queue machinery.
     facebook_sync_correlation_prefix: str = Field(default="fb_sync")
 
+    # ---- Phase 61 — One-click Meta OAuth (Page connect) ----
+    # Standard Facebook Login app credentials. The redirect URI MUST be
+    # whitelisted byte-for-byte in the Meta App dashboard ("Valid OAuth
+    # Redirect URIs"), e.g. https://chat.nexus.gayo-sphere.cloud/api/facebook/callback
+    facebook_app_id: str | None = None
+    facebook_app_secret: str | None = None
+    facebook_redirect_uri: str | None = None
+
     # ---- Phase 56 — Google SSO (OIDC authorization-code + PKCE) ----
     google_client_id: str | None = None
     google_client_secret: str | None = None

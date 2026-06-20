@@ -50,7 +50,7 @@ from typing import Any, AsyncIterator
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
@@ -66,6 +66,7 @@ from rag.auth import (  # noqa: E402
 )
 from rag.config import settings  # noqa: E402
 from rag.database.engine import dispose_engine  # noqa: E402
+from rag.messenger.routers import auth_fb as v2_fb_oauth  # noqa: E402
 from rag.messenger.routers import automations as v2_fb_automations  # noqa: E402
 from rag.messenger.routers import flows as v2_fb_flows  # noqa: E402
 from rag.messenger.routers import health as v2_health  # noqa: E402
@@ -260,6 +261,8 @@ app.include_router(v2_tenants.router)
 # Phase 51 — invite routes (/api/tenants/{id}/invites) + public accept (/api/invites/accept).
 app.include_router(v2_invites)
 app.include_router(v2_invites_public)
+# Phase 61 — one-click Meta OAuth page connect (/api/facebook/login, /callback).
+app.include_router(v2_fb_oauth.router)
 # Phase 57.1 — facebook automation CRUD (/api/tenants/{id}/facebook/automations).
 app.include_router(v2_fb_automations.router)
 # Phase 58.1 — NEXUS Flow CRUD (/api/tenants/{id}/facebook/flows).
@@ -310,6 +313,135 @@ async def widget() -> FileResponse:
 @app.get("/", include_in_schema=False)
 async def index() -> FileResponse:
     return FileResponse(str(WEBAPP_DIR / "index.html"))
+
+
+_PRIVACY_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="index, follow" />
+  <title>Privacy Policy — NEXUS by Gayo Sphere</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #f8fafc; color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.65; -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
+    header { border-bottom: 1px solid #e2e8f0; padding-bottom: 24px; margin-bottom: 32px; }
+    h1 { font-size: 1.9rem; margin: 0 0 6px; letter-spacing: -0.02em; }
+    h2 { font-size: 1.18rem; margin: 38px 0 10px; letter-spacing: -0.01em; }
+    p, li { font-size: 0.98rem; color: #334155; }
+    a { color: #2563eb; }
+    .muted { color: #64748b; font-size: 0.85rem; }
+    ul { padding-left: 1.25rem; }
+    li { margin: 6px 0; }
+    code { background: #eef2f7; padding: 1px 6px; border-radius: 5px; font-size: 0.85em; }
+    footer { margin-top: 48px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Privacy Policy</h1>
+      <p class="muted">NEXUS — operated by Gayo Sphere &middot; Last updated: 20 June 2026</p>
+    </header>
+
+    <p>
+      NEXUS (&ldquo;NEXUS&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;) provides an AI-assisted
+      messaging and knowledge platform. This policy explains what data we process when a
+      workspace owner connects a Facebook Page to NEXUS, how that data is used, retained,
+      and deleted, and the rights available to end users.
+    </p>
+
+    <h2>1. Information We Process</h2>
+    <ul>
+      <li><strong>Facebook Page connection data.</strong> When you connect a Page, we receive
+        and store your Page ID, Page name, profile picture URL, and a Page Access Token used
+        to send and receive messages on your behalf.</li>
+      <li><strong>Messaging content.</strong> Messages, comments, and conversation metadata
+        delivered to us through Meta&rsquo;s webhooks so NEXUS can generate and send replies.</li>
+      <li><strong>Account data.</strong> The email address and workspace details of the
+        NEXUS user who authorizes the connection.</li>
+    </ul>
+
+    <h2>2. How We Use Facebook Data</h2>
+    <ul>
+      <li>To deliver the core service: receiving inbound messages/comments and sending
+        automated or human-assisted replies through your connected Page.</li>
+      <li>To display your connected Page&rsquo;s name and avatar inside the NEXUS dashboard so
+        you can confirm the active connection.</li>
+      <li>We use the granted permissions
+        (<code>pages_show_list</code>, <code>pages_messaging</code>,
+        <code>pages_manage_metadata</code>) solely for these purposes.</li>
+    </ul>
+
+    <h2>3. Data Storage &amp; Security</h2>
+    <p>
+      Page Access Tokens are encrypted at rest (AES-128-CBC with HMAC-SHA256 authentication,
+      via Fernet) and are never written to application logs or exposed to the browser. Data
+      is processed on access-controlled infrastructure and transmitted over TLS.
+    </p>
+
+    <h2>4. Data Sharing</h2>
+    <p>
+      <strong>We do not sell your data or any Facebook user data to third parties.</strong>
+      Facebook data is not shared except with the infrastructure sub-processors strictly
+      required to operate the service (e.g. hosting and the LLM provider used to generate
+      replies), and only to the extent necessary to deliver the feature you enabled.
+    </p>
+
+    <h2>5. Data Retention</h2>
+    <p>
+      Connection data and message history are retained for as long as your Page remains
+      connected and your workspace is active. When you disconnect a Page or delete your
+      workspace, the associated Page binding and stored token are removed promptly.
+    </p>
+
+    <h2>6. Data Deletion</h2>
+    <p>
+      You may revoke NEXUS&rsquo;s access at any time from your
+      <a href="https://www.facebook.com/settings?tab=business_tools" rel="noopener">Facebook
+      Business Integrations</a> settings, or by disconnecting the Page inside the NEXUS
+      Integrations dashboard. To request deletion of all data we hold about you or your Page,
+      email <a href="mailto:privacy@gayo-sphere.cloud">privacy@gayo-sphere.cloud</a> and we
+      will process the request within 30 days.
+    </p>
+
+    <h2>7. Meta Platform Compliance</h2>
+    <p>
+      Our use and transfer of information received from Meta APIs adheres to the
+      <a href="https://developers.facebook.com/terms/" rel="noopener">Meta Platform Terms</a>
+      and Developer Policies, including the limited-use requirements governing permissions.
+    </p>
+
+    <h2>8. Contact</h2>
+    <p>
+      Questions about this policy or your data can be sent to
+      <a href="mailto:privacy@gayo-sphere.cloud">privacy@gayo-sphere.cloud</a>.
+    </p>
+
+    <footer>
+      <p class="muted">&copy; 2026 Gayo Sphere. All rights reserved.</p>
+    </footer>
+  </div>
+</body>
+</html>"""
+
+
+@app.get("/privacy", include_in_schema=False)
+async def privacy() -> HTMLResponse:
+    """Public privacy policy — required for Meta App Review.
+
+    Served as a standalone, auth-free HTML document (Meta's reviewers must be
+    able to reach it without logging in). Covers Facebook data usage, data
+    deletion, retention, and the no-third-party-selling commitment.
+    """
+
+    return HTMLResponse(content=_PRIVACY_HTML)
 
 
 @app.get("/{full_path:path}", include_in_schema=False)

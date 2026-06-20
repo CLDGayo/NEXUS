@@ -24,6 +24,25 @@
     "copyToClipboard": "Copy to clipboard",
     "secretHint": "Used to verify Meta's X-Hub-Signature-256 on inbound webhooks. Updates take effect on the next request — no restart needed."
   },
+  "connect": {
+    "title": "Connect a Facebook Page",
+    "subtitle": "Authorize NEXUS with Facebook to bind a Page — no manual IDs or tokens.",
+    "connected": "Connected",
+    "loading": "Checking connection…",
+    "empty": "No Facebook Page is connected to this workspace yet.",
+    "connectButton": "Connect Facebook Page",
+    "redirecting": "Redirecting to Facebook…",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Disconnect this Facebook Page from the workspace? Inbound messages will stop routing here until you reconnect.",
+    "pageId": "Page ID",
+    "unnamedPage": "Facebook Page",
+    "startFailed": "Could not start the Facebook connection. Please try again.",
+    "noticeConnected": "Facebook Page connected successfully.",
+    "noticeCancelled": "Facebook connection was cancelled.",
+    "noticeNoPages": "No managed Facebook Pages were found on that account.",
+    "noticeAlreadyBound": "That Page is already connected to another workspace.",
+    "noticeError": "Something went wrong connecting your Facebook Page. Please try again."
+  },
   "webhooks": {
     "title": "Webhook integrations",
     "subtitle": "Fire system events out to n8n, Make, Slack, or your own service.",
