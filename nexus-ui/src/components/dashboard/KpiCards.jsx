@@ -17,7 +17,7 @@ function Card({ icon: Icon, label, value, sub, accent }) {
         <Icon size={16} />
       </div>
       <div className="min-w-0">
-        <div className="truncate text-[11px] font-medium uppercase tracking-wide text-nexus-muted">{label}</div>
+        <div className="text-[11px] font-medium uppercase leading-tight tracking-tight text-nexus-muted [overflow-wrap:anywhere]">{label}</div>
         <div className="truncate text-lg font-semibold leading-tight text-slate-800 dark:text-slate-100">{value}</div>
         {sub && <div className="truncate text-[11px] text-nexus-muted">{sub}</div>}
       </div>
