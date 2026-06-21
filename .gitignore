@@ -34,3 +34,8 @@ rag/data/traces/
 rag/data/.password_override.json
 rag/data/.messenger_override.json
 rag/.ingest_state.json
+
+# OWASP ZAP scan reports — large (multi-MB) HTML snapshots from security scans.
+# Excluded from deploy rsync too (see deploy-rag.sh). Findings are tracked in
+# commit messages / process reports, not the raw report.
+OwaspZapReports/

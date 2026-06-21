@@ -5,26 +5,54 @@ import { cn } from '../../ui/cn.js';
 
 /**
  * @typedef {Object} ConditionData
- * @property {string} variable    - context variable to evaluate (e.g. "email")
- * @property {'contains'|'equals'|'exists'} operator
- * @property {string} [value]     - comparison value (not needed for 'exists')
+ * @property {string} variable    - context variable / attribute key to evaluate
+ * @property {'eq'|'neq'|'contains'|'exists'|'tag_exists'|'tag_not_exists'|'attribute_equals'|'is_hot_lead'} operator
+ * @property {string} [value]     - comparison value / tag name (some rules need none)
  */
 
 /**
+ * Build the one-line preview shown on the node body.
+ *
+ * Phase 60: contact rules (tag_exists / tag_not_exists / attribute_equals /
+ * is_hot_lead) evaluate the durable flow_contacts row; the rest evaluate the
+ * in-memory flow context.
+ *
+ * @param {(key: string, opts?: object) => string} t
+ * @param {ConditionData} data
+ * @returns {string | null}
+ */
+function previewText(t, data) {
+  const op = data.operator;
+  const value = data.value || '…';
+  switch (op) {
+    case 'tag_exists':
+      return t('nodes.condition.hasTag', { value });
+    case 'tag_not_exists':
+      return t('nodes.condition.missingTag', { value });
+    case 'is_hot_lead':
+      return t('nodes.condition.isHotLead');
+    case 'attribute_equals':
+      return data.variable ? `${data.variable} = "${value}"` : null;
+    case 'exists':
+      return data.variable ? `${data.variable} exists` : null;
+    default:
+      return data.variable
+        ? `${data.variable} ${op || 'contains'} "${value}"`
+        : null;
+  }
+}
+
+/**
  * ConditionNode — one target handle + two source handles (true/false).
- * Evaluates a condition against the flow context and routes accordingly.
+ * Evaluates a condition against the flow context or the contact's CRM state
+ * and routes accordingly.
  *
  * @param {{ data: ConditionData, selected: boolean }} props
  */
 export default function ConditionNode({ data, selected }) {
   const { t } = useTranslation('flows');
 
-  const conditionText =
-    data.variable
-      ? data.operator === 'exists'
-        ? `${data.variable} exists`
-        : `${data.variable} ${data.operator || 'contains'} "${data.value || '…'}"`
-      : null;
+  const conditionText = previewText(t, data);
 
   return (
     <div

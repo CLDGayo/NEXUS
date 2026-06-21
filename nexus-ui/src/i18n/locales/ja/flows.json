@@ -56,7 +56,10 @@
       "label": "Condition",
       "true": "True",
       "false": "False",
-      "noCondition": "No condition set"
+      "noCondition": "No condition set",
+      "hasTag": "タグ「{{value}}」あり",
+      "missingTag": "タグ「{{value}}」なし",
+      "isHotLead": "ホットリード"
     },
     "sendMessage": {
       "label": "Send Message",
@@ -136,6 +139,15 @@
     "crmValue": "Value",
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
-    "crmFieldPlaceholder": "e.g. plan"
+    "crmFieldPlaceholder": "e.g. plan",
+    "ruleGroupContext": "メッセージコンテキスト",
+    "ruleGroupContact": "連絡先 (CRM)",
+    "opTagExists": "タグあり",
+    "opTagNotExists": "タグなし",
+    "opAttributeEquals": "属性が一致",
+    "opIsHotLead": "ホットリード",
+    "attribute": "属性",
+    "tag": "タグ",
+    "tagPlaceholder": "例: hot_lead"
   }
 }

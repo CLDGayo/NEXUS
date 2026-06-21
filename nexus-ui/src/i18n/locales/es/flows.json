@@ -56,7 +56,10 @@
       "label": "Condition",
       "true": "True",
       "false": "False",
-      "noCondition": "No condition set"
+      "noCondition": "No condition set",
+      "hasTag": "tiene etiqueta \"{{value}}\"",
+      "missingTag": "falta etiqueta \"{{value}}\"",
+      "isHotLead": "es lead caliente"
     },
     "sendMessage": {
       "label": "Send Message",
@@ -136,6 +139,15 @@
     "crmValue": "Value",
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
-    "crmFieldPlaceholder": "e.g. plan"
+    "crmFieldPlaceholder": "e.g. plan",
+    "ruleGroupContext": "Contexto del mensaje",
+    "ruleGroupContact": "Contacto (CRM)",
+    "opTagExists": "Tiene etiqueta",
+    "opTagNotExists": "Falta etiqueta",
+    "opAttributeEquals": "Atributo igual a",
+    "opIsHotLead": "Es lead caliente",
+    "attribute": "Atributo",
+    "tag": "Etiqueta",
+    "tagPlaceholder": "p. ej. hot_lead"
   }
 }

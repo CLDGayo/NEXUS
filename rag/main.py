@@ -266,14 +266,24 @@ async def security_headers(request: Any, call_next: Any) -> Any:
             f"max-age={settings.hsts_max_age}; includeSubDomains",
         )
 
-    # Re-examine Cache-control (ZAP Info): API/auth responses may carry
-    # sensitive data and must not be cached by shared proxies. Static SPA
-    # assets (hashed, immutable) are left untouched so the CDN can cache them.
+    # Re-examine Cache-control (ZAP Info, alert 10015): responses that may carry
+    # sensitive data must not be cached by browsers or shared proxies. This
+    # covers API/auth/webhook payloads AND the SPA HTML shell — the authed app
+    # document itself must always be revalidated so a logged-out browser never
+    # replays a stale authenticated shell from cache. Hashed, immutable static
+    # assets under /assets (JS/CSS — not text/html) are left untouched so the
+    # CDN can cache them. The HTML branch uses direct assignment to override the
+    # weak ``Cache-Control: no-transform`` that the upstream nginx vhost emits.
+    content_type = response.headers.get("content-type", "")
+    is_html = content_type.startswith("text/html")
     if path.startswith("/api/") or path.startswith("/webhook"):
         response.headers.setdefault(
             "Cache-Control", "no-store, no-cache, must-revalidate"
         )
         response.headers.setdefault("Pragma", "no-cache")
+    elif is_html:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
 
     return response
 

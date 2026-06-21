@@ -56,7 +56,10 @@
       "label": "Condition",
       "true": "True",
       "false": "False",
-      "noCondition": "No condition set"
+      "noCondition": "No condition set",
+      "hasTag": "có thẻ \"{{value}}\"",
+      "missingTag": "thiếu thẻ \"{{value}}\"",
+      "isHotLead": "là khách tiềm năng nóng"
     },
     "sendMessage": {
       "label": "Send Message",
@@ -136,6 +139,15 @@
     "crmValue": "Value",
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
-    "crmFieldPlaceholder": "e.g. plan"
+    "crmFieldPlaceholder": "e.g. plan",
+    "ruleGroupContext": "Ngữ cảnh tin nhắn",
+    "ruleGroupContact": "Liên hệ (CRM)",
+    "opTagExists": "Có thẻ",
+    "opTagNotExists": "Thiếu thẻ",
+    "opAttributeEquals": "Thuộc tính bằng",
+    "opIsHotLead": "Là khách tiềm năng nóng",
+    "attribute": "Thuộc tính",
+    "tag": "Thẻ",
+    "tagPlaceholder": "vd. hot_lead"
   }
 }
