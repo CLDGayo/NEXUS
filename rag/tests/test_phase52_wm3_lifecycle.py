@@ -60,6 +60,7 @@ class _FakeTenant:
         slug: str = "hunter",
         archived_at: datetime | None = None,
         avatar_url: str | None = None,
+        preferred_language: str = "en",
     ) -> None:
         self.id = TENANT_ID
         self.name = name
@@ -67,6 +68,7 @@ class _FakeTenant:
         self.created_at = datetime(2026, 5, 25, tzinfo=timezone.utc)
         self.archived_at = archived_at
         self.avatar_url = avatar_url
+        self.preferred_language = preferred_language
 
 
 class _FakeLink:

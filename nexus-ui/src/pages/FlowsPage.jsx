@@ -13,7 +13,7 @@ import Switch from '../components/ui/Switch.jsx';
 export default function FlowsPage() {
   const { t } = useTranslation('flows');
   const navigate = useNavigate();
-  const { flows, pages, loading, error, busyId, createFlow, toggleActive, deleteFlow } = useFlows();
+  const { flows, pages, analytics, loading, error, busyId, createFlow, toggleActive, deleteFlow } = useFlows();
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -63,11 +63,16 @@ export default function FlowsPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       {/* Page header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            {t('title')}
-          </h1>
-          <p className="mt-0.5 text-sm text-nexus-muted">{t('subtitle')}</p>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-nexus-accent/10 text-nexus-accent">
+            <Workflow size={20} />
+          </span>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              {t('title')}
+            </h1>
+            <p className="mt-0.5 text-sm text-nexus-muted">{t('subtitle')}</p>
+          </div>
         </div>
         <button
           type="button"
@@ -126,6 +131,7 @@ export default function FlowsPage() {
                 <th className="px-4 py-2.5 font-medium">{t('colName')}</th>
                 <th className="px-4 py-2.5 font-medium">{t('colPage')}</th>
                 <th className="px-4 py-2.5 font-medium">{t('colStatus')}</th>
+                <th className="px-4 py-2.5 font-medium">{t('colRuns')}</th>
                 <th className="px-4 py-2.5 font-medium">{t('colCreated')}</th>
                 <th className="px-4 py-2.5 text-right font-medium">{t('colActions')}</th>
               </tr>
@@ -139,16 +145,31 @@ export default function FlowsPage() {
                 const page = pages.find((p) => p.facebook_page_id === flow.page_id);
                 const pageName = page?.page_name || flow.page_id || '—';
 
+                const stepCount = Array.isArray(flow.flow_state?.nodes)
+                  ? flow.flow_state.nodes.length
+                  : 0;
+
                 return (
                   <tr
                     key={flow.id}
-                    className="border-t border-white/40 dark:border-white/10"
+                    onClick={() => navigate(`/flows/${flow.id}`)}
+                    className="cursor-pointer border-t border-white/40 transition-colors hover:bg-white/50 dark:border-white/10 dark:hover:bg-white/5"
                   >
                     {/* Name */}
-                    <td className="px-4 py-2.5">
-                      <span className="font-medium text-slate-800 dark:text-slate-100">
-                        {flow.name}
-                      </span>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-nexus-accent/10 text-nexus-accent">
+                          <Workflow size={15} />
+                        </span>
+                        <div className="min-w-0">
+                          <span className="block truncate font-medium text-slate-800 dark:text-slate-100">
+                            {flow.name}
+                          </span>
+                          <span className="text-[11px] text-nexus-muted">
+                            {t('stepsCount', { count: stepCount })}
+                          </span>
+                        </div>
+                      </div>
                     </td>
 
                     {/* Page */}
@@ -157,7 +178,7 @@ export default function FlowsPage() {
                     </td>
 
                     {/* Active switch */}
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         <Switch
                           checked={flow.is_active}
@@ -170,13 +191,44 @@ export default function FlowsPage() {
                       </div>
                     </td>
 
+                    {/* Runs / success (Phase 58.4a analytics, last 7d) */}
+                    <td className="px-4 py-2.5">
+                      {(() => {
+                        const stat = analytics[flow.id];
+                        if (!stat || stat.total === 0) {
+                          return (
+                            <span className="text-xs text-nexus-muted">
+                              {t('noRuns')}
+                            </span>
+                          );
+                        }
+                        const pct = Math.round((stat.success_rate || 0) * 100);
+                        const tone =
+                          pct >= 80
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : pct >= 50
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-red-600 dark:text-red-400';
+                        return (
+                          <span className="inline-flex items-center gap-1.5 text-xs">
+                            <span className="font-medium text-slate-700 dark:text-slate-300">
+                              {t('runsCount', { count: stat.total })}
+                            </span>
+                            <span className={`font-semibold ${tone}`}>
+                              {t('successRate', { pct })}
+                            </span>
+                          </span>
+                        );
+                      })()}
+                    </td>
+
                     {/* Created */}
                     <td className="px-4 py-2.5 text-xs text-slate-500 dark:text-slate-400">
                       {formatDate(flow.created_at)}
                     </td>
 
                     {/* Actions */}
-                    <td className="px-4 py-2.5 text-right">
+                    <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                       {isConfirming ? (
                         <span className="inline-flex items-center gap-1.5">
                           <button

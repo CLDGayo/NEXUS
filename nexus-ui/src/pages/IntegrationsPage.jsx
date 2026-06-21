@@ -1,3 +1,4 @@
+import FacebookConnectCard from '../components/integrations/FacebookConnectCard.jsx';
 import MessengerPanel from '../components/integrations/MessengerPanel.jsx';
 import FacebookAutomationsPanel from '../components/integrations/FacebookAutomationsPanel.jsx';
 import WebhookIntegrationsList from '../components/integrations/WebhookIntegrationsList.jsx';
@@ -10,6 +11,9 @@ export default function IntegrationsPage() {
   return (
     <div ref={pageRef} className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl space-y-4 p-6">
+        <div data-animate>
+          <FacebookConnectCard />
+        </div>
         <div data-animate>
           <MessengerPanel />
         </div>

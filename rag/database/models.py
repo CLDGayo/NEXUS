@@ -140,6 +140,14 @@ class Tenant(Base):
         ),
     )
 
+    # Phase 59 — workspace default chatbot language (BCP-47 base code, e.g.
+    # "en", "es", "ja"). The flow engine injects a "reply exclusively in
+    # <language>" directive into LLM node prompts when this is non-"en".
+    # NOT NULL with server_default "en" so existing tenants are unchanged.
+    preferred_language: Mapped[str] = mapped_column(
+        String(8), nullable=False, server_default="en"
+    )
+
 
 class TenantUser(Base):
     """Membership table — composite PK (tenant_id, user_id).
@@ -941,11 +949,26 @@ class FlowRun(Base):
     context: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
+    # Phase 58.4a — analytics instrumentation. ``path`` is the ordered trail
+    # of visited node ids (appended in ``_traverse``); ``failed_node_id`` is
+    # the node that drove ``status='failed'``. Aggregating these across runs
+    # yields per-node visit + failure counts without a dedicated events table.
+    path: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    failed_node_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Phase 61 — ``onupdate`` makes updated_at track the last state transition
+    # (traversal completion / failure / DM-resume), so the Executions dashboard
+    # can report a meaningful "Run Time" = updated_at − created_at. Client-side
+    # default only (emitted in the UPDATE statement); no schema migration needed.
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
     flow: Mapped["NexusFlow"] = relationship("NexusFlow", back_populates="runs")

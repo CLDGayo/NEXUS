@@ -12,8 +12,14 @@
   "colName": "Name",
   "colPage": "Page",
   "colStatus": "Status",
+  "colRuns": "Runs (7d)",
   "colCreated": "Created",
   "colActions": "Actions",
+  "noRuns": "No runs",
+  "stepsCount": "{{count}} steps",
+  "stepsCount_one": "{{count}} step",
+  "runsCount": "{{count}} runs",
+  "successRate": "{{pct}}% success",
   "statusActive": "Active",
   "statusInactive": "Inactive",
   "edit": "Edit",
@@ -26,7 +32,17 @@
   "notFound": "Flow not found",
   "flowNamePlaceholder": "Flow name",
   "palette": "Nodes",
-  "canvasHint": "Add nodes from the palette to start building.",
+  "paletteSearch": "Search nodes…",
+  "paletteClear": "Clear search",
+  "paletteNoResults": "No matching nodes",
+  "paletteHint": "Drag a node onto the canvas, or click to add.",
+  "paletteCategories": {
+    "triggers": "Triggers",
+    "messaging": "Messaging",
+    "logic": "Logic & AI",
+    "actions": "Actions"
+  },
+  "canvasHint": "Drag nodes from the left to start building.",
   "activate": "Active",
   "save": "Save",
   "saving": "Saving…",
@@ -54,7 +70,10 @@
       "label": "Condition",
       "true": "True",
       "false": "False",
-      "noCondition": "No condition set"
+      "noCondition": "No condition set",
+      "hasTag": "has tag \"{{value}}\"",
+      "missingTag": "missing tag \"{{value}}\"",
+      "isHotLead": "is hot lead"
     },
     "sendMessage": {
       "label": "Send Message",
@@ -135,8 +154,45 @@
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
     "crmFieldPlaceholder": "e.g. plan",
+<<<<<<< HEAD
     "postUrl": "Facebook Post (optional)",
     "postUrlPlaceholder": "Post URL or ID — blank = any post",
     "postUrlHint": "Only fire when the comment is on this post."
+=======
+    "ruleGroupContext": "Message context",
+    "ruleGroupContact": "Contact (CRM)",
+    "opTagExists": "Has tag",
+    "opTagNotExists": "Missing tag",
+    "opAttributeEquals": "Attribute equals",
+    "opIsHotLead": "Is hot lead",
+    "attribute": "Attribute",
+    "tag": "Tag",
+    "tagPlaceholder": "e.g. hot_lead"
+  },
+  "executions": {
+    "tab": "Executions",
+    "editorTab": "Editor",
+    "title": "Executions",
+    "colStatus": "Status",
+    "colStarted": "Started",
+    "colRunTime": "Run Time",
+    "colId": "Execution ID",
+    "statusCompleted": "Success",
+    "statusFailed": "Error",
+    "statusActive": "Running",
+    "statusWaiting": "Waiting",
+    "empty": "No executions yet",
+    "emptyHint": "Runs appear here once this flow is triggered by a comment or DM.",
+    "viewing": "Viewing execution",
+    "readOnly": "Read-only",
+    "backToList": "Back to executions",
+    "loadError": "Could not load executions.",
+    "refresh": "Refresh",
+    "prev": "Previous",
+    "next": "Next",
+    "showing": "{{from}}–{{to}} of {{total}}",
+    "legendSuccess": "Success path",
+    "legendError": "Failed node"
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
   }
 }

@@ -12,8 +12,12 @@
   "colName": "Name",
   "colPage": "Page",
   "colStatus": "Status",
+  "colRuns": "Runs (7d)",
   "colCreated": "Created",
   "colActions": "Actions",
+  "noRuns": "No runs",
+  "runsCount": "{{count}} runs",
+  "successRate": "{{pct}}% success",
   "statusActive": "Active",
   "statusInactive": "Inactive",
   "edit": "Edit",
@@ -54,7 +58,10 @@
       "label": "Condition",
       "true": "True",
       "false": "False",
-      "noCondition": "No condition set"
+      "noCondition": "No condition set",
+      "hasTag": "タグ「{{value}}」あり",
+      "missingTag": "タグ「{{value}}」なし",
+      "isHotLead": "ホットリード"
     },
     "sendMessage": {
       "label": "Send Message",
@@ -135,8 +142,45 @@
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
     "crmFieldPlaceholder": "e.g. plan",
+<<<<<<< HEAD
     "postUrl": "Facebook投稿（任意）",
     "postUrlPlaceholder": "投稿のURLまたはID — 空欄=すべての投稿",
     "postUrlHint": "この投稿へのコメントのときのみ起動します。"
+=======
+    "ruleGroupContext": "メッセージコンテキスト",
+    "ruleGroupContact": "連絡先 (CRM)",
+    "opTagExists": "タグあり",
+    "opTagNotExists": "タグなし",
+    "opAttributeEquals": "属性が一致",
+    "opIsHotLead": "ホットリード",
+    "attribute": "属性",
+    "tag": "タグ",
+    "tagPlaceholder": "例: hot_lead"
+  },
+  "executions": {
+    "tab": "実行履歴",
+    "editorTab": "エディター",
+    "title": "実行履歴",
+    "colStatus": "ステータス",
+    "colStarted": "開始",
+    "colRunTime": "実行時間",
+    "colId": "実行ID",
+    "statusCompleted": "成功",
+    "statusFailed": "エラー",
+    "statusActive": "実行中",
+    "statusWaiting": "待機中",
+    "empty": "実行履歴はまだありません",
+    "emptyHint": "このフローがコメントやDMでトリガーされると、ここに実行履歴が表示されます。",
+    "viewing": "実行を表示中",
+    "readOnly": "読み取り専用",
+    "backToList": "実行履歴に戻る",
+    "loadError": "実行履歴を読み込めませんでした。",
+    "refresh": "更新",
+    "prev": "前へ",
+    "next": "次へ",
+    "showing": "{{total}}件中 {{from}}–{{to}}",
+    "legendSuccess": "成功パス",
+    "legendError": "失敗ノード"
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
   }
 }

@@ -1,7 +1,6 @@
-import { Handle, Position } from '@xyflow/react';
 import { Webhook } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { cn } from '../../ui/cn.js';
+import NodeShell from './NodeShell.jsx';
 
 /**
  * @typedef {Object} WebhookData
@@ -34,31 +33,12 @@ export default function WebhookNode({ data, selected }) {
     : null;
 
   return (
-    <div
-      className={cn(
-        'glass-card min-w-[200px] rounded-xl border px-4 py-3 shadow-md',
-        selected
-          ? 'border-nexus-accent ring-2 ring-nexus-accent/30'
-          : 'border-white/60 dark:border-white/10',
-      )}
+    <NodeShell
+      Icon={Webhook}
+      label={t('nodes.webhook.label')}
+      accent="sky"
+      selected={selected}
     >
-      {/* Target handle — left */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
-      />
-
-      {/* Header */}
-      <div className="mb-2 flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sky-500/15 text-sky-600">
-          <Webhook size={13} />
-        </span>
-        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-          {t('nodes.webhook.label')}
-        </span>
-      </div>
-
       {/* URL host preview */}
       {hostPreview ? (
         <p className="truncate text-[11px] font-medium text-sky-600 dark:text-sky-400">
@@ -72,17 +52,10 @@ export default function WebhookNode({ data, selected }) {
 
       {/* Body preview */}
       {bodyPreview && (
-        <p className="mt-0.5 font-mono text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+        <p className="mt-0.5 font-mono text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
           {bodyPreview}
         </p>
       )}
-
-      {/* Source handle — right */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!h-3 !w-3 !border-2 !border-white !bg-nexus-accent"
-      />
-    </div>
+    </NodeShell>
   );
 }

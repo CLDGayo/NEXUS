@@ -125,31 +125,62 @@ function DmTriggerInspector({ data, patch }) {
   );
 }
 
+// Phase 60 — operators that evaluate the durable flow_contacts row (CRM state)
+// instead of the in-memory flow context. Kept in sync with flow_engine
+// ._CONTACT_RULES on the backend.
+const CONTACT_RULES = ['tag_exists', 'tag_not_exists', 'attribute_equals', 'is_hot_lead'];
+
 function ConditionInspector({ data, patch }) {
   const { t } = useTranslation('flows');
+  const op = data.operator || 'contains';
+  const isContactRule = CONTACT_RULES.includes(op);
+  // The variable/attribute key is only meaningful for context rules and the
+  // attribute_equals contact rule (where it is the attribute name).
+  const showVariable = !isContactRule || op === 'attribute_equals';
+  // A comparison value is irrelevant for presence-only rules.
+  const showValue = op !== 'exists' && op !== 'is_hot_lead';
+  const isTagRule = op === 'tag_exists' || op === 'tag_not_exists';
+
+  const variableLabel =
+    op === 'attribute_equals' ? t('inspector.attribute') : t('inspector.variable');
+  const valueLabel = isTagRule ? t('inspector.tag') : t('inspector.value');
+  const valuePlaceholder = isTagRule
+    ? t('inspector.tagPlaceholder')
+    : t('inspector.valuePlaceholder');
+
   return (
     <>
-      <Field label={t('inspector.variable')}>
-        <TextInput
-          value={data.variable}
-          onChange={(v) => patch({ variable: v })}
-          placeholder={t('inspector.variablePlaceholder')}
-        />
-      </Field>
       <Field label={t('inspector.operator')}>
-        <Select value={data.operator} onChange={(v) => patch({ operator: v })}>
-          <option value="eq">{t('inspector.opEq')}</option>
-          <option value="neq">{t('inspector.opNeq')}</option>
-          <option value="contains">{t('inspector.opContains')}</option>
-          <option value="exists">{t('inspector.opExists')}</option>
+        <Select value={op} onChange={(v) => patch({ operator: v })}>
+          <optgroup label={t('inspector.ruleGroupContext')}>
+            <option value="eq">{t('inspector.opEq')}</option>
+            <option value="neq">{t('inspector.opNeq')}</option>
+            <option value="contains">{t('inspector.opContains')}</option>
+            <option value="exists">{t('inspector.opExists')}</option>
+          </optgroup>
+          <optgroup label={t('inspector.ruleGroupContact')}>
+            <option value="tag_exists">{t('inspector.opTagExists')}</option>
+            <option value="tag_not_exists">{t('inspector.opTagNotExists')}</option>
+            <option value="attribute_equals">{t('inspector.opAttributeEquals')}</option>
+            <option value="is_hot_lead">{t('inspector.opIsHotLead')}</option>
+          </optgroup>
         </Select>
       </Field>
-      {data.operator !== 'exists' && (
-        <Field label={t('inspector.value')}>
+      {showVariable && (
+        <Field label={variableLabel}>
+          <TextInput
+            value={data.variable}
+            onChange={(v) => patch({ variable: v })}
+            placeholder={t('inspector.variablePlaceholder')}
+          />
+        </Field>
+      )}
+      {showValue && (
+        <Field label={valueLabel}>
           <TextInput
             value={data.value}
             onChange={(v) => patch({ value: v })}
-            placeholder={t('inspector.valuePlaceholder')}
+            placeholder={valuePlaceholder}
           />
         </Field>
       )}

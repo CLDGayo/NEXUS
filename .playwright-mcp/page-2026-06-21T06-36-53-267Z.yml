@@ -1,0 +1,14 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - img [ref=e6]
+    - generic [ref=e10]: NEXUS
+  - heading "Knowledge Base" [level=1] [ref=e11]
+  - paragraph [ref=e12]: Enter your credentials to continue.
+  - generic [ref=e13]:
+    - textbox "Email" [active] [ref=e14]
+    - textbox "Password" [ref=e15]
+    - button "Sign In" [disabled] [ref=e16]
+  - generic [ref=e19]: or
+  - button "Continue with Google" [ref=e21] [cursor=pointer]:
+    - img [ref=e22]
+    - text: Continue with Google

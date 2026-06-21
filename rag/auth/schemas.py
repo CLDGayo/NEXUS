@@ -9,11 +9,9 @@ from datetime import datetime
 from fastapi_users import schemas
 from pydantic import BaseModel, Field, field_validator
 
-# Phase 54 — supported UI languages. Mirror of nexus-ui/src/i18n/languages.js;
-# keep both lists in sync. English is the default fallback.
-SUPPORTED_LANGUAGES: frozenset[str] = frozenset(
-    {"en", "vi", "fil", "de", "fr", "es", "ja"}
-)
+# Phase 54 / 59 — supported UI + chatbot languages. Single source of truth is
+# rag.i18n (also mirrored in nexus-ui/src/i18n/languages.js). English default.
+from rag.i18n import SUPPORTED_LANGUAGES
 
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
@@ -74,11 +72,13 @@ class TenantRead(BaseModel):
     # Phase 52 — Workspace Lifecycle & Danger Zone.
     avatar_url: str | None = None
     archived_at: datetime | None = None
+    # Phase 59 — workspace default chatbot language (BCP-47 base code).
+    preferred_language: str = "en"
 
 
 class TenantUpdate(BaseModel):
-    """Body for ``PATCH /api/tenants/{id}`` — name, slug, and avatar_url are
-    all optional; at least one must be provided.
+    """Body for ``PATCH /api/tenants/{id}`` — name, slug, avatar_url, and
+    preferred_language are all optional; at least one must be provided.
 
     Slug validation: lowercase URL-safe (a-z, 0-9, hyphen), 1–120 chars.
     """
@@ -86,6 +86,8 @@ class TenantUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     slug: str | None = Field(default=None, min_length=1, max_length=120)
     avatar_url: str | None = None
+    # Phase 59 — set the workspace default chatbot language.
+    preferred_language: str | None = None
 
     @field_validator("slug")
     @classmethod
@@ -99,6 +101,18 @@ class TenantUpdate(BaseModel):
             raise ValueError(
                 "slug must contain only lowercase letters, digits, and hyphens, "
                 "and must not start or end with a hyphen"
+            )
+        return v
+
+    @field_validator("preferred_language")
+    @classmethod
+    def preferred_language_must_be_supported(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if v not in SUPPORTED_LANGUAGES:
+            raise ValueError(
+                "preferred_language must be one of: "
+                + ", ".join(sorted(SUPPORTED_LANGUAGES))
             )
         return v
 

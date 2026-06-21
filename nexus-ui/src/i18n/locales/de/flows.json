@@ -12,8 +12,12 @@
   "colName": "Name",
   "colPage": "Page",
   "colStatus": "Status",
+  "colRuns": "Runs (7d)",
   "colCreated": "Created",
   "colActions": "Actions",
+  "noRuns": "No runs",
+  "runsCount": "{{count}} runs",
+  "successRate": "{{pct}}% success",
   "statusActive": "Active",
   "statusInactive": "Inactive",
   "edit": "Edit",
@@ -54,7 +58,10 @@
       "label": "Condition",
       "true": "True",
       "false": "False",
-      "noCondition": "No condition set"
+      "noCondition": "No condition set",
+      "hasTag": "hat Tag \"{{value}}\"",
+      "missingTag": "Tag \"{{value}}\" fehlt",
+      "isHotLead": "ist Hot Lead"
     },
     "sendMessage": {
       "label": "Send Message",
@@ -135,8 +142,45 @@
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
     "crmFieldPlaceholder": "e.g. plan",
+<<<<<<< HEAD
     "postUrl": "Facebook-Beitrag (optional)",
     "postUrlPlaceholder": "Beitrags-URL oder ID — leer = jeder Beitrag",
     "postUrlHint": "Nur auslösen, wenn der Kommentar zu diesem Beitrag gehört."
+=======
+    "ruleGroupContext": "Nachrichtenkontext",
+    "ruleGroupContact": "Kontakt (CRM)",
+    "opTagExists": "Hat Tag",
+    "opTagNotExists": "Tag fehlt",
+    "opAttributeEquals": "Attribut gleich",
+    "opIsHotLead": "Ist Hot Lead",
+    "attribute": "Attribut",
+    "tag": "Tag",
+    "tagPlaceholder": "z. B. hot_lead"
+  },
+  "executions": {
+    "tab": "Ausführungen",
+    "editorTab": "Editor",
+    "title": "Ausführungen",
+    "colStatus": "Status",
+    "colStarted": "Gestartet",
+    "colRunTime": "Laufzeit",
+    "colId": "Ausführungs-ID",
+    "statusCompleted": "Erfolg",
+    "statusFailed": "Fehler",
+    "statusActive": "Läuft",
+    "statusWaiting": "Wartet",
+    "empty": "Noch keine Ausführungen",
+    "emptyHint": "Ausführungen erscheinen hier, sobald dieser Flow durch einen Kommentar oder eine DM ausgelöst wird.",
+    "viewing": "Ausführung anzeigen",
+    "readOnly": "Schreibgeschützt",
+    "backToList": "Zurück zu Ausführungen",
+    "loadError": "Ausführungen konnten nicht geladen werden.",
+    "refresh": "Aktualisieren",
+    "prev": "Zurück",
+    "next": "Weiter",
+    "showing": "{{from}}–{{to}} von {{total}}",
+    "legendSuccess": "Erfolgspfad",
+    "legendError": "Fehlerknoten"
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
   }
 }

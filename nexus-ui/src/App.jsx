@@ -67,7 +67,6 @@ export default function App() {
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/conversations" element={<ConversationsPage />} />
             <Route path="/logs" element={<LogsPage />} />
-            <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/resources" element={<ResourcesPage />} />
             <Route
               path="/graph"
@@ -83,6 +82,10 @@ export default function App() {
             </Route>
             {/* Phase 50 — settings are manager-class (owner or admin). */}
             <Route element={<RequireManager />}>
+              {/* Integrations is manager-class — the whole /api/integrations
+                  surface is require_manager. Guarding here bounces plain
+                  members to /chat instead of looping the workspace picker. */}
+              <Route path="/integrations" element={<IntegrationsPage />} />
               {/* Phase 58 — NEXUS Flow visual builder (manager-class). */}
               <Route path="/flows" element={<FlowsPage />} />
               <Route

@@ -73,12 +73,6 @@ export default {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
-        // Slow drift of the ambient gradient mesh behind the glass.
-        'mesh-drift': {
-          '0%,100%': { transform: 'translate3d(0,0,0) scale(1)' },
-          '33%': { transform: 'translate3d(3%,-4%,0) scale(1.08)' },
-          '66%': { transform: 'translate3d(-3%,3%,0) scale(0.96)' },
-        },
         // iOS mount reveal — rise + fade + de-blur.
         'glass-rise': {
           '0%': { opacity: '0', transform: 'translateY(8px) scale(0.985)' },
@@ -90,7 +84,6 @@ export default {
         'glass-pulse': 'glass-pulse 2.4s ease-in-out infinite',
         'particle-drift': 'particle-drift 4s linear infinite',
         sheen: 'sheen 2.5s linear infinite',
-        'mesh-drift': 'mesh-drift 22s ease-in-out infinite',
         'glass-rise': 'glass-rise 0.32s cubic-bezier(0.22,1,0.36,1)',
       },
     },

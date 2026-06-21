@@ -130,9 +130,8 @@ body {
   }
 }
 
-/* Honor reduced-motion for the ambient mesh + perpetual glass motion. */
+/* Honor reduced-motion for perpetual glass motion. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-mesh-drift,
   .animate-glass-float,
   .animate-glass-pulse {
     animation: none !important;

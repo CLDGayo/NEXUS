@@ -323,6 +323,14 @@ class Settings(BaseSettings):
     # Redis key the sync jobs share with the existing outbound queue machinery.
     facebook_sync_correlation_prefix: str = Field(default="fb_sync")
 
+    # ---- Phase 61 — One-click Meta OAuth (Page connect) ----
+    # Standard Facebook Login app credentials. The redirect URI MUST be
+    # whitelisted byte-for-byte in the Meta App dashboard ("Valid OAuth
+    # Redirect URIs"), e.g. https://chat.nexus.gayo-sphere.cloud/api/facebook/callback
+    facebook_app_id: str | None = None
+    facebook_app_secret: str | None = None
+    facebook_redirect_uri: str | None = None
+
     # ---- Phase 56 — Google SSO (OIDC authorization-code + PKCE) ----
     google_client_id: str | None = None
     google_client_secret: str | None = None
@@ -340,6 +348,82 @@ class Settings(BaseSettings):
     # Set Secure flag on the refresh cookie. True in prod (HTTPS); tests/dev
     # over http need it False or the cookie is dropped.
     refresh_cookie_secure: bool = Field(default=True)
+
+    # ---- Security headers + CORS hardening (ZAP 2026-06-20 remediation) ----
+    # Cross-Domain Misconfiguration: the legacy ``allow_origins=["*"]`` (paired
+    # with ``allow_credentials=True``, which browsers reject anyway) let any
+    # origin read API responses. Lock CORS to an explicit allowlist. The SPA
+    # and the embeddable widget both call the API same-origin (relative URLs),
+    # so the only genuine cross-origin callers are local Vite dev servers.
+    # Override on the VPS via ``CORS_ALLOW_ORIGINS`` if a new origin is added.
+    cors_allow_origins_csv: str = Field(
+        default=(
+            "https://chat.nexus.gayo-sphere.cloud,"
+            "https://nexus.gayo-sphere.cloud,"
+            "http://localhost:5173,"
+            "http://127.0.0.1:5173"
+        ),
+        alias="CORS_ALLOW_ORIGINS",
+        description="Comma-separated CORS origin allowlist. Replaces wildcard.",
+    )
+    # Master switch for the response security-headers middleware (CSP, HSTS,
+    # X-Content-Type-Options, Referrer-Policy, etc.). True in prod; tests flip
+    # it as needed.
+    security_headers_enabled: bool = Field(default=True)
+    # HSTS max-age (seconds). 2 years + includeSubDomains is the
+    # preload-eligible baseline. Only emitted over HTTPS requests.
+    hsts_max_age: int = Field(default=63_072_000, ge=0, le=63_072_000)
+    # Content-Security-Policy for the SPA / API surface. Kept env-overridable
+    # so ops can relax a directive without a code redeploy if the Vite bundle
+    # ever needs an additional source. ``frame-ancestors 'self'`` stops the
+    # admin SPA being framed; the embeddable widget gets its own policy below.
+    security_csp: str = Field(
+        default=(
+            "default-src 'self'; "
+            "script-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self' data:; "
+            "connect-src 'self'; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "frame-ancestors 'self'"
+        ),
+        alias="SECURITY_CSP",
+        description="Content-Security-Policy header value for app/API routes.",
+    )
+    # Widget CSP — identical hardening but ``frame-ancestors *`` so the chat
+    # widget remains embeddable as an iframe on arbitrary customer sites.
+    # Tighten to a specific customer-domain allowlist via ``SECURITY_CSP_WIDGET``
+    # once the embed list is known.
+    security_csp_widget: str = Field(
+        default=(
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "font-src 'self' data:; "
+            "connect-src 'self'; "
+            "object-src 'none'; "
+            "base-uri 'self'; "
+            "frame-ancestors *"
+        ),
+        alias="SECURITY_CSP_WIDGET",
+        description="CSP for embeddable widget routes (permits cross-site framing).",
+    )
+
+    def cors_allow_origins(self) -> list[str]:
+        """Parse the CSV allowlist into a de-duplicated, ordered origin list."""
+
+        seen: set[str] = set()
+        out: list[str] = []
+        for part in self.cors_allow_origins_csv.split(","):
+            origin = part.strip().rstrip("/")
+            if origin and origin not in seen:
+                seen.add(origin)
+                out.append(origin)
+        return out
 
     def outbound_backoff_seconds(self) -> list[int]:
         """Parse the CSV into ordered backoff intervals."""
