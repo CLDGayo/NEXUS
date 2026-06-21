@@ -84,6 +84,11 @@
       "saveTo": "Save to",
       "validate": "Validate"
     },
+    "userInput": {
+      "label": "Collect Input",
+      "savesTo": "Saves to: {{field}}",
+      "noField": "No field key set"
+    },
     "aiRouter": {
       "label": "AI Intent Router",
       "intentCount": "{{count}} intent(s)",
@@ -128,6 +133,9 @@
     "promptPlaceholder": "What would you like to ask?",
     "captureVariable": "Save reply to variable",
     "captureVariablePlaceholder": "e.g. email",
+    "fieldKey": "Custom field key",
+    "fieldKeyPlaceholder": "e.g. email",
+    "fieldKeyHint": "The reply is saved to this field on the contact's Audience record.",
     "validation": "Validation hint",
     "validationPlaceholder": "e.g. must be email",
     "intents": "Intents",

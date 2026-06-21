@@ -409,7 +409,7 @@ async def _traverse(
             current_node = _next_node(flow, node_id, source_handle)
             continue
 
-        if node_type == "waitForInput":
+        if node_type in ("waitForInput", "userInput"):
             # Send the prompt message.
             prompt = str(node_data.get("prompt") or node_data.get("message") or "")
             if prompt:
@@ -878,6 +878,17 @@ async def resume_flow_for_dm(
         node_data = waiting_node.get("data") or {}
         var_name = str(node_data.get("variable") or node_data.get("saveAs") or "input")
         run_row.context = {**run_row.context, var_name: message, "_input": message}
+
+        # Phase 65 — a userInput node also persists the captured reply to the
+        # durable flow_contacts custom-fields store (audience CRM), keyed by the
+        # node's fieldKey (falling back to the capture variable name).
+        if waiting_node.get("type") == "userInput":
+            field_key = str(node_data.get("fieldKey") or var_name)
+            contact = await _get_or_create_contact(
+                db, run_row.tenant_id, run_row.page_id, run_row.sender_id
+            )
+            contact.attributes = {**(contact.attributes or {}), field_key: message}
+            await db.flush()
 
         # Resume from the next node after the waitForInput.
         next_node = _next_node(flow, waiting_node_id or "")

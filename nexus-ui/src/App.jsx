@@ -18,6 +18,7 @@ import ConversationsPage from './pages/ConversationsPage.jsx';
 import LogsPage from './pages/LogsPage.jsx';
 import IntegrationsPage from './pages/IntegrationsPage.jsx';
 import FlowsPage from './pages/FlowsPage.jsx';
+import AudiencePage from './pages/AudiencePage.jsx';
 import ResourcesPage from './pages/ResourcesPage.jsx';
 import ProductsDashboardPage from './pages/ProductsDashboardPage.jsx';
 import ProductEditPage from './pages/ProductEditPage.jsx';
@@ -96,6 +97,7 @@ export default function App() {
                   </Suspense>
                 }
               />
+              <Route path="/audience" element={<AudiencePage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route
                 path="/settings/ai-studio"

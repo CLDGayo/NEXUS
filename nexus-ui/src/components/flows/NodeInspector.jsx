@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import UserInputInspector from './UserInputInspector.jsx';
 
 /**
  * Slugify a label into a machine-safe id.
@@ -457,6 +458,8 @@ export default function NodeInspector({ selectedNode, setEdges, onClose }) {
         return <SendMessageInspector data={data} patch={patch} />;
       case 'waitForInput':
         return <WaitForInputInspector data={data} patch={patch} />;
+      case 'userInput':
+        return <UserInputInspector data={data} patch={patch} />;
       case 'aiRouter':
         return (
           <AiRouterInspector
