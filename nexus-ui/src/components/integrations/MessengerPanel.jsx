@@ -65,9 +65,6 @@ export default function MessengerPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [editingPat, setEditingPat] = useState(false);
-  const [patInput, setPatInput] = useState('');
-  const [patStatus, setPatStatus] = useState(null);
   const [editingSecret, setEditingSecret] = useState(false);
   const [secretInput, setSecretInput] = useState('');
   const [secretStatus, setSecretStatus] = useState(null);
@@ -95,23 +92,6 @@ export default function MessengerPanel() {
       setData(d);
     } catch (err) {
       alert(t('messenger.rotateFailed', { error: err.message }));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function submitPat(e) {
-    e.preventDefault();
-    setPatStatus(null);
-    setBusy(true);
-    try {
-      const d = await api.patch('/integrations/messenger', { page_access_token: patInput.trim() });
-      setData(d);
-      setEditingPat(false);
-      setPatInput('');
-      setPatStatus({ kind: 'success', text: t('messenger.patUpdated') });
-    } catch (err) {
-      setPatStatus({ kind: 'error', text: err.message });
     } finally {
       setBusy(false);
     }
@@ -161,7 +141,6 @@ export default function MessengerPanel() {
         </div>
         <div className="flex items-center gap-2">
           <StatusPill ok={data.app_secret_present} okLabel={t('messenger.appSecret')} badLabel={t('messenger.appSecretMissing')} />
-          <StatusPill ok={data.page_access_token_present} okLabel={t('messenger.patSet')} badLabel={t('messenger.patMissing')} />
         </div>
       </div>
 
@@ -182,62 +161,6 @@ export default function MessengerPanel() {
             </button>
           }
         />
-      </div>
-
-      <div>
-        <div className="mb-1 flex items-center justify-between">
-          <label className="text-[11px] font-semibold uppercase tracking-wide text-nexus-muted">
-            {t('messenger.pageAccessToken')}
-          </label>
-          {!editingPat ? (
-            <button
-              type="button"
-              onClick={() => { setEditingPat(true); setPatStatus(null); }}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-nexus-accent hover:underline"
-            >
-              <Edit3 size={11} /> {t('messenger.update')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => { setEditingPat(false); setPatInput(''); setPatStatus(null); }}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-nexus-muted hover:text-slate-700 hover:dark:text-slate-300"
-            >
-              <X size={11} /> {t('messenger.cancel')}
-            </button>
-          )}
-        </div>
-
-        {!editingPat ? (
-          <div className="rounded-lg border border-nexus-border bg-slate-50 dark:bg-slate-900 px-3 py-2 font-mono text-xs text-slate-600 dark:text-slate-400">
-            {data.page_access_token_masked || <span className="text-slate-400">{t('messenger.notSet')}</span>}
-          </div>
-        ) : (
-          <form onSubmit={submitPat} className="flex items-stretch gap-2">
-            <input
-              type="password"
-              value={patInput}
-              onChange={(e) => setPatInput(e.target.value)}
-              placeholder={t('messenger.patPlaceholder')}
-              minLength={16}
-              required
-              className="flex-1 rounded-lg border border-white/60 bg-white/55 backdrop-blur-glass dark:border-white/10 dark:bg-white/5 px-3 py-2 font-mono text-xs outline-none focus:border-nexus-accent"
-            />
-            <button
-              type="submit"
-              disabled={busy || patInput.trim().length < 16}
-              className="rounded-lg bg-nexus-accent px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              {t('messenger.save')}
-            </button>
-          </form>
-        )}
-
-        {patStatus && (
-          <p className={`mt-1 text-xs ${patStatus.kind === 'error' ? 'text-red-600' : 'text-emerald-600'}`}>
-            {patStatus.text}
-          </p>
-        )}
       </div>
 
       <div>
