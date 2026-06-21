@@ -278,12 +278,18 @@ async def _traverse(
             )
             run.status = "failed"
             run.current_node_id = current_node.get("id")
+            run.failed_node_id = current_node.get("id")
             return False, "node visit cap exceeded (cycle guard)"
 
         visit_count += 1
         node_id = current_node.get("id", "")
         node_type = current_node.get("type", "")
         node_data = current_node.get("data") or {}
+
+        # Phase 58.4a — analytics trail. Reassign (not mutate) so SQLAlchemy
+        # flags the JSONB column dirty. Captures every executed node id in order.
+        if node_id:
+            run.path = [*(run.path or []), node_id]
 
         _log.debug(
             "flow_engine.traverse flow=%s run=%s node=%s type=%s",
@@ -318,6 +324,7 @@ async def _traverse(
                     )
                     run.status = "failed"
                     run.current_node_id = node_id
+                    run.failed_node_id = node_id
                     return False, error
             source_handle = None
             current_node = _next_node(flow, node_id)
@@ -365,6 +372,7 @@ async def _traverse(
                     )
                     run.status = "failed"
                     run.current_node_id = node_id
+                    run.failed_node_id = node_id
                     return False, error
             # Halt here — resume when DM arrives.
             run.status = "waiting"
@@ -533,6 +541,7 @@ async def _traverse(
         )
         run.status = "failed"
         run.current_node_id = node_id
+        run.failed_node_id = node_id
         return False, f"unknown node type: {node_type}"
 
     # End of graph reached normally.
