@@ -42,7 +42,9 @@
       "matchExact": "Exact match",
       "matchContains": "Contains",
       "matchAny": "Any comment",
-      "noKeyword": "No keyword set"
+      "noKeyword": "No keyword set",
+      "onPost": "Publication spécifique",
+      "anyPost": "Toute publication"
     },
     "dmTrigger": {
       "label": "DM Trigger",
@@ -132,6 +134,9 @@
     "crmValue": "Value",
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
-    "crmFieldPlaceholder": "e.g. plan"
+    "crmFieldPlaceholder": "e.g. plan",
+    "postUrl": "Publication Facebook (facultatif)",
+    "postUrlPlaceholder": "URL ou ID de la publication — vide = toutes",
+    "postUrlHint": "Se déclenche uniquement pour un commentaire sur cette publication."
   }
 }

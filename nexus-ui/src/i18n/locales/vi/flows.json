@@ -42,7 +42,9 @@
       "matchExact": "Exact match",
       "matchContains": "Contains",
       "matchAny": "Any comment",
-      "noKeyword": "No keyword set"
+      "noKeyword": "No keyword set",
+      "onPost": "Bài viết cụ thể",
+      "anyPost": "Mọi bài viết"
     },
     "dmTrigger": {
       "label": "DM Trigger",
@@ -132,6 +134,9 @@
     "crmValue": "Value",
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
-    "crmFieldPlaceholder": "e.g. plan"
+    "crmFieldPlaceholder": "e.g. plan",
+    "postUrl": "Bài viết Facebook (tùy chọn)",
+    "postUrlPlaceholder": "URL hoặc ID bài viết — để trống = mọi bài",
+    "postUrlHint": "Chỉ kích hoạt khi bình luận nằm trên bài viết này."
   }
 }

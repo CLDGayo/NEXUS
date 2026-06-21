@@ -201,7 +201,7 @@ export default function FlowBuilderPage() {
       label: t('nodes.commentTrigger.label'),
       Icon: MessageCircle,
       color: 'text-blue-500',
-      defaultData: { keyword: '', matchType: 'contains', pageId, pageName },
+      defaultData: { keyword: '', matchType: 'contains', post_id: '', pageId, pageName },
     },
     {
       type: 'dmTrigger',
