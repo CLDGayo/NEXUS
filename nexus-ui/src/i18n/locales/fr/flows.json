@@ -149,5 +149,30 @@
     "attribute": "Attribut",
     "tag": "Tag",
     "tagPlaceholder": "ex. hot_lead"
+  },
+  "executions": {
+    "tab": "Exécutions",
+    "editorTab": "Éditeur",
+    "title": "Exécutions",
+    "colStatus": "Statut",
+    "colStarted": "Démarré",
+    "colRunTime": "Durée",
+    "colId": "ID d'exécution",
+    "statusCompleted": "Succès",
+    "statusFailed": "Erreur",
+    "statusActive": "En cours",
+    "statusWaiting": "En attente",
+    "empty": "Aucune exécution",
+    "emptyHint": "Les exécutions apparaissent ici lorsque ce flux est déclenché par un commentaire ou un message.",
+    "viewing": "Exécution affichée",
+    "readOnly": "Lecture seule",
+    "backToList": "Retour aux exécutions",
+    "loadError": "Impossible de charger les exécutions.",
+    "refresh": "Actualiser",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "showing": "{{from}}–{{to}} sur {{total}}",
+    "legendSuccess": "Chemin réussi",
+    "legendError": "Nœud en échec"
   }
 }

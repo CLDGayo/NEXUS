@@ -960,8 +960,15 @@ class FlowRun(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Phase 61 — ``onupdate`` makes updated_at track the last state transition
+    # (traversal completion / failure / DM-resume), so the Executions dashboard
+    # can report a meaningful "Run Time" = updated_at − created_at. Client-side
+    # default only (emitted in the UPDATE statement); no schema migration needed.
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
     flow: Mapped["NexusFlow"] = relationship("NexusFlow", back_populates="runs")

@@ -149,5 +149,30 @@
     "attribute": "Thuộc tính",
     "tag": "Thẻ",
     "tagPlaceholder": "vd. hot_lead"
+  },
+  "executions": {
+    "tab": "Lần chạy",
+    "editorTab": "Trình chỉnh sửa",
+    "title": "Lần chạy",
+    "colStatus": "Trạng thái",
+    "colStarted": "Bắt đầu",
+    "colRunTime": "Thời gian chạy",
+    "colId": "ID lần chạy",
+    "statusCompleted": "Thành công",
+    "statusFailed": "Lỗi",
+    "statusActive": "Đang chạy",
+    "statusWaiting": "Đang chờ",
+    "empty": "Chưa có lần chạy nào",
+    "emptyHint": "Các lần chạy sẽ xuất hiện ở đây khi luồng này được kích hoạt bởi bình luận hoặc tin nhắn.",
+    "viewing": "Đang xem lần chạy",
+    "readOnly": "Chỉ đọc",
+    "backToList": "Quay lại danh sách lần chạy",
+    "loadError": "Không thể tải các lần chạy.",
+    "refresh": "Làm mới",
+    "prev": "Trước",
+    "next": "Tiếp",
+    "showing": "{{from}}–{{to}} trên {{total}}",
+    "legendSuccess": "Đường thành công",
+    "legendError": "Nút lỗi"
   }
 }

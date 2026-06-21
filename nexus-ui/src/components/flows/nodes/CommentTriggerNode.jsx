@@ -1,7 +1,6 @@
-import { Handle, Position } from '@xyflow/react';
 import { MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { cn } from '../../ui/cn.js';
+import NodeShell from './NodeShell.jsx';
 
 /**
  * @typedef {Object} CommentTriggerData
@@ -28,27 +27,18 @@ export default function CommentTriggerNode({ data, selected }) {
         : t('nodes.commentTrigger.matchExact');
 
   return (
-    <div
-      className={cn(
-        'glass-card min-w-[200px] rounded-xl border px-4 py-3 shadow-md',
-        selected
-          ? 'border-nexus-accent ring-2 ring-nexus-accent/30'
-          : 'border-white/60 dark:border-white/10',
-      )}
-    >
-      {/* Header */}
-      <div className="mb-2 flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/15 text-blue-500">
-          <MessageCircle size={13} />
-        </span>
-        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-          {t('nodes.commentTrigger.label')}
-        </span>
-        <span className="ml-auto rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-blue-600 dark:text-blue-400">
+    <NodeShell
+      Icon={MessageCircle}
+      label={t('nodes.commentTrigger.label')}
+      accent="blue"
+      selected={selected}
+      target={false}
+      badge={
+        <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-300">
           {t('nodes.trigger')}
         </span>
-      </div>
-
+      }
+    >
       {/* Keyword */}
       {data.keyword ? (
         <p className="truncate font-mono text-[11px] text-slate-600 dark:text-slate-400">
@@ -69,17 +59,8 @@ export default function CommentTriggerNode({ data, selected }) {
 
       {/* Page */}
       {data.pageName && (
-        <p className="mt-1 truncate text-[10px] text-nexus-muted">
-          {data.pageName}
-        </p>
+        <p className="mt-1 truncate text-[10px] text-nexus-muted">{data.pageName}</p>
       )}
-
-      {/* Source handle — right */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!h-3 !w-3 !border-2 !border-white !bg-nexus-accent"
-      />
-    </div>
+    </NodeShell>
   );
 }

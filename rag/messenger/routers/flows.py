@@ -144,6 +144,36 @@ class FlowAnalyticsSummary(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Phase 61 — per-run execution history (Executions dashboard + canvas overlay)
+# ---------------------------------------------------------------------------
+
+
+class FlowRunRead(BaseModel):
+    """One execution row for the Executions table."""
+
+    id: uuid.UUID
+    status: str
+    current_node_id: str | None = None
+    failed_node_id: str | None = None
+    started_at: datetime
+    updated_at: datetime
+    run_time_ms: int
+
+
+class FlowRunListResponse(BaseModel):
+    runs: list[FlowRunRead]
+    total: int
+    limit: int
+    offset: int
+
+
+class FlowRunDetail(FlowRunRead):
+    """Single execution incl. the visited-node trail for the canvas overlay."""
+
+    path: list[str] = []
+
+
+# ---------------------------------------------------------------------------
 # Path/header guard helper
 # ---------------------------------------------------------------------------
 
@@ -335,6 +365,16 @@ def _success_rate(completed: int, failed: int) -> float:
     return round(completed / terminal, 4) if terminal else 0.0
 
 
+def _run_time_ms(started: datetime, updated: datetime) -> int:
+    """Elapsed wall-clock for a run in milliseconds (never negative).
+
+    For terminal runs ``updated`` is the completion/failure time (FlowRun
+    sets ``onupdate=func.now()``); for in-flight runs it is the last
+    transition, so the value reads as "elapsed so far".
+    """
+    return max(0, int((updated - started).total_seconds() * 1000))
+
+
 @router.get("/{tenant_id}/facebook/flows/analytics/summary")
 async def flows_analytics_summary(
     tenant_id: uuid.UUID,
@@ -439,4 +479,117 @@ async def flow_analytics(
         },
         nodes=nodes,
         window_days=window_days,
+    )
+
+
+async def _assert_flow_owned(
+    db: AsyncSession, flow_id: uuid.UUID, tenant_id: uuid.UUID
+) -> None:
+    """404 unless ``flow_id`` belongs to ``tenant_id``."""
+    owns = (
+        await db.execute(
+            select(NexusFlow.id).where(
+                NexusFlow.id == flow_id,
+                NexusFlow.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if owns is None:
+        raise HTTPException(status_code=404, detail="flow_not_found")
+
+
+@router.get("/{tenant_id}/facebook/flows/{flow_id}/runs")
+async def list_flow_runs(
+    tenant_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    limit: int = Query(default=25, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    status: str | None = Query(default=None),
+    tenant: Tenant = Depends(require_manager),
+    db: AsyncSession = Depends(get_async_session),
+) -> FlowRunListResponse:
+    """Paginated execution history for one flow (Executions dashboard).
+
+    Newest first. Optional ``status`` filter (active|waiting|completed|failed).
+    """
+    _check_path_matches_header(tenant, tenant_id)
+    await _assert_flow_owned(db, flow_id, tenant.id)
+
+    filters = [FlowRun.flow_id == flow_id, FlowRun.tenant_id == tenant.id]
+    if status in ("active", "waiting", "completed", "failed"):
+        filters.append(FlowRun.status == status)
+
+    total = (
+        await db.execute(select(func.count()).select_from(FlowRun).where(*filters))
+    ).scalar_one_or_none() or 0
+
+    rows = (
+        await db.execute(
+            select(
+                FlowRun.id,
+                FlowRun.status,
+                FlowRun.current_node_id,
+                FlowRun.failed_node_id,
+                FlowRun.created_at,
+                FlowRun.updated_at,
+            )
+            .where(*filters)
+            .order_by(FlowRun.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+    ).all()
+
+    # Index access works for both real SQLAlchemy Row objects and the test
+    # double's plain tuples.
+    runs = [
+        FlowRunRead(
+            id=r[0],
+            status=r[1],
+            current_node_id=r[2],
+            failed_node_id=r[3],
+            started_at=r[4],
+            updated_at=r[5],
+            run_time_ms=_run_time_ms(r[4], r[5]),
+        )
+        for r in rows
+    ]
+    return FlowRunListResponse(
+        runs=runs, total=int(total), limit=limit, offset=offset
+    )
+
+
+@router.get("/{tenant_id}/facebook/flows/{flow_id}/runs/{run_id}")
+async def get_flow_run(
+    tenant_id: uuid.UUID,
+    flow_id: uuid.UUID,
+    run_id: uuid.UUID,
+    tenant: Tenant = Depends(require_manager),
+    db: AsyncSession = Depends(get_async_session),
+) -> FlowRunDetail:
+    """Single execution incl. the visited-node ``path`` and ``failed_node_id``
+    for the read-only canvas overlay."""
+    _check_path_matches_header(tenant, tenant_id)
+
+    row = (
+        await db.execute(
+            select(FlowRun).where(
+                FlowRun.id == run_id,
+                FlowRun.flow_id == flow_id,
+                FlowRun.tenant_id == tenant.id,
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="run_not_found")
+
+    return FlowRunDetail(
+        id=row.id,
+        status=row.status,
+        current_node_id=row.current_node_id,
+        failed_node_id=row.failed_node_id,
+        started_at=row.created_at,
+        updated_at=row.updated_at,
+        run_time_ms=_run_time_ms(row.created_at, row.updated_at),
+        path=list(row.path or []),
     )
