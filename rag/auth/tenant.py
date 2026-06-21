@@ -130,6 +130,7 @@ async def list_tenants_for_user(db: AsyncSession, user: User) -> list[TenantRead
             member_count=member_count,
             avatar_url=tenant.avatar_url,
             archived_at=tenant.archived_at,
+            preferred_language=tenant.preferred_language,
         )
         for tenant, role, member_count in rows
     ]

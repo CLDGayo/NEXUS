@@ -1,11 +1,8 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LockKeyhole, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.js';
-import BackgroundBoundary from '../background/BackgroundBoundary.jsx';
-
-const LiquidBackground = lazy(() => import('../background/LiquidBackground.jsx'));
 
 export default function LoginScreen() {
   const { t } = useTranslation('auth');
@@ -37,18 +34,6 @@ export default function LoginScreen() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden p-6">
-      {/* Pastel mesh fallback + 3D liquid orbs behind the frosted login card.
-          Body holds the cream/ink base color; mesh + orbs are fixed z-0. */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -left-[10%] -top-[15%] h-[60vh] w-[60vh] animate-mesh-drift rounded-full bg-[radial-gradient(circle,rgba(191,232,212,0.6),transparent_70%)] blur-3xl dark:bg-[radial-gradient(circle,rgba(91,124,250,0.3),transparent_70%)]" />
-        <div className="absolute right-[-12%] bottom-[-10%] h-[55vh] w-[55vh] animate-mesh-drift rounded-full bg-[radial-gradient(circle,rgba(246,212,221,0.55),transparent_70%)] blur-3xl [animation-delay:-7s] dark:bg-[radial-gradient(circle,rgba(157,180,255,0.2),transparent_70%)]" />
-      </div>
-      <BackgroundBoundary>
-        <Suspense fallback={null}>
-          <LiquidBackground />
-        </Suspense>
-      </BackgroundBoundary>
-
       <div className="glass-dialog relative z-10 w-full max-w-md p-8 text-slate-900 dark:text-slate-100">
         <div className="flex items-center gap-2 text-nexus-accent mb-1">
           <LockKeyhole size={18} />

@@ -206,6 +206,7 @@ def _db_stub(
     flush_raises: Exception | None = None,
     run_row: Any = None,
     flow_row: Any = None,
+    tenant_language: str = "en",
 ) -> MagicMock:
     """Build a minimal AsyncSession double for flow_engine tests."""
     db = MagicMock()
@@ -215,6 +216,9 @@ def _db_stub(
         db._added.append(row)
 
     db.add = _add
+
+    # Phase 59 — flow_engine loads Tenant.preferred_language via db.scalar.
+    db.scalar = AsyncMock(return_value=tenant_language)
 
     call_count = [0]
 
@@ -252,11 +256,15 @@ def _db_stub_resume(
     *,
     run_row: Any = None,
     flow_row: Any = None,
+    tenant_language: str = "en",
 ) -> MagicMock:
     """DB stub specifically for resume_flow_for_dm (2 select calls)."""
     db = MagicMock()
     db._added: list = []
     db.add = lambda row: db._added.append(row)
+
+    # Phase 59 — resume path loads Tenant.preferred_language via db.scalar.
+    db.scalar = AsyncMock(return_value=tenant_language)
 
     call_count = [0]
 
@@ -826,6 +834,83 @@ class TestAiRouterNode:
         # Fallback branch should have fired
         assert len(client.posts) == 1
         assert client.posts[0]["json"]["message"]["text"] == "Safe fallback"
+
+    async def test_airouter_injects_tenant_language_directive(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Phase 59 — a non-English tenant gets the language directive injected
+        into the aiRouter LLM system prompt."""
+        from unittest.mock import AsyncMock
+        import rag.orchestrator.llm as _llm_mod
+
+        trigger = _comment_trigger_node(keyword="hi", match_type="contains")
+        router = _ai_router_node(
+            node_id="n_router",
+            intents=[{"id": "sales", "label": "Sales"}, {"id": "support", "label": "Support"}],
+        )
+        send_sales = _send_message_node(node_id="n_sales", message="Sales here!")
+
+        flow = _make_flow(
+            nodes=[trigger, router, send_sales],
+            edges=[
+                _edge("n_trigger", "n_router"),
+                _edge("n_router", "n_sales", handle="sales"),
+            ],
+        )
+        # Tenant default language = Spanish.
+        db = _db_stub(page_row=_make_page_row(), flows=[flow], tenant_language="es")
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        mock_chat = AsyncMock(return_value=TestAiRouterNode._make_llm_result("sales"))
+        monkeypatch.setattr(_llm_mod, "chat_complete", mock_chat)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_ai_lang", "message": "hi", "sender_id": "u_lang"},
+        )
+
+        # The classifier system prompt must carry the strict Spanish directive.
+        assert mock_chat.await_count == 1
+        messages = mock_chat.await_args.args[0]
+        system_content = messages[0]["content"]
+        assert messages[0]["role"] == "system"
+        assert "You must reply exclusively in Spanish." in system_content
+
+    async def test_airouter_english_tenant_no_directive(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Phase 59 — a default (English) tenant gets a byte-identical prompt
+        with no language directive appended."""
+        from unittest.mock import AsyncMock
+        import rag.orchestrator.llm as _llm_mod
+
+        trigger = _comment_trigger_node(keyword="hi", match_type="contains")
+        router = _ai_router_node(node_id="n_router")
+        send_sales = _send_message_node(node_id="n_sales", message="Sales here!")
+
+        flow = _make_flow(
+            nodes=[trigger, router, send_sales],
+            edges=[
+                _edge("n_trigger", "n_router"),
+                _edge("n_router", "n_sales", handle="sales"),
+            ],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow], tenant_language="en")
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        mock_chat = AsyncMock(return_value=TestAiRouterNode._make_llm_result("sales"))
+        monkeypatch.setattr(_llm_mod, "chat_complete", mock_chat)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_ai_en", "message": "hi", "sender_id": "u_en"},
+        )
+
+        assert mock_chat.await_count == 1
+        system_content = mock_chat.await_args.args[0][0]["content"]
+        assert "reply exclusively in" not in system_content
 
 
 # ---------------------------------------------------------------------------
