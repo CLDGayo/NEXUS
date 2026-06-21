@@ -12,7 +12,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck, Webhook, UserCog } from 'lucide-react';
+import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck, Webhook, UserCog, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlows } from '../hooks/useFlows.js';
 import CommentTriggerNode from '../components/flows/nodes/CommentTriggerNode.jsx';
@@ -24,6 +24,7 @@ import AiRouterNode from '../components/flows/nodes/AiRouterNode.jsx';
 import PauseNode from '../components/flows/nodes/PauseNode.jsx';
 import WebhookNode from '../components/flows/nodes/WebhookNode.jsx';
 import UpdateCrmNode from '../components/flows/nodes/UpdateCrmNode.jsx';
+import SmartDelayNode from '../components/flows/nodes/SmartDelayNode.jsx';
 import NodeInspector from '../components/flows/NodeInspector.jsx';
 
 /** Registry of custom node types — must be defined outside render to avoid re-registration */
@@ -37,6 +38,7 @@ const NODE_TYPES = {
   pause: PauseNode,
   webhook: WebhookNode,
   updateCrm: UpdateCrmNode,
+  smartDelay: SmartDelayNode,
 };
 
 /**
@@ -253,6 +255,13 @@ export default function FlowBuilderPage() {
       defaultData: { durationSeconds: 86400, message: '' },
     },
     {
+      type: 'smartDelay',
+      label: t('nodes.smartDelay.label'),
+      Icon: Timer,
+      color: 'text-indigo-500',
+      defaultData: { days: 0, hours: 1, minutes: 0 },
+    },
+    {
       type: 'webhook',
       label: t('nodes.webhook.label'),
       Icon: Webhook,
@@ -421,6 +430,7 @@ export default function FlowBuilderPage() {
                   if (n.type === 'waitForInput') return '#f97316';
                   if (n.type === 'aiRouter') return '#8b5cf6';
                   if (n.type === 'pause') return '#f43f5e';
+                  if (n.type === 'smartDelay') return '#6366f1';
                   if (n.type === 'webhook') return '#0ea5e9';
                   if (n.type === 'updateCrm') return '#14b8a6';
                   return '#94a3b8';

@@ -917,7 +917,7 @@ class FlowRun(Base):
     __tablename__ = "flow_runs"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('active','waiting','completed','failed')",
+            "status IN ('active','waiting','sleeping','completed','failed')",
             name="ck_flow_run_status",
         ),
         {"schema": "app"},
@@ -946,6 +946,14 @@ class FlowRun(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    # Phase 64 — Smart Delay scheduling. A ``smartDelay`` node halts traversal
+    # with status='sleeping' and stamps ``resume_at`` with the wall-clock time
+    # the background poller (resume_due_flows) should re-hydrate the run and
+    # continue from ``current_node_id``. State lives in Postgres so a server
+    # restart loses nothing — the poller just re-scans overdue rows on boot.
+    resume_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     flow: Mapped["NexusFlow"] = relationship("NexusFlow", back_populates="runs")

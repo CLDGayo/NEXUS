@@ -256,6 +256,16 @@ async def run_forever(
                 counters["dead_lettered"],
             )
 
+        # Phase 64 — resume any smartDelay runs whose timer is due. DB-backed +
+        # best-effort: an error here must never stall the outbound drain loop.
+        try:
+            from rag.messenger.flow_engine import resume_due_flows
+
+            async with client_factory() as resume_client:
+                await resume_due_flows(resume_client)
+        except Exception as exc:  # noqa: BLE001 — poller must never kill the worker
+            _log.warning("flow_delay poll failed err=%s", exc)
+
         if iteration_limit is not None and iterations >= iteration_limit:
             break
 

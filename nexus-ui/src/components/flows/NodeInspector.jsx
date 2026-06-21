@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import SmartDelayInspector from './SmartDelayInspector.jsx';
 
 /**
  * Slugify a label into a machine-safe id.
@@ -437,6 +438,8 @@ export default function NodeInspector({ selectedNode, setEdges, onClose }) {
         );
       case 'pause':
         return <PauseInspector data={data} patch={patch} />;
+      case 'smartDelay':
+        return <SmartDelayInspector data={data} patch={patch} />;
       case 'webhook':
         return <WebhookInspector data={data} patch={patch} />;
       case 'updateCrm':
