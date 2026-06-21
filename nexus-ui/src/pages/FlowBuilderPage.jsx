@@ -25,6 +25,7 @@ import PauseNode from '../components/flows/nodes/PauseNode.jsx';
 import WebhookNode from '../components/flows/nodes/WebhookNode.jsx';
 import UpdateCrmNode from '../components/flows/nodes/UpdateCrmNode.jsx';
 import NodeInspector from '../components/flows/NodeInspector.jsx';
+import NodePalette, { FLOW_DND_TYPE } from '../components/flows/NodePalette.jsx';
 import ExecutionsList from '../components/flows/ExecutionsList.jsx';
 
 /** Registry of custom node types — must be defined outside render to avoid re-registration */
@@ -169,19 +170,41 @@ export default function FlowBuilderPage() {
   );
 
   /**
-   * Add a node of the given type to the canvas at a sensible default position.
+   * Add a node of the given type to the canvas.
    * @param {string} type
-   * @param {Object} defaultData
+   * @param {{x:number,y:number}} [position] - explicit canvas position (drop); when
+   *   omitted a cascading default offset is used (click-to-add).
    */
-  function addNode(type, defaultData = {}) {
+  function addNodeByType(type, position) {
+    const entry = palette.find((p) => p.type === type);
+    if (!entry) return;
     const existingCount = nodes.filter((n) => n.type === type).length;
     const newNode = {
       id: makeNodeId(type),
       type,
-      position: { x: 100 + existingCount * 40, y: 100 + existingCount * 60 },
-      data: { ...defaultData },
+      position:
+        position || { x: 120 + existingCount * 40, y: 100 + existingCount * 60 },
+      data: { ...entry.defaultData },
     };
     setNodes((nds) => [...nds, newNode]);
+  }
+
+  /** Allow dropping palette items onto the canvas. */
+  function onDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }
+
+  /** Create a node at the drop point (converted from screen to flow coords). */
+  function onDrop(event) {
+    event.preventDefault();
+    const type = event.dataTransfer.getData(FLOW_DND_TYPE);
+    if (!type || !reactFlowInstance.current) return;
+    const position = reactFlowInstance.current.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    addNodeByType(type, position);
   }
 
   /** Client-side guard: block save-as-active when canvas lacks exactly one trigger */
@@ -235,11 +258,12 @@ export default function FlowBuilderPage() {
   const page = pages.find((p) => p.facebook_page_id === pageId);
   const pageName = page?.page_name || pageId || '—';
 
-  // Node palette definition
+  // Node palette definition — `category` drives the grouped sidebar.
   const palette = [
     {
       type: 'commentTrigger',
       label: t('nodes.commentTrigger.label'),
+      category: 'triggers',
       Icon: MessageCircle,
       color: 'text-blue-500',
       defaultData: { keyword: '', matchType: 'contains', pageId, pageName },
@@ -247,20 +271,15 @@ export default function FlowBuilderPage() {
     {
       type: 'dmTrigger',
       label: t('nodes.dmTrigger.label'),
+      category: 'triggers',
       Icon: Mail,
       color: 'text-violet-500',
       defaultData: { keyword: '' },
     },
     {
-      type: 'condition',
-      label: t('nodes.condition.label'),
-      Icon: GitBranch,
-      color: 'text-amber-500',
-      defaultData: { variable: '', operator: 'contains', value: '' },
-    },
-    {
       type: 'sendMessage',
       label: t('nodes.sendMessage.label'),
+      category: 'messaging',
       Icon: Send,
       color: 'text-emerald-600',
       defaultData: { message: '' },
@@ -268,13 +287,23 @@ export default function FlowBuilderPage() {
     {
       type: 'waitForInput',
       label: t('nodes.waitForInput.label'),
+      category: 'messaging',
       Icon: Clock,
       color: 'text-orange-500',
       defaultData: { prompt: '', captureVariable: '', validation: '' },
     },
     {
+      type: 'condition',
+      label: t('nodes.condition.label'),
+      category: 'logic',
+      Icon: GitBranch,
+      color: 'text-amber-500',
+      defaultData: { variable: '', operator: 'contains', value: '' },
+    },
+    {
       type: 'aiRouter',
       label: t('nodes.aiRouter.label'),
+      category: 'logic',
       Icon: Brain,
       color: 'text-violet-500',
       defaultData: {
@@ -287,25 +316,28 @@ export default function FlowBuilderPage() {
       },
     },
     {
-      type: 'pause',
-      label: t('nodes.pause.label'),
-      Icon: UserCheck,
-      color: 'text-rose-500',
-      defaultData: { durationSeconds: 86400, message: '' },
+      type: 'updateCrm',
+      label: t('nodes.updateCrm.label'),
+      category: 'actions',
+      Icon: UserCog,
+      color: 'text-teal-500',
+      defaultData: { action: 'add_tag', value: '', field: '' },
     },
     {
       type: 'webhook',
       label: t('nodes.webhook.label'),
+      category: 'actions',
       Icon: Webhook,
       color: 'text-sky-500',
       defaultData: { url: '', bodyTemplate: '{\n  "text": "{{ _input }}"\n}' },
     },
     {
-      type: 'updateCrm',
-      label: t('nodes.updateCrm.label'),
-      Icon: UserCog,
-      color: 'text-teal-500',
-      defaultData: { action: 'add_tag', value: '', field: '' },
+      type: 'pause',
+      label: t('nodes.pause.label'),
+      category: 'actions',
+      Icon: UserCheck,
+      color: 'text-rose-500',
+      defaultData: { durationSeconds: 86400, message: '' },
     },
   ];
 
@@ -514,26 +546,11 @@ export default function FlowBuilderPage() {
             <div className="flex min-h-0 flex-1">
               {/* Node palette sidebar — editor only */}
               {!execMode && (
-                <aside className="flex w-44 shrink-0 flex-col gap-1 border-r border-nexus-border/60 bg-white/40 p-3 backdrop-blur-sm dark:border-white/10 dark:bg-slate-900/40">
-                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-nexus-muted">
-                    {t('palette')}
-                  </p>
-                  {palette.map(({ type, label, Icon, color, defaultData }) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => addNode(type, defaultData)}
-                      className="glass-pressable flex items-center gap-2 rounded-lg border border-white/60 bg-white/55 px-2.5 py-2 text-left text-xs text-slate-700 hover:bg-white/80 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10"
-                    >
-                      <Icon size={13} className={color} />
-                      {label}
-                    </button>
-                  ))}
-                </aside>
+                <NodePalette palette={palette} onAdd={(type) => addNodeByType(type)} />
               )}
 
               {/* React Flow canvas */}
-              <div className="relative flex-1">
+              <div className="relative flex-1" onDrop={onDrop} onDragOver={onDragOver}>
                 <ReactFlow
                   nodes={displayNodes}
                   edges={displayEdges}

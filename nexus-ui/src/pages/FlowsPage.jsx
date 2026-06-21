@@ -63,11 +63,16 @@ export default function FlowsPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       {/* Page header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            {t('title')}
-          </h1>
-          <p className="mt-0.5 text-sm text-nexus-muted">{t('subtitle')}</p>
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-nexus-accent/10 text-nexus-accent">
+            <Workflow size={20} />
+          </span>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              {t('title')}
+            </h1>
+            <p className="mt-0.5 text-sm text-nexus-muted">{t('subtitle')}</p>
+          </div>
         </div>
         <button
           type="button"
@@ -140,16 +145,31 @@ export default function FlowsPage() {
                 const page = pages.find((p) => p.facebook_page_id === flow.page_id);
                 const pageName = page?.page_name || flow.page_id || '—';
 
+                const stepCount = Array.isArray(flow.flow_state?.nodes)
+                  ? flow.flow_state.nodes.length
+                  : 0;
+
                 return (
                   <tr
                     key={flow.id}
-                    className="border-t border-white/40 dark:border-white/10"
+                    onClick={() => navigate(`/flows/${flow.id}`)}
+                    className="cursor-pointer border-t border-white/40 transition-colors hover:bg-white/50 dark:border-white/10 dark:hover:bg-white/5"
                   >
                     {/* Name */}
-                    <td className="px-4 py-2.5">
-                      <span className="font-medium text-slate-800 dark:text-slate-100">
-                        {flow.name}
-                      </span>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-nexus-accent/10 text-nexus-accent">
+                          <Workflow size={15} />
+                        </span>
+                        <div className="min-w-0">
+                          <span className="block truncate font-medium text-slate-800 dark:text-slate-100">
+                            {flow.name}
+                          </span>
+                          <span className="text-[11px] text-nexus-muted">
+                            {t('stepsCount', { count: stepCount })}
+                          </span>
+                        </div>
+                      </div>
                     </td>
 
                     {/* Page */}
@@ -158,7 +178,7 @@ export default function FlowsPage() {
                     </td>
 
                     {/* Active switch */}
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         <Switch
                           checked={flow.is_active}
@@ -208,7 +228,7 @@ export default function FlowsPage() {
                     </td>
 
                     {/* Actions */}
-                    <td className="px-4 py-2.5 text-right">
+                    <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                       {isConfirming ? (
                         <span className="inline-flex items-center gap-1.5">
                           <button
