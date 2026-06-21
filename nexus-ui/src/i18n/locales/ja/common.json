@@ -15,7 +15,8 @@
     "documentation": "ドキュメント",
     "whatsNew": "新着情報",
     "changelog": "変更履歴",
-    "admin": "管理"
+    "admin": "管理",
+    "broadcasts": "ブロードキャスト"
   },
   "title": {
     "newProduct": "新規製品",

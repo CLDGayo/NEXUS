@@ -33,10 +33,13 @@ from __future__ import annotations
 import json
 import logging
 import re
+import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 
 from rag.config import settings
@@ -915,3 +918,220 @@ async def resume_flow_for_dm(
             )
 
         return True
+
+
+# ---------------------------------------------------------------------------
+# Phase 66 — Audience Broadcasting
+# ---------------------------------------------------------------------------
+
+
+async def touch_contact_interaction(
+    *,
+    tenant_id: Any,
+    page_id: str,
+    sender_id: str,
+    when: datetime | None = None,
+) -> None:
+    """Stamp ``flow_contacts.last_interaction_at`` for an inbound Messenger message.
+
+    This timestamp is the anchor for Meta's 24-hour standard messaging window
+    enforced by the Broadcasting engine. Call it from the webhook DM branch on
+    every inbound *Messenger message* — NOT on comments, because a public
+    comment does not open the messaging window under Meta policy.
+
+    Opens its own short transaction: the webhook's request session is
+    read-oriented (it backgrounds the heavy work and is not guaranteed to
+    commit), so the stamp must not depend on it. Uses a PostgreSQL
+    ``INSERT ... ON CONFLICT`` upsert keyed on ``uq_flow_contact`` so concurrent
+    inbound turns for the same sender cannot race a select-then-update.
+
+    Best-effort by contract: the caller wraps this in try/except so a DB hiccup
+    here can never 5xx the webhook (a 5xx makes Meta retry-storm).
+    """
+    stamp = when or datetime.now(timezone.utc)
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        stmt = (
+            pg_insert(FlowContact)
+            .values(
+                tenant_id=tenant_id,
+                page_id=page_id,
+                sender_id=sender_id,
+                tags=[],
+                attributes={},
+                hot_lead=False,
+                last_interaction_at=stamp,
+            )
+            .on_conflict_do_update(
+                constraint="uq_flow_contact",
+                set_={"last_interaction_at": stamp},
+            )
+        )
+        await db.execute(stmt)
+        await db.commit()
+
+
+async def enqueue_broadcast_job(
+    *,
+    page_id: str,
+    flow_id: str,
+    sender_id: str,
+    tenant_id: str,
+) -> None:
+    """Park one broadcast send on the shared Redis queue (one job per recipient).
+
+    The worker calls ``run_broadcast_job`` for every dequeued ``fb_broadcast``
+    item. Keeping the fan-out on the queue means the ``/fire`` request returns
+    immediately and a large audience can never block the API worker or exceed a
+    request budget.
+    """
+    item = QueuedItem(
+        correlation_id=f"fb_broadcast:{flow_id}:{sender_id}",
+        target_url="",  # unused; URL is built at send time
+        payload={
+            "page_id": page_id,
+            "flow_id": flow_id,
+            "sender_id": sender_id,
+            "tenant_id": tenant_id,
+        },
+        target="fb_broadcast",
+    )
+    await get_queue().enqueue(item)
+
+
+def _find_any_trigger_node(flow: NexusFlow) -> dict[str, Any] | None:
+    """Return the flow's trigger node (any trigger type), or None.
+
+    A broadcast starts a flow regardless of which inbound surface its trigger
+    models: ``_traverse`` skips the trigger node and advances to its successor,
+    so the trigger type only matters for matching live inbound events, not for a
+    programmatic broadcast send.
+    """
+    trigger_types = {"commentTrigger", "dmTrigger", "storyTrigger"}
+    nodes: list[dict[str, Any]] = (flow.flow_state or {}).get("nodes", [])
+    for node in nodes:
+        if node.get("type") in trigger_types:
+            return node
+    return None
+
+
+async def run_broadcast_job(
+    client: httpx.AsyncClient,
+    payload: dict[str, Any],
+) -> tuple[bool, int | None, str | None, bool]:
+    """Execute one ``fb_broadcast`` job: start ``flow_id`` for one ``sender_id``.
+
+    Mirrors ``run_flow_job``'s tenant/token resolution but is driven by an
+    explicit ``flow_id`` (the broadcast target) instead of a comment keyword
+    match, and carries NO ``processed_fb_comments`` idempotency lock — a
+    broadcast is an intentional, operator-initiated send, not a webhook-deduped
+    event.
+
+    CRITICAL: ``retryable`` is **always** ``False`` — any Graph-API error
+    dead-letters this single recipient's job immediately (Phase 57/58
+    discipline) so one bad recipient can never retry-storm the page.
+    """
+    page_id = str(payload.get("page_id") or "")
+    flow_id = str(payload.get("flow_id") or "")
+    sender_id = str(payload.get("sender_id") or "")
+
+    if not page_id or not flow_id or not sender_id:
+        _log.warning(
+            "broadcast.missing_fields page=%s flow=%s sender=%s",
+            page_id,
+            flow_id,
+            sender_id,
+        )
+        return False, None, "missing page_id, flow_id or sender_id", False
+
+    try:
+        flow_uuid = uuid.UUID(flow_id)
+    except ValueError:
+        _log.warning("broadcast.bad_flow_id flow=%s", flow_id)
+        return True, None, "invalid flow_id", False  # drop, not DLQ
+
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        # 1. Resolve tenant + page token from the page mapping.
+        mapping = (
+            await db.execute(
+                select(MessengerPageTenant).where(
+                    MessengerPageTenant.facebook_page_id == page_id
+                )
+            )
+        ).scalar_one_or_none()
+        if mapping is None:
+            _log.warning("broadcast.no_mapping page=%s", page_id)
+            return True, None, "page unmapped", False  # drop, not DLQ
+
+        tenant_id = mapping.tenant_id
+        token = (
+            decrypt_token(mapping.page_access_token_enc)
+            if mapping.page_access_token_enc
+            else None
+        ) or current_page_access_token()
+        if not token:
+            _log.warning("broadcast.no_token page=%s flow=%s", page_id, flow_id)
+            return False, None, "page access token missing", False
+
+        tenant_language = (
+            await db.scalar(
+                select(Tenant.preferred_language).where(Tenant.id == tenant_id)
+            )
+        ) or "en"
+
+        # 2. Load the target flow, scoped to the resolved tenant (defence in
+        #    depth — the router already authorised, but the worker must never
+        #    send a flow that does not belong to the page's tenant).
+        flow = (
+            await db.execute(
+                select(NexusFlow).where(
+                    NexusFlow.id == flow_uuid,
+                    NexusFlow.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if flow is None:
+            _log.warning(
+                "broadcast.flow_not_found flow=%s tenant=%s", flow_id, tenant_id
+            )
+            return True, None, "flow not found for tenant", False  # drop, not DLQ
+
+        trigger_node = _find_any_trigger_node(flow)
+        if trigger_node is None:
+            _log.warning("broadcast.no_trigger flow=%s", flow_id)
+            return False, None, "flow has no trigger node", False
+
+        # 3. Start a fresh FlowRun and traverse from the trigger node.
+        run = FlowRun(
+            tenant_id=tenant_id,
+            flow_id=flow.id,
+            page_id=page_id,
+            sender_id=sender_id,
+            status="active",
+            context={"_input": "", "_broadcast": True},
+        )
+        db.add(run)
+        await db.flush()  # assign run.id
+
+        success, error = await _traverse(
+            client,
+            flow=flow,
+            run=run,
+            start_node=trigger_node,
+            token=token,
+            db=db,
+            language=tenant_language,
+        )
+        await db.commit()
+
+        if not success:
+            _log.warning(
+                "broadcast.traversal_failed flow=%s run=%s err=%s",
+                flow.id,
+                run.id,
+                error,
+            )
+            return False, None, error, False  # retryable=False always
+
+        return True, None, None, False

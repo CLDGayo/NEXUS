@@ -15,7 +15,8 @@
     "documentation": "Documentation",
     "whatsNew": "Nouveautés",
     "changelog": "Journal des modifications",
-    "admin": "Administration"
+    "admin": "Administration",
+    "broadcasts": "Diffusions"
   },
   "title": {
     "newProduct": "Nouveau produit",

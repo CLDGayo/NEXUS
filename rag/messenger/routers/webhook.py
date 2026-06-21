@@ -53,7 +53,11 @@ from rag.messenger.idempotency import (
     release_thread_lock,
 )
 from rag.messenger.page_sync import PAGE_SYNC_FIELDS, schedule_page_sync
-from rag.messenger.flow_engine import enqueue_flow_job, resume_flow_for_dm
+from rag.messenger.flow_engine import (
+    enqueue_flow_job,
+    resume_flow_for_dm,
+    touch_contact_interaction,
+)
 from rag.messenger.private_reply import enqueue_private_reply_job
 from rag.messenger.payloads import build_outbound_payload
 from rag.messenger.pii import scrub
@@ -523,6 +527,22 @@ async def messenger_inbound_direct(
                 sender_id,
             )
             continue
+
+        # Phase 66 — stamp the inbound Messenger-message timestamp that anchors
+        # Meta's 24h standard messaging window for the Broadcasting engine. Only
+        # Messenger messages open the window (comments do not), so this lives in
+        # the messaging branch, not the comment branch. Best-effort: a DB hiccup
+        # must never 5xx the webhook (Meta would retry-storm), so swallow + log.
+        try:
+            await touch_contact_interaction(
+                tenant_id=tenant.id, page_id=page_id, sender_id=sender_id
+            )
+        except Exception as exc:  # noqa: BLE001 — compliance stamp is best-effort
+            _log.warning(
+                "messenger.event.interaction_stamp_failed sender=%s err=%s",
+                sender_id,
+                exc,
+            )
 
         inbound = InboundMessage(
             user_id=sender_id,
