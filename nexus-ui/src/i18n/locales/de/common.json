@@ -17,7 +17,8 @@
     "changelog": "Änderungsprotokoll",
     "admin": "Administration",
     "broadcasts": "Broadcasts",
-    "inbox": "Posteingang"
+    "inbox": "Posteingang",
+    "systemSummary": "Systemübersicht"
   },
   "title": {
     "newProduct": "Neues Produkt",

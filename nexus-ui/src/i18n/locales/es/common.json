@@ -17,7 +17,8 @@
     "changelog": "Registro de cambios",
     "admin": "Administración",
     "broadcasts": "Difusiones",
-    "inbox": "Bandeja de entrada"
+    "inbox": "Bandeja de entrada",
+    "systemSummary": "Resumen del sistema"
   },
   "title": {
     "newProduct": "Nuevo producto",

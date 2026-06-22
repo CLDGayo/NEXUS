@@ -17,7 +17,8 @@
     "changelog": "Talaan ng Pagbabago",
     "admin": "Admin",
     "broadcasts": "Mga Broadcast",
-    "inbox": "Inbox"
+    "inbox": "Inbox",
+    "systemSummary": "Buod ng Sistema"
   },
   "title": {
     "newProduct": "Bagong produkto",

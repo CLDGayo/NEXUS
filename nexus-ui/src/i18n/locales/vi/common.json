@@ -17,7 +17,8 @@
     "changelog": "Nhật ký thay đổi",
     "admin": "Quản trị",
     "broadcasts": "Phát quảng bá",
-    "inbox": "Hộp thư"
+    "inbox": "Hộp thư",
+    "systemSummary": "Tóm tắt hệ thống"
   },
   "title": {
     "newProduct": "Sản phẩm mới",
