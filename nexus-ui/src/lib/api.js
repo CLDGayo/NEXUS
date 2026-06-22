@@ -118,21 +118,25 @@ async function apiFetch(path, opts = {}) {
     // forbidden response on a tenant-scoped route. Let the provider
     // clear local state and bounce the user back to the picker.
     //
-    // Phase 31 exception — ``owner_role_required`` means the user IS a
-    // valid member of the active tenant, just not an owner. Bouncing
-    // them to the picker would be wrong (their tenant is fine; they
-    // simply tried to load an admin surface). Let the throw propagate so
-    // the calling component can surface a "needs owner" toast without
-    // losing the active workspace selection.
+    // Phase 31/50 exception — the ``*_role_required`` details mean the
+    // user IS a valid member of the active tenant, just lacking the role
+    // a surface demands (``owner_role_required`` from require_owner,
+    // ``manager_role_required`` from require_manager). Bouncing them to
+    // the picker would be wrong (their tenant is fine; they simply tried
+    // to load a privileged surface) AND it loops: the picker re-selects
+    // the same member workspace, the surface refetches, 403 fires again.
+    // Let the throw propagate so the calling component can surface a
+    // "needs manager/owner" message without losing the active selection.
     let detail = res.statusText;
-    let body = null;
     try {
-      body = await res.json();
+      const body = await res.json();
       detail = body?.detail || detail;
     } catch {
       /* non-JSON */
     }
-    if (detail !== 'owner_role_required') {
+    const isRoleInsufficiency =
+      detail === 'owner_role_required' || detail === 'manager_role_required';
+    if (!isRoleInsufficiency) {
       if (_onForbiddenTenant) _onForbiddenTenant();
     }
     throw new HTTPError(`403: ${detail}`, 403, detail);

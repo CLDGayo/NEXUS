@@ -50,6 +50,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     SmallInteger,
     String,
@@ -138,6 +139,14 @@ class Tenant(Base):
             '"sdr_persona":true,"hitl_handover":true},'
             '"model_params":{"temperature":null,"max_tokens":null,"model_choice":null}}\'::jsonb'
         ),
+    )
+
+    # Phase 59 — workspace default chatbot language (BCP-47 base code, e.g.
+    # "en", "es", "ja"). The flow engine injects a "reply exclusively in
+    # <language>" directive into LLM node prompts when this is non-"en".
+    # NOT NULL with server_default "en" so existing tenants are unchanged.
+    preferred_language: Mapped[str] = mapped_column(
+        String(8), nullable=False, server_default="en"
     )
 
 
@@ -894,10 +903,73 @@ class FlowContact(Base):
     hot_lead: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
+    # Phase 66 — last inbound *Messenger message* from this sender (UTC). This is
+    # the anchor for Meta's 24-hour standard messaging window: the Broadcasting
+    # engine may only message a sender whose last_interaction_at is within the
+    # last 24h. Stamped by ``touch_contact_interaction`` on every inbound DM
+    # (NOT on comments — a public comment does not open the messaging window).
+    # NULL means "never sent us a Messenger message" → permanently ineligible
+    # for broadcasts until they message the page. Indexed for the window filter.
+    last_interaction_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    # Phase 67 — DB-backed human-handoff pause. When a human operator replies via
+    # the Live Chat inbox, this is stamped to ``now + 24h``; the webhook gate
+    # (``is_contact_bot_paused``) then halts BOTH the NEXUS Flow engine and the
+    # LangGraph orchestrator for this sender until the stamp lapses. The durable
+    # twin of the Phase 37 Redis HITL pause (survives a broker flush + is
+    # queryable for the inbox "paused" badge). NULL / past = bot is live.
+    bot_paused_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ContactMessage(Base):
+    """Phase 67 — append-only Messenger transcript row for the Live Chat inbox.
+
+    One row per inbound or outbound message for a ``(page_id, sender_id)``
+    thread, tenant-scoped. ``direction`` is ``inbound`` (from the user) or
+    ``outbound`` (from the bot/flow OR a human operator). This is the history
+    the inbox UI renders; it is intentionally separate from the RAG ``messages``
+    table (which is the auth-gated chat SPA's conversation log).
+
+    The composite index ``ix_contact_messages_thread`` keeps the per-thread
+    history query index-backed even as the transcript grows.
+    """
+
+    __tablename__ = "contact_messages"
+    __table_args__ = (
+        CheckConstraint(
+            "direction IN ('inbound','outbound')",
+            name="ck_contact_message_direction",
+        ),
+        Index(
+            "ix_contact_messages_thread",
+            "tenant_id",
+            "page_id",
+            "sender_id",
+            "created_at",
+        ),
+        {"schema": "app"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    page_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    sender_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    direction: Mapped[str] = mapped_column(String(16), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
@@ -941,11 +1013,26 @@ class FlowRun(Base):
     context: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
+    # Phase 58.4a — analytics instrumentation. ``path`` is the ordered trail
+    # of visited node ids (appended in ``_traverse``); ``failed_node_id`` is
+    # the node that drove ``status='failed'``. Aggregating these across runs
+    # yields per-node visit + failure counts without a dedicated events table.
+    path: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    failed_node_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Phase 61 — ``onupdate`` makes updated_at track the last state transition
+    # (traversal completion / failure / DM-resume), so the Executions dashboard
+    # can report a meaningful "Run Time" = updated_at − created_at. Client-side
+    # default only (emitted in the UPDATE statement); no schema migration needed.
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
     # Phase 64 — Smart Delay scheduling. A ``smartDelay`` node halts traversal
     # with status='sleeping' and stamps ``resume_at`` with the wall-clock time

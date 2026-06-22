@@ -101,6 +101,7 @@ async def create_tenant(
         role="owner",
         avatar_url=tenant.avatar_url,
         archived_at=tenant.archived_at,
+        preferred_language=tenant.preferred_language,
     )
 
 
@@ -145,6 +146,7 @@ async def get_tenant_detail(
         role=role,
         avatar_url=tenant.avatar_url,
         archived_at=tenant.archived_at,
+        preferred_language=tenant.preferred_language,
     )
 
 
@@ -361,6 +363,7 @@ def _tenant_read_from_model(tenant: Tenant, role: str) -> TenantRead:
         role=role,
         avatar_url=tenant.avatar_url,
         archived_at=tenant.archived_at,
+        preferred_language=tenant.preferred_language,
     )
 
 
@@ -424,6 +427,12 @@ async def update_tenant(
 
     if body.avatar_url is not None:
         tenant.avatar_url = body.avatar_url
+        changed = True
+
+    # Phase 59 — workspace default chatbot language. Validator already
+    # constrained the value to SUPPORTED_LANGUAGES at the schema layer.
+    if body.preferred_language is not None:
+        tenant.preferred_language = body.preferred_language
         changed = True
 
     if not changed:

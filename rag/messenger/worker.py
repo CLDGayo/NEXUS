@@ -94,6 +94,15 @@ async def _send_once(
 
         return await run_flow_job(client, item.payload)
 
+    if target == "fb_broadcast":
+        # Phase 66 — Audience Broadcasting. One job per eligible recipient,
+        # enqueued by POST /broadcasts/fire. Starts the target flow for a single
+        # sender. Opens its own DB session; dead-letters immediately on any
+        # error (retryable=False always — one bad recipient never retry-storms).
+        from rag.messenger.flow_engine import run_broadcast_job
+
+        return await run_broadcast_job(client, item.payload)
+
     if target == "graph_api":
         token = current_page_access_token()
         if not token:

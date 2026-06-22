@@ -1,0 +1,16 @@
+{
+  "title": "Live Chat",
+  "subtitle": "Watch live Messenger threads and take over a conversation from the bot.",
+  "contacts": "Contacts",
+  "loading": "Loading…",
+  "noContacts": "No conversations yet",
+  "selectPrompt": "Select a conversation to view its history.",
+  "noMessages": "No messages yet in this thread.",
+  "paused": "Bot paused",
+  "botPaused": "Bot paused — you're handling this",
+  "you": "You",
+  "inputPlaceholder": "Type a reply…",
+  "send": "Send",
+  "sending": "Sending…",
+  "handoffNote": "Sending a reply pauses the bot for 24 hours so you can handle this thread."
+}

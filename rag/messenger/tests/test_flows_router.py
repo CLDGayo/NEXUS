@@ -365,6 +365,232 @@ def test_flows_router_lockdown_uses_require_manager() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Phase 58.4a — analytics endpoints (DB-less, sequenced execute results)
+# ---------------------------------------------------------------------------
+
+
+class _SeqResult:
+    """Execute-result double exposing both .all() and .scalar_one_or_none()."""
+
+    def __init__(self, *, all_rows: Any = None, scalar: Any = None) -> None:
+        self._all = all_rows or []
+        self._scalar = scalar
+
+    def all(self) -> list[Any]:
+        return self._all
+
+    def scalar_one_or_none(self) -> Any:
+        return self._scalar
+
+
+def _install_analytics_overrides(app: Any, results: list[_SeqResult]) -> None:
+    """Override the session so each db.execute() returns the next _SeqResult."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from rag.auth import current_active_user
+    from rag.database.engine import get_async_session
+    from rag.routers.deps import require_manager
+
+    seq = list(results)
+    calls = {"i": 0}
+
+    async def _execute(_stmt: Any) -> Any:
+        i = calls["i"]
+        calls["i"] += 1
+        return seq[i] if i < len(seq) else _SeqResult()
+
+    session = AsyncMock()
+    session.execute = AsyncMock(side_effect=_execute)
+    session.add = MagicMock()
+    session.commit = AsyncMock()
+
+    async def _session_override() -> AsyncGenerator[Any, None]:
+        yield session
+
+    app.dependency_overrides[current_active_user] = lambda: _FakeUser()
+    app.dependency_overrides[require_manager] = lambda: _FakeTenant()
+    app.dependency_overrides[get_async_session] = _session_override
+
+
+def test_analytics_summary_aggregates_per_flow(client: TestClient, app: Any) -> None:
+    f1 = uuid.UUID("11111111-0000-0000-0000-000000000001")
+    f2 = uuid.UUID("22222222-0000-0000-0000-000000000002")
+    # (flow_id, status, count) rows — F1: 3 completed + 1 failed; F2: 1 active.
+    rows = [
+        (f1, "completed", 3),
+        (f1, "failed", 1),
+        (f2, "active", 1),
+    ]
+    _install_analytics_overrides(app, [_SeqResult(all_rows=rows)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/analytics/summary"
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["window_days"] == 7
+        by_id = {row["flow_id"]: row for row in body["flows"]}
+        assert by_id[str(f1)] == {
+            "flow_id": str(f1),
+            "total": 4,
+            "completed": 3,
+            "failed": 1,
+            "success_rate": 0.75,
+        }
+        # In-flight-only flow: no terminal runs → 0.0 success rate.
+        assert by_id[str(f2)]["total"] == 1
+        assert by_id[str(f2)]["success_rate"] == 0.0
+    finally:
+        _clear_overrides(app)
+
+
+def test_flow_analytics_404_when_flow_not_owned(
+    client: TestClient, app: Any
+) -> None:
+    # 1st execute = ownership check → scalar None → 404 (never reaches the
+    # run-aggregation query).
+    _install_analytics_overrides(app, [_SeqResult(scalar=None)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/analytics"
+        )
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "flow_not_found"
+    finally:
+        _clear_overrides(app)
+
+
+def test_flow_analytics_node_aggregation(client: TestClient, app: Any) -> None:
+    # 1st execute = ownership (returns the flow id), 2nd = run rows.
+    run_rows = [
+        ("completed", ["n1", "n2"], None),
+        ("failed", ["n1", "n3"], "n3"),
+    ]
+    _install_analytics_overrides(
+        app,
+        [_SeqResult(scalar=FLOW_ID), _SeqResult(all_rows=run_rows)],
+    )
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/analytics"
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["runs"] == {
+            "total": 2,
+            "active": 0,
+            "waiting": 0,
+            "completed": 1,
+            "failed": 1,
+            "success_rate": 0.5,
+        }
+        nodes = {n["node_id"]: n for n in body["nodes"]}
+        assert nodes["n1"] == {"node_id": "n1", "visits": 2, "failures": 0}
+        assert nodes["n2"] == {"node_id": "n2", "visits": 1, "failures": 0}
+        assert nodes["n3"] == {"node_id": "n3", "visits": 1, "failures": 1}
+    finally:
+        _clear_overrides(app)
+
+
+# ---------------------------------------------------------------------------
+# Phase 61 — per-run execution history endpoints (DB-less, sequenced execute)
+# ---------------------------------------------------------------------------
+
+RUN_ID = uuid.UUID("eeeeeeee-0000-0000-0000-000000000005")
+
+
+def test_list_runs_returns_paginated_rows(client: TestClient, app: Any) -> None:
+    """ownership → count → run tuples; run_time_ms derived from timestamps."""
+    t0 = datetime(2026, 6, 20, 12, 0, 0, tzinfo=timezone.utc)
+    t_plus_1500ms = datetime(2026, 6, 20, 12, 0, 1, 500000, tzinfo=timezone.utc)
+    run_rows = [
+        (RUN_ID, "completed", None, None, t0, t_plus_1500ms),
+        (uuid.uuid4(), "failed", None, "n3", t0, t0),
+    ]
+    _install_analytics_overrides(
+        app,
+        [
+            _SeqResult(scalar=FLOW_ID),  # ownership
+            _SeqResult(scalar=2),        # total count
+            _SeqResult(all_rows=run_rows),  # page rows
+        ],
+    )
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/runs?limit=25&offset=0"
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["total"] == 2
+        assert body["limit"] == 25 and body["offset"] == 0
+        assert len(body["runs"]) == 2
+        first = body["runs"][0]
+        assert first["id"] == str(RUN_ID)
+        assert first["status"] == "completed"
+        assert first["run_time_ms"] == 1500
+        assert body["runs"][1]["status"] == "failed"
+        assert body["runs"][1]["failed_node_id"] == "n3"
+        assert body["runs"][1]["run_time_ms"] == 0
+    finally:
+        _clear_overrides(app)
+
+
+def test_list_runs_404_when_flow_not_owned(client: TestClient, app: Any) -> None:
+    # 1st execute = ownership check → None → 404 before any aggregation.
+    _install_analytics_overrides(app, [_SeqResult(scalar=None)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/runs"
+        )
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "flow_not_found"
+    finally:
+        _clear_overrides(app)
+
+
+def test_get_run_detail_returns_path(client: TestClient, app: Any) -> None:
+    from types import SimpleNamespace
+
+    t0 = datetime(2026, 6, 20, 12, 0, 0, tzinfo=timezone.utc)
+    t1 = datetime(2026, 6, 20, 12, 0, 1, 500000, tzinfo=timezone.utc)
+    run_obj = SimpleNamespace(
+        id=RUN_ID,
+        status="failed",
+        current_node_id="n3",
+        failed_node_id="n3",
+        created_at=t0,
+        updated_at=t1,
+        path=["n1", "n2", "n3"],
+    )
+    _install_analytics_overrides(app, [_SeqResult(scalar=run_obj)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/runs/{RUN_ID}"
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["id"] == str(RUN_ID)
+        assert body["status"] == "failed"
+        assert body["failed_node_id"] == "n3"
+        assert body["path"] == ["n1", "n2", "n3"]
+        assert body["run_time_ms"] == 1500
+    finally:
+        _clear_overrides(app)
+
+
+def test_get_run_detail_404_when_missing(client: TestClient, app: Any) -> None:
+    _install_analytics_overrides(app, [_SeqResult(scalar=None)])
+    try:
+        resp = client.get(
+            f"/api/tenants/{TENANT_A_ID}/facebook/flows/{FLOW_ID}/runs/{RUN_ID}"
+        )
+        assert resp.status_code == 404
+        assert resp.json()["detail"] == "run_not_found"
+    finally:
+        _clear_overrides(app)
+
+
+# ---------------------------------------------------------------------------
 # Layer B — pg_required integration tests
 # ---------------------------------------------------------------------------
 

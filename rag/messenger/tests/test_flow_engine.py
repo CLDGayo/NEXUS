@@ -206,6 +206,7 @@ def _db_stub(
     flush_raises: Exception | None = None,
     run_row: Any = None,
     flow_row: Any = None,
+    tenant_language: str = "en",
 ) -> MagicMock:
     """Build a minimal AsyncSession double for flow_engine tests."""
     db = MagicMock()
@@ -215,6 +216,9 @@ def _db_stub(
         db._added.append(row)
 
     db.add = _add
+
+    # Phase 59 — flow_engine loads Tenant.preferred_language via db.scalar.
+    db.scalar = AsyncMock(return_value=tenant_language)
 
     call_count = [0]
 
@@ -252,11 +256,15 @@ def _db_stub_resume(
     *,
     run_row: Any = None,
     flow_row: Any = None,
+    tenant_language: str = "en",
 ) -> MagicMock:
     """DB stub specifically for resume_flow_for_dm (2 select calls)."""
     db = MagicMock()
     db._added: list = []
     db.add = lambda row: db._added.append(row)
+
+    # Phase 59 — resume path loads Tenant.preferred_language via db.scalar.
+    db.scalar = AsyncMock(return_value=tenant_language)
 
     call_count = [0]
 
@@ -827,6 +835,83 @@ class TestAiRouterNode:
         assert len(client.posts) == 1
         assert client.posts[0]["json"]["message"]["text"] == "Safe fallback"
 
+    async def test_airouter_injects_tenant_language_directive(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Phase 59 — a non-English tenant gets the language directive injected
+        into the aiRouter LLM system prompt."""
+        from unittest.mock import AsyncMock
+        import rag.orchestrator.llm as _llm_mod
+
+        trigger = _comment_trigger_node(keyword="hi", match_type="contains")
+        router = _ai_router_node(
+            node_id="n_router",
+            intents=[{"id": "sales", "label": "Sales"}, {"id": "support", "label": "Support"}],
+        )
+        send_sales = _send_message_node(node_id="n_sales", message="Sales here!")
+
+        flow = _make_flow(
+            nodes=[trigger, router, send_sales],
+            edges=[
+                _edge("n_trigger", "n_router"),
+                _edge("n_router", "n_sales", handle="sales"),
+            ],
+        )
+        # Tenant default language = Spanish.
+        db = _db_stub(page_row=_make_page_row(), flows=[flow], tenant_language="es")
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        mock_chat = AsyncMock(return_value=TestAiRouterNode._make_llm_result("sales"))
+        monkeypatch.setattr(_llm_mod, "chat_complete", mock_chat)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_ai_lang", "message": "hi", "sender_id": "u_lang"},
+        )
+
+        # The classifier system prompt must carry the strict Spanish directive.
+        assert mock_chat.await_count == 1
+        messages = mock_chat.await_args.args[0]
+        system_content = messages[0]["content"]
+        assert messages[0]["role"] == "system"
+        assert "You must reply exclusively in Spanish." in system_content
+
+    async def test_airouter_english_tenant_no_directive(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Phase 59 — a default (English) tenant gets a byte-identical prompt
+        with no language directive appended."""
+        from unittest.mock import AsyncMock
+        import rag.orchestrator.llm as _llm_mod
+
+        trigger = _comment_trigger_node(keyword="hi", match_type="contains")
+        router = _ai_router_node(node_id="n_router")
+        send_sales = _send_message_node(node_id="n_sales", message="Sales here!")
+
+        flow = _make_flow(
+            nodes=[trigger, router, send_sales],
+            edges=[
+                _edge("n_trigger", "n_router"),
+                _edge("n_router", "n_sales", handle="sales"),
+            ],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow], tenant_language="en")
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        mock_chat = AsyncMock(return_value=TestAiRouterNode._make_llm_result("sales"))
+        monkeypatch.setattr(_llm_mod, "chat_complete", mock_chat)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        await _fe.run_flow_job(
+            client,
+            {"page_id": "page_1", "comment_id": "c_ai_en", "message": "hi", "sender_id": "u_en"},
+        )
+
+        assert mock_chat.await_count == 1
+        system_content = mock_chat.await_args.args[0][0]["content"]
+        assert "reply exclusively in" not in system_content
+
 
 # ---------------------------------------------------------------------------
 # Pause node tests
@@ -1382,3 +1467,213 @@ class TestWorkerDispatch:
 
         assert result == (True, None, None, False)
         assert len(called) == 1
+
+
+# ---------------------------------------------------------------------------
+# Phase 58.4a — analytics instrumentation (_traverse records path + failure)
+# ---------------------------------------------------------------------------
+
+
+def _make_run(sender_id: str = "u_1", page_id: str = "page_1") -> Any:
+    """Lightweight FlowRun double for direct _traverse calls. ``path`` starts
+    as None — matching an unpersisted SQLAlchemy instance before flush."""
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        id=uuid.uuid4(),
+        tenant_id=uuid.uuid4(),
+        sender_id=sender_id,
+        page_id=page_id,
+        status="active",
+        current_node_id=None,
+        context={},
+        path=None,
+        failed_node_id=None,
+    )
+
+
+@pytest.mark.unit
+class TestTraverseAnalytics:
+    """_traverse records the executed node trail and the failing node id."""
+
+    async def test_path_records_visited_nodes_on_success(self) -> None:
+        trigger = _comment_trigger_node("n_trigger")
+        send = _send_message_node("n_send", "Our price is $99")
+        flow = _make_flow(nodes=[trigger, send], edges=[_edge("n_trigger", "n_send")])
+        run = _make_run()
+        client = _HttpClient(_Resp(200, {"message_id": "m1"}))
+
+        success, error = await _fe._traverse(
+            client,
+            flow=flow,
+            run=run,
+            start_node=trigger,
+            token="tok",
+            db=MagicMock(),
+        )
+
+        assert success is True
+        assert error is None
+        assert run.status == "completed"
+        assert run.path == ["n_trigger", "n_send"]
+        assert run.failed_node_id is None
+
+    async def test_failed_node_id_set_on_send_failure(self) -> None:
+        trigger = _comment_trigger_node("n_trigger")
+        send = _send_message_node("n_send", "boom")
+        flow = _make_flow(nodes=[trigger, send], edges=[_edge("n_trigger", "n_send")])
+        run = _make_run()
+        client = _HttpClient(_Resp(500, {"error": {"message": "graph down"}}))
+
+        success, _error = await _fe._traverse(
+            client,
+            flow=flow,
+            run=run,
+            start_node=trigger,
+            token="tok",
+            db=MagicMock(),
+        )
+
+        assert success is False
+        assert run.status == "failed"
+        # Failing node recorded for attribution; still present in the visited
+        # path (appended before execution).
+        assert run.failed_node_id == "n_send"
+        assert run.path == ["n_trigger", "n_send"]
+
+
+# ---------------------------------------------------------------------------
+# Phase 60 — condition node routing on the durable flow_contacts row
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestConditionContactRules:
+    """Phase 60 — condition node evaluates flow_contacts (CRM) state.
+
+    Each test wires trigger → condition → {true: "Premium!", false: "Standard."}
+    and stubs ``_load_contact`` so the chosen branch is fully deterministic
+    (mirrors the TestUpdateCrmNode pattern of patching ``_get_or_create_contact``).
+    """
+
+    @pytest.fixture(autouse=True)
+    def _patch_decrypt(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "decrypt_token", lambda enc: "decrypted-tok")
+
+    @pytest.fixture(autouse=True)
+    def _patch_overlay(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(_fe, "current_page_access_token", lambda: "overlay-tok")
+
+    @staticmethod
+    def _branching_flow(
+        operator: str, value: Any = "hot_lead", variable: str = ""
+    ) -> MagicMock:
+        trigger = _comment_trigger_node(keyword="price", match_type="exact")
+        cond = _condition_node(
+            node_id="n_cond", variable=variable, operator=operator, value=value
+        )
+        send_true = _send_message_node(node_id="n_true", message="Premium!")
+        send_false = _send_message_node(node_id="n_false", message="Standard.")
+        return _make_flow(
+            nodes=[trigger, cond, send_true, send_false],
+            edges=[
+                _edge("n_trigger", "n_cond"),
+                _edge("n_cond", "n_true", handle="true"),
+                _edge("n_cond", "n_false", handle="false"),
+            ],
+        )
+
+    async def _run_branch(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        flow: MagicMock,
+        contact: Any,
+        comment_id: str,
+        sender_id: str,
+    ) -> _HttpClient:
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        async def _mock_load(_db: Any, _page_id: str, _sender_id: str) -> Any:
+            return contact
+
+        monkeypatch.setattr(_fe, "_load_contact", _mock_load)
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, _retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": comment_id,
+                "message": "price",
+                "sender_id": sender_id,
+            },
+        )
+        assert delivered is True
+        assert error is None
+        assert len(client.posts) == 1
+        return client
+
+    async def test_tag_exists_routes_true_when_tag_present(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("tag_exists", value="hot_lead")
+        contact = _make_contact(tags=["hot_lead", "vip"])
+        client = await self._run_branch(monkeypatch, flow, contact, "c_tag_t", "u_tag_t")
+        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+
+    async def test_tag_exists_routes_false_when_tag_absent(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("tag_exists", value="hot_lead")
+        contact = _make_contact(tags=["newsletter"])
+        client = await self._run_branch(monkeypatch, flow, contact, "c_tag_f", "u_tag_f")
+        assert client.posts[0]["json"]["message"]["text"] == "Standard."
+
+    async def test_tag_exists_routes_false_when_no_contact_row(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No flow_contacts row yet → empty CRM state → false branch."""
+        flow = self._branching_flow("tag_exists", value="hot_lead")
+        client = await self._run_branch(monkeypatch, flow, None, "c_tag_none", "u_tag_none")
+        assert client.posts[0]["json"]["message"]["text"] == "Standard."
+
+    async def test_tag_not_exists_routes_true_when_tag_absent(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("tag_not_exists", value="banned")
+        contact = _make_contact(tags=["vip"])
+        client = await self._run_branch(monkeypatch, flow, contact, "c_ntag_t", "u_ntag_t")
+        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+
+    async def test_attribute_equals_routes_true_on_match(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("attribute_equals", variable="plan", value="pro")
+        contact = _make_contact(attributes={"plan": "pro"})
+        client = await self._run_branch(monkeypatch, flow, contact, "c_attr_t", "u_attr_t")
+        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+
+    async def test_attribute_equals_routes_false_on_mismatch(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("attribute_equals", variable="plan", value="pro")
+        contact = _make_contact(attributes={"plan": "free"})
+        client = await self._run_branch(monkeypatch, flow, contact, "c_attr_f", "u_attr_f")
+        assert client.posts[0]["json"]["message"]["text"] == "Standard."
+
+    async def test_is_hot_lead_routes_true_when_flagged(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("is_hot_lead", value="")
+        contact = _make_contact(hot_lead=True)
+        client = await self._run_branch(monkeypatch, flow, contact, "c_hl_t", "u_hl_t")
+        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+
+    async def test_is_hot_lead_routes_false_when_not_flagged(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        flow = self._branching_flow("is_hot_lead", value="")
+        contact = _make_contact(hot_lead=False)
+        client = await self._run_branch(monkeypatch, flow, contact, "c_hl_f", "u_hl_f")
+        assert client.posts[0]["json"]["message"]["text"] == "Standard."

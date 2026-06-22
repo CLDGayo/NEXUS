@@ -1,7 +1,6 @@
-import { Handle, Position } from '@xyflow/react';
 import { UserCog } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { cn } from '../../ui/cn.js';
+import NodeShell from './NodeShell.jsx';
 
 /**
  * @typedef {Object} UpdateCrmData
@@ -35,55 +34,31 @@ export default function UpdateCrmNode({ data, selected }) {
     }
   })();
 
-  const valueSummary = data.action === 'set_field' && data.field
-    ? `${data.field} = ${data.value ?? ''}`
-    : data.value != null && String(data.value).length > 0
-    ? String(data.value)
-    : null;
+  const valueSummary =
+    data.action === 'set_field' && data.field
+      ? `${data.field} = ${data.value ?? ''}`
+      : data.value != null && String(data.value).length > 0
+        ? String(data.value)
+        : null;
 
   return (
-    <div
-      className={cn(
-        'glass-card min-w-[200px] rounded-xl border px-4 py-3 shadow-md',
-        selected
-          ? 'border-nexus-accent ring-2 ring-nexus-accent/30'
-          : 'border-white/60 dark:border-white/10',
-      )}
+    <NodeShell
+      Icon={UserCog}
+      label={t('nodes.updateCrm.label')}
+      accent="teal"
+      selected={selected}
     >
-      {/* Target handle — left */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
-      />
-
-      {/* Header */}
-      <div className="mb-2 flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-500/15 text-teal-600">
-          <UserCog size={13} />
+      {/* Action chip + value */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="rounded-full bg-teal-500/10 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-400/10 dark:text-teal-300">
+          {actionLabel}
         </span>
-        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-          {t('nodes.updateCrm.label')}
-        </span>
-      </div>
-
-      {/* Action + value summary */}
-      <p className="text-[11px] text-slate-600 dark:text-slate-400">
-        <span className="font-medium">{actionLabel}</span>
         {valueSummary ? (
-          <>
-            {': '}
-            <span className="font-mono">{valueSummary}</span>
-          </>
+          <span className="truncate font-mono text-[11px] text-slate-600 dark:text-slate-400">
+            {valueSummary}
+          </span>
         ) : null}
-      </p>
-
-      {/* Source handle — right */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!h-3 !w-3 !border-2 !border-white !bg-nexus-accent"
-      />
-    </div>
+      </div>
+    </NodeShell>
   );
 }

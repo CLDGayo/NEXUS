@@ -62,6 +62,9 @@ export function useFlows() {
 
   const [flows, setFlows] = useState([]);
   const [pages, setPages] = useState([]);
+  // Phase 58.4a — per-flow analytics keyed by flow id:
+  // { [flow_id]: { total, completed, failed, success_rate } }
+  const [analytics, setAnalytics] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
@@ -81,13 +84,20 @@ export function useFlows() {
       setLoading(true);
       setError(null);
       try {
-        const [list, pageList] = await Promise.all([
+        const [list, pageList, summary] = await Promise.all([
           api.get(base),
           api.get('/integrations/messenger/pages'),
+          // Analytics is best-effort: a failure (e.g. pre-58.4a backend) must
+          // not blank the flows list. Degrade to no badges.
+          api.get(`${base}/analytics/summary`).catch(() => ({ flows: [] })),
         ]);
         if (!active) return;
         setFlows(Array.isArray(list) ? list : []);
         setPages(Array.isArray(pageList) ? pageList : []);
+        const rows = Array.isArray(summary?.flows) ? summary.flows : [];
+        setAnalytics(
+          Object.fromEntries(rows.map((r) => [r.flow_id, r])),
+        );
       } catch (err) {
         if (!active) return;
         setError(err.body || err.message);
@@ -159,6 +169,7 @@ export function useFlows() {
   return {
     flows,
     pages,
+    analytics,
     loading,
     error,
     busyId,

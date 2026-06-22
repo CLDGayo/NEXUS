@@ -20,6 +20,8 @@ rsync -avz --delete \
   --exclude='rag/' \
   --exclude='nexus-ui/' \
   --exclude='.git/' \
+  --exclude='OwaspZapReports/' \
+  --exclude='graphify-out/' \
   "$VAULT_ROOT/" "$VPS:$VPS_VAULT/"
 
 # The Docker api container runs as nexus (UID 1000). rsync copies files

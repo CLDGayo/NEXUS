@@ -15,7 +15,9 @@
     "documentation": "Tài liệu hướng dẫn",
     "whatsNew": "Có gì mới",
     "changelog": "Nhật ký thay đổi",
-    "admin": "Quản trị"
+    "admin": "Quản trị",
+    "broadcasts": "Phát quảng bá",
+    "inbox": "Hộp thư"
   },
   "title": {
     "newProduct": "Sản phẩm mới",

@@ -1,7 +1,7 @@
 import { Handle, Position } from '@xyflow/react';
 import { Brain } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { cn } from '../../ui/cn.js';
+import NodeShell from './NodeShell.jsx';
 
 /**
  * @typedef {Object} AiRouterIntent
@@ -18,7 +18,7 @@ import { cn } from '../../ui/cn.js';
  */
 
 /**
- * AiRouterNode — one target handle (left) + N dynamic source handles (right).
+ * AiRouterNode — one target handle (via NodeShell) + N dynamic source handles.
  *
  * One source handle is rendered per intent in data.intents, plus a fixed
  * "other" fallback handle at the bottom.  Editing happens in NodeInspector.
@@ -31,31 +31,14 @@ export default function AiRouterNode({ data, selected }) {
   const fallbackId = data.fallbackHandle || 'other';
 
   return (
-    <div
-      className={cn(
-        'glass-card relative min-w-[220px] rounded-xl border px-4 py-3 shadow-md',
-        selected
-          ? 'border-nexus-accent ring-2 ring-nexus-accent/30'
-          : 'border-white/60 dark:border-white/10',
-      )}
+    <NodeShell
+      Icon={Brain}
+      label={t('nodes.aiRouter.label')}
+      accent="violet"
+      selected={selected}
+      source={false}
+      minW={224}
     >
-      {/* Target handle — left */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="!h-3 !w-3 !border-2 !border-white !bg-slate-400"
-      />
-
-      {/* Header */}
-      <div className="mb-2 flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-500/15 text-violet-500">
-          <Brain size={13} />
-        </span>
-        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-          {t('nodes.aiRouter.label')}
-        </span>
-      </div>
-
       {/* Intent count preview */}
       <p className="mb-3 text-[11px] text-slate-500 dark:text-slate-400">
         {intents.length > 0
@@ -64,36 +47,36 @@ export default function AiRouterNode({ data, selected }) {
       </p>
 
       {/* Dynamic source handles — one per intent, plus fallback */}
-      <div className="flex flex-col gap-2.5 items-end">
+      <div className="flex flex-col items-end gap-2.5">
         {intents.map((intent) => (
           <div key={intent.id} className="relative flex items-center gap-1">
-            <span className="max-w-[120px] truncate text-[9px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 pr-4">
+            <span className="max-w-[120px] truncate pr-4 text-[9px] font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400">
               {intent.label || intent.id}
             </span>
             <Handle
               type="source"
               position={Position.Right}
               id={intent.id}
-              style={{ top: 'auto', bottom: 'auto', transform: 'none', right: '-20px' }}
-              className="!relative !h-3 !w-3 !border-2 !border-white !bg-violet-500 !translate-y-0 !translate-x-0"
+              style={{ top: 'auto', bottom: 'auto', transform: 'none', right: '-22px' }}
+              className="!relative !h-3.5 !w-3.5 !translate-x-0 !translate-y-0 !rounded-full !border-2 !border-white !bg-violet-500 !shadow-sm !transition-transform hover:!scale-125 dark:!border-slate-800"
             />
           </div>
         ))}
 
         {/* Fixed fallback handle */}
         <div className="relative flex items-center gap-1">
-          <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 pr-4">
+          <span className="pr-4 text-[9px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
             {fallbackId}
           </span>
           <Handle
             type="source"
             position={Position.Right}
             id={fallbackId}
-            style={{ top: 'auto', bottom: 'auto', transform: 'none', right: '-20px' }}
-            className="!relative !h-3 !w-3 !border-2 !border-white !bg-slate-400 !translate-y-0 !translate-x-0"
+            style={{ top: 'auto', bottom: 'auto', transform: 'none', right: '-22px' }}
+            className="!relative !h-3.5 !w-3.5 !translate-x-0 !translate-y-0 !rounded-full !border-2 !border-white !bg-slate-400 !shadow-sm !transition-transform hover:!scale-125 dark:!border-slate-800"
           />
         </div>
       </div>
-    </div>
+    </NodeShell>
   );
 }

@@ -8,8 +8,8 @@ Adds:
     * Partial index ``ix_flow_runs_due`` on ``resume_at WHERE status='sleeping'``
       so the poller's "due runs" scan stays cheap as completed/failed rows pile up.
 
-Revision ID: 0017_phase64_smart_delay
-Revises: 0016_phase58_flow_contacts
+Revision ID: 0021_phase64_smart_delay
+Revises: 0020_phase67_live_chat_inbox
 Create Date: 2026-06-21
 """
 
@@ -18,8 +18,8 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0017_phase64_smart_delay"
-down_revision = "0016_phase58_flow_contacts"
+revision = "0021_phase64_smart_delay"
+down_revision = "0020_phase67_live_chat_inbox"
 branch_labels = None
 depends_on = None
 
