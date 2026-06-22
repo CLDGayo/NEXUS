@@ -16,7 +16,8 @@
     "whatsNew": "新着情報",
     "changelog": "変更履歴",
     "admin": "管理",
-    "broadcasts": "ブロードキャスト"
+    "broadcasts": "ブロードキャスト",
+    "inbox": "受信トレイ"
   },
   "title": {
     "newProduct": "新規製品",

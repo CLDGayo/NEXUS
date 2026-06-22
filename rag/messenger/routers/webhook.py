@@ -55,6 +55,8 @@ from rag.messenger.idempotency import (
 from rag.messenger.page_sync import PAGE_SYNC_FIELDS, schedule_page_sync
 from rag.messenger.flow_engine import (
     enqueue_flow_job,
+    is_contact_bot_paused,
+    log_contact_message,
     resume_flow_for_dm,
     touch_contact_interaction,
 )
@@ -544,6 +546,18 @@ async def messenger_inbound_direct(
                 exc,
             )
 
+        # Phase 67 — log the inbound message to the Live Chat inbox transcript.
+        # Done BEFORE the pause gate so a human operator still sees what the user
+        # said while the bot is paused. Best-effort: log_contact_message swallows
+        # its own errors, so this can never 5xx the webhook.
+        await log_contact_message(
+            tenant_id=tenant.id,
+            page_id=page_id,
+            sender_id=sender_id,
+            direction="inbound",
+            content=merged_text,
+        )
+
         inbound = InboundMessage(
             user_id=sender_id,
             message_text=merged_text,
@@ -613,7 +627,14 @@ async def messenger_inbound_direct(
         # the inbound message (do NOT run the graph). Return 200 so Meta
         # doesn't retry. Release the thread lock we just acquired so a
         # later (post-pause) turn can re-acquire it cleanly.
-        if await is_bot_paused(sender_id):
+        #
+        # Phase 67 — the gate now also honours the DB-backed handoff pause
+        # (``flow_contacts.bot_paused_until``) set when a human replies via the
+        # Live Chat inbox. Either pause source halts BOTH the NEXUS Flow engine
+        # and the LangGraph orchestrator (this ``continue`` skips both schedules).
+        if await is_bot_paused(sender_id) or await is_contact_bot_paused(
+            page_id, sender_id
+        ):
             _log.info(
                 "hitl.gatekeeper_dropped sender=%s page=%s reason=human_active",
                 sender_id,

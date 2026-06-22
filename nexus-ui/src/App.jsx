@@ -19,6 +19,7 @@ import LogsPage from './pages/LogsPage.jsx';
 import IntegrationsPage from './pages/IntegrationsPage.jsx';
 import FlowsPage from './pages/FlowsPage.jsx';
 import BroadcastsPage from './pages/BroadcastsPage.jsx';
+import InboxPage from './pages/InboxPage.jsx';
 import ResourcesPage from './pages/ResourcesPage.jsx';
 import ProductsDashboardPage from './pages/ProductsDashboardPage.jsx';
 import ProductEditPage from './pages/ProductEditPage.jsx';
@@ -99,6 +100,8 @@ export default function App() {
               />
               {/* Phase 66 — Audience Broadcasting (manager-class). */}
               <Route path="/broadcasts" element={<BroadcastsPage />} />
+              {/* Phase 67 — Live Chat Inbox & Human Handoff (manager-class). */}
+              <Route path="/inbox" element={<InboxPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route
                 path="/settings/ai-studio"
