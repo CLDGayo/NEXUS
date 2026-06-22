@@ -88,6 +88,7 @@ from rag.routers.tenant_invites import router as v2_invites  # noqa: E402
 from integrations import dispatcher as integrations_dispatcher  # noqa: E402
 from routers import (  # noqa: E402
     api_tokens,
+    audience,
     auth,
     changelog,
     chat,
@@ -359,6 +360,7 @@ app.include_router(logs.router, prefix="/api")
 app.include_router(v1_settings.router, prefix="/api/settings")
 app.include_router(changelog.router, prefix="/api/changelog")
 app.include_router(integrations.router, prefix="/api/integrations")
+app.include_router(audience.router, prefix="/api/audience")
 app.include_router(api_tokens.router, prefix="/api/tokens")
 app.include_router(workspace_ai_settings.router, prefix="/api/workspace")
 app.include_router(resources.router, prefix="/api/resources")

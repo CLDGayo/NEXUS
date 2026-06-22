@@ -12,7 +12,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck, Webhook, UserCog, Activity, ListChecks, PencilLine } from 'lucide-react';
+import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck, Webhook, UserCog, Activity, ListChecks, PencilLine, FormInput } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlows } from '../hooks/useFlows.js';
 import CommentTriggerNode from '../components/flows/nodes/CommentTriggerNode.jsx';
@@ -20,6 +20,7 @@ import DmTriggerNode from '../components/flows/nodes/DmTriggerNode.jsx';
 import ConditionNode from '../components/flows/nodes/ConditionNode.jsx';
 import SendMessageNode from '../components/flows/nodes/SendMessageNode.jsx';
 import WaitForInputNode from '../components/flows/nodes/WaitForInputNode.jsx';
+import UserInputNode from '../components/flows/nodes/UserInputNode.jsx';
 import AiRouterNode from '../components/flows/nodes/AiRouterNode.jsx';
 import PauseNode from '../components/flows/nodes/PauseNode.jsx';
 import WebhookNode from '../components/flows/nodes/WebhookNode.jsx';
@@ -35,6 +36,7 @@ const NODE_TYPES = {
   condition: ConditionNode,
   sendMessage: SendMessageNode,
   waitForInput: WaitForInputNode,
+  userInput: UserInputNode,
   aiRouter: AiRouterNode,
   pause: PauseNode,
   webhook: WebhookNode,
@@ -291,6 +293,14 @@ export default function FlowBuilderPage() {
       Icon: Clock,
       color: 'text-orange-500',
       defaultData: { prompt: '', captureVariable: '', validation: '' },
+    },
+    {
+      type: 'userInput',
+      label: t('nodes.userInput.label'),
+      category: 'messaging',
+      Icon: FormInput,
+      color: 'text-cyan-500',
+      defaultData: { prompt: '', fieldKey: '', variable: '' },
     },
     {
       type: 'condition',
@@ -577,6 +587,7 @@ export default function FlowBuilderPage() {
                       if (n.type === 'condition') return '#f59e0b';
                       if (n.type === 'sendMessage') return '#10b981';
                       if (n.type === 'waitForInput') return '#f97316';
+                      if (n.type === 'userInput') return '#06b6d4';
                       if (n.type === 'aiRouter') return '#8b5cf6';
                       if (n.type === 'pause') return '#f43f5e';
                       if (n.type === 'webhook') return '#0ea5e9';
