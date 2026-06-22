@@ -15,7 +15,9 @@
     "documentation": "Dokumentasyon",
     "whatsNew": "Bago Ngayon",
     "changelog": "Talaan ng Pagbabago",
-    "admin": "Admin"
+    "admin": "Admin",
+    "broadcasts": "Mga Broadcast",
+    "inbox": "Inbox"
   },
   "title": {
     "newProduct": "Bagong produkto",

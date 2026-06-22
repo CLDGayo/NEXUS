@@ -19,6 +19,8 @@ import LogsPage from './pages/LogsPage.jsx';
 import IntegrationsPage from './pages/IntegrationsPage.jsx';
 import FlowsPage from './pages/FlowsPage.jsx';
 import AudiencePage from './pages/AudiencePage.jsx';
+import BroadcastsPage from './pages/BroadcastsPage.jsx';
+import InboxPage from './pages/InboxPage.jsx';
 import ResourcesPage from './pages/ResourcesPage.jsx';
 import ProductsDashboardPage from './pages/ProductsDashboardPage.jsx';
 import ProductEditPage from './pages/ProductEditPage.jsx';
@@ -30,6 +32,7 @@ import ChangelogPage from './pages/ChangelogPage.jsx';
 import WhatsNewPage from './pages/WhatsNewPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
+import SystemSummaryPage from './pages/SystemSummaryPage.jsx';
 import JoinWorkspacePage from './pages/JoinWorkspacePage.jsx';
 import OAuthCallback from './pages/OAuthCallback.jsx';
 import DocsPage from './pages/DocsPage.jsx';
@@ -98,6 +101,10 @@ export default function App() {
                 }
               />
               <Route path="/audience" element={<AudiencePage />} />
+              {/* Phase 66 — Audience Broadcasting (manager-class). */}
+              <Route path="/broadcasts" element={<BroadcastsPage />} />
+              {/* Phase 67 — Live Chat Inbox & Human Handoff (manager-class). */}
+              <Route path="/inbox" element={<InboxPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route
                 path="/settings/ai-studio"
@@ -111,6 +118,8 @@ export default function App() {
                 path="/settings/workspaces/:slug"
                 element={<WorkspaceDetailPage />}
               />
+              {/* Phase 68 — Admin System Summary encyclopedia (owner/admin). */}
+              <Route path="/admin/summary" element={<SystemSummaryPage />} />
             </Route>
             <Route path="/docs" element={<DocsPage />} />
             <Route path="/docs/*" element={<DocsPage />} />

@@ -14,6 +14,8 @@
     "workspaces": "Workspaces",
     "flows": "Flows",
     "audience": "Audience",
+    "broadcasts": "Broadcasts",
+    "inbox": "Inbox",
     "documentation": "Documentation",
     "whatsNew": "What's New",
     "changelog": "Changelog",

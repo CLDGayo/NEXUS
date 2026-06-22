@@ -33,16 +33,20 @@ from __future__ import annotations
 import json
 import logging
 import re
+import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 
 from rag.config import settings
 from rag.crypto import decrypt_token
 from rag.database.engine import get_sessionmaker
 from rag.database.models import (
+    ContactMessage,
     FlowContact,
     FlowRun,
     MessengerPageTenant,
@@ -246,11 +250,17 @@ async def _send_graph_message(
     sender_id: str,
     text: str,
     token: str,
+    run: FlowRun | None = None,
 ) -> tuple[bool, int | None, str | None]:
     """POST a text message to the Messenger Send API.
 
     Returns (success, status_code, error_summary).
     ALL errors → non-retryable (matches Phase 57 discipline).
+
+    Phase 67 — when *run* is supplied, a successful send is best-effort logged
+    to ``contact_messages`` as an ``outbound`` row so the Live Chat inbox can
+    render the bot/flow side of the conversation. Logging never affects the send
+    result (the transcript is observability, not a delivery guarantee).
     """
     from rag.messenger.worker import _classify_graph_error
 
@@ -270,6 +280,14 @@ async def _send_graph_message(
         return False, None, f"transport: {exc.__class__.__name__}: {exc}"
 
     if resp.status_code < 400:
+        if run is not None:
+            await log_contact_message(
+                tenant_id=run.tenant_id,
+                page_id=run.page_id,
+                sender_id=sender_id,
+                direction="outbound",
+                content=text,
+            )
         return True, resp.status_code, None
 
     try:
@@ -348,6 +366,7 @@ async def _traverse(
                     sender_id=run.sender_id,
                     text=text,
                     token=token,
+                    run=run,
                 )
                 if not success:
                     _log.warning(
@@ -418,6 +437,7 @@ async def _traverse(
                     sender_id=run.sender_id,
                     text=prompt,
                     token=token,
+                    run=run,
                 )
                 if not success:
                     _log.warning(
@@ -510,6 +530,19 @@ async def _traverse(
 
             duration_s = int(node_data.get("durationSeconds") or 86400)
             await set_bot_paused(run.sender_id, duration_s=duration_s)
+            # Phase 67 — also stamp the durable DB pause so the Live Chat inbox
+            # reflects this thread as paused (the Redis key alone is invisible to
+            # the inbox query). Best-effort: a stamp failure must not fail the run.
+            try:
+                await set_contact_bot_paused(
+                    page_id=run.page_id,
+                    sender_id=run.sender_id,
+                    until=datetime.now(timezone.utc) + timedelta(seconds=duration_s),
+                )
+            except Exception as exc:  # noqa: BLE001 — durable mirror is best-effort
+                _log.warning(
+                    "flow_engine.pause_db_stamp_failed run=%s err=%s", run.id, exc
+                )
 
             handoff_msg = str(node_data.get("message") or "")
             if handoff_msg:
@@ -518,6 +551,7 @@ async def _traverse(
                     sender_id=run.sender_id,
                     text=handoff_msg,
                     token=token,
+                    run=run,
                 )
                 if not success:
                     _log.warning(
@@ -829,6 +863,16 @@ async def resume_flow_for_dm(
     Called from the webhook messaging branch after the is_bot_paused() gate.
     Returns True if a waiting run was found and resumed, False otherwise.
     """
+    # Phase 67 — defence in depth. The webhook gate already drops paused threads
+    # before this is scheduled, but a DB-backed human handoff must halt the flow
+    # engine even if that gate is ever bypassed. Returning True ("handled")
+    # ensures the caller does NOT fall through to the orchestrator path either.
+    if await is_contact_bot_paused(page_id, sender_id):
+        _log.info(
+            "flow_engine.resume_skipped_paused page=%s sender=%s", page_id, sender_id
+        )
+        return True
+
     sessionmaker = get_sessionmaker()
     async with sessionmaker() as db:
         run_row = (
@@ -926,3 +970,353 @@ async def resume_flow_for_dm(
             )
 
         return True
+
+
+# ---------------------------------------------------------------------------
+# Phase 66 — Audience Broadcasting
+# ---------------------------------------------------------------------------
+
+
+async def touch_contact_interaction(
+    *,
+    tenant_id: Any,
+    page_id: str,
+    sender_id: str,
+    when: datetime | None = None,
+) -> None:
+    """Stamp ``flow_contacts.last_interaction_at`` for an inbound Messenger message.
+
+    This timestamp is the anchor for Meta's 24-hour standard messaging window
+    enforced by the Broadcasting engine. Call it from the webhook DM branch on
+    every inbound *Messenger message* — NOT on comments, because a public
+    comment does not open the messaging window under Meta policy.
+
+    Opens its own short transaction: the webhook's request session is
+    read-oriented (it backgrounds the heavy work and is not guaranteed to
+    commit), so the stamp must not depend on it. Uses a PostgreSQL
+    ``INSERT ... ON CONFLICT`` upsert keyed on ``uq_flow_contact`` so concurrent
+    inbound turns for the same sender cannot race a select-then-update.
+
+    Best-effort by contract: the caller wraps this in try/except so a DB hiccup
+    here can never 5xx the webhook (a 5xx makes Meta retry-storm).
+    """
+    stamp = when or datetime.now(timezone.utc)
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        stmt = (
+            pg_insert(FlowContact)
+            .values(
+                tenant_id=tenant_id,
+                page_id=page_id,
+                sender_id=sender_id,
+                tags=[],
+                attributes={},
+                hot_lead=False,
+                last_interaction_at=stamp,
+            )
+            .on_conflict_do_update(
+                constraint="uq_flow_contact",
+                set_={"last_interaction_at": stamp},
+            )
+        )
+        await db.execute(stmt)
+        await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Phase 67 — Live Chat Inbox & Human Handoff
+# ---------------------------------------------------------------------------
+
+
+def _pause_active(bot_paused_until: datetime | None, now: datetime) -> bool:
+    """Return True iff a DB-backed bot pause is currently in effect.
+
+    Pure predicate (no I/O) so the gate is trivially unit-testable, mirroring
+    ``broadcasts._within_messaging_window``. ``None`` (never paused / cleared) is
+    never active; a naive timestamp is defensively treated as UTC.
+    """
+    if bot_paused_until is None:
+        return False
+    if bot_paused_until.tzinfo is None:
+        bot_paused_until = bot_paused_until.replace(tzinfo=timezone.utc)
+    return bot_paused_until > now
+
+
+async def is_contact_bot_paused(page_id: str, sender_id: str) -> bool:
+    """True when a human operator has paused the bot for this thread.
+
+    The durable twin of ``hitl.is_bot_paused`` (Redis): checks
+    ``flow_contacts.bot_paused_until`` against ``now``. Fail-open (return False)
+    on any DB error so a transient hiccup can never permanently silence the bot
+    — the inbox send also sets the Redis pause, which gates independently.
+    """
+    if not page_id or not sender_id:
+        return False
+    try:
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            paused_until = await db.scalar(
+                select(FlowContact.bot_paused_until).where(
+                    FlowContact.page_id == page_id,
+                    FlowContact.sender_id == sender_id,
+                )
+            )
+        return _pause_active(paused_until, datetime.now(timezone.utc))
+    except Exception as exc:  # noqa: BLE001 — fail-open like the Redis gate
+        _log.warning(
+            "flow_engine.contact_pause_check_failed sender=%s err=%s",
+            sender_id,
+            exc,
+        )
+        return False
+
+
+async def set_contact_bot_paused(
+    *,
+    page_id: str,
+    sender_id: str,
+    until: datetime,
+) -> None:
+    """Stamp ``flow_contacts.bot_paused_until`` for a thread.
+
+    Upserts on ``uq_flow_contact`` so it is safe even when no contact row exists
+    yet (e.g. a flow ``pause`` node fired before any inbound DM). Opens its own
+    short transaction — callers wrap it in try/except (best-effort durable
+    mirror of the Redis pause).
+    """
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        # tenant_id is required on insert; resolve it from the page mapping so a
+        # brand-new contact row satisfies the NOT NULL FK. If the page is
+        # unmapped we cannot create a row — skip silently (the Redis pause still
+        # applies and the inbox only lists mapped pages).
+        tenant_id = await db.scalar(
+            select(MessengerPageTenant.tenant_id).where(
+                MessengerPageTenant.facebook_page_id == page_id
+            )
+        )
+        if tenant_id is None:
+            return
+        stmt = (
+            pg_insert(FlowContact)
+            .values(
+                tenant_id=tenant_id,
+                page_id=page_id,
+                sender_id=sender_id,
+                tags=[],
+                attributes={},
+                hot_lead=False,
+                bot_paused_until=until,
+            )
+            .on_conflict_do_update(
+                constraint="uq_flow_contact",
+                set_={"bot_paused_until": until},
+            )
+        )
+        await db.execute(stmt)
+        await db.commit()
+
+
+async def log_contact_message(
+    *,
+    tenant_id: Any,
+    page_id: str,
+    sender_id: str,
+    direction: str,
+    content: str,
+) -> None:
+    """Append one row to ``contact_messages`` for the Live Chat inbox transcript.
+
+    Best-effort by contract: every caller (webhook inbound, flow/bot outbound,
+    human operator send) wraps or tolerates failure, because the transcript is
+    observability — a logging hiccup must never break message delivery or 5xx the
+    webhook. Empty ``content`` is dropped (nothing useful to render).
+    """
+    if not content or not sender_id:
+        return
+    try:
+        sessionmaker = get_sessionmaker()
+        async with sessionmaker() as db:
+            db.add(
+                ContactMessage(
+                    tenant_id=tenant_id,
+                    page_id=page_id,
+                    sender_id=sender_id,
+                    direction=direction,
+                    content=content,
+                )
+            )
+            await db.commit()
+    except Exception as exc:  # noqa: BLE001 — transcript is best-effort
+        _log.warning(
+            "flow_engine.contact_message_log_failed sender=%s dir=%s err=%s",
+            sender_id,
+            direction,
+            exc,
+        )
+
+
+async def enqueue_broadcast_job(
+    *,
+    page_id: str,
+    flow_id: str,
+    sender_id: str,
+    tenant_id: str,
+) -> None:
+    """Park one broadcast send on the shared Redis queue (one job per recipient).
+
+    The worker calls ``run_broadcast_job`` for every dequeued ``fb_broadcast``
+    item. Keeping the fan-out on the queue means the ``/fire`` request returns
+    immediately and a large audience can never block the API worker or exceed a
+    request budget.
+    """
+    item = QueuedItem(
+        correlation_id=f"fb_broadcast:{flow_id}:{sender_id}",
+        target_url="",  # unused; URL is built at send time
+        payload={
+            "page_id": page_id,
+            "flow_id": flow_id,
+            "sender_id": sender_id,
+            "tenant_id": tenant_id,
+        },
+        target="fb_broadcast",
+    )
+    await get_queue().enqueue(item)
+
+
+def _find_any_trigger_node(flow: NexusFlow) -> dict[str, Any] | None:
+    """Return the flow's trigger node (any trigger type), or None.
+
+    A broadcast starts a flow regardless of which inbound surface its trigger
+    models: ``_traverse`` skips the trigger node and advances to its successor,
+    so the trigger type only matters for matching live inbound events, not for a
+    programmatic broadcast send.
+    """
+    trigger_types = {"commentTrigger", "dmTrigger", "storyTrigger"}
+    nodes: list[dict[str, Any]] = (flow.flow_state or {}).get("nodes", [])
+    for node in nodes:
+        if node.get("type") in trigger_types:
+            return node
+    return None
+
+
+async def run_broadcast_job(
+    client: httpx.AsyncClient,
+    payload: dict[str, Any],
+) -> tuple[bool, int | None, str | None, bool]:
+    """Execute one ``fb_broadcast`` job: start ``flow_id`` for one ``sender_id``.
+
+    Mirrors ``run_flow_job``'s tenant/token resolution but is driven by an
+    explicit ``flow_id`` (the broadcast target) instead of a comment keyword
+    match, and carries NO ``processed_fb_comments`` idempotency lock — a
+    broadcast is an intentional, operator-initiated send, not a webhook-deduped
+    event.
+
+    CRITICAL: ``retryable`` is **always** ``False`` — any Graph-API error
+    dead-letters this single recipient's job immediately (Phase 57/58
+    discipline) so one bad recipient can never retry-storm the page.
+    """
+    page_id = str(payload.get("page_id") or "")
+    flow_id = str(payload.get("flow_id") or "")
+    sender_id = str(payload.get("sender_id") or "")
+
+    if not page_id or not flow_id or not sender_id:
+        _log.warning(
+            "broadcast.missing_fields page=%s flow=%s sender=%s",
+            page_id,
+            flow_id,
+            sender_id,
+        )
+        return False, None, "missing page_id, flow_id or sender_id", False
+
+    try:
+        flow_uuid = uuid.UUID(flow_id)
+    except ValueError:
+        _log.warning("broadcast.bad_flow_id flow=%s", flow_id)
+        return True, None, "invalid flow_id", False  # drop, not DLQ
+
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        # 1. Resolve tenant + page token from the page mapping.
+        mapping = (
+            await db.execute(
+                select(MessengerPageTenant).where(
+                    MessengerPageTenant.facebook_page_id == page_id
+                )
+            )
+        ).scalar_one_or_none()
+        if mapping is None:
+            _log.warning("broadcast.no_mapping page=%s", page_id)
+            return True, None, "page unmapped", False  # drop, not DLQ
+
+        tenant_id = mapping.tenant_id
+        token = (
+            decrypt_token(mapping.page_access_token_enc)
+            if mapping.page_access_token_enc
+            else None
+        ) or current_page_access_token()
+        if not token:
+            _log.warning("broadcast.no_token page=%s flow=%s", page_id, flow_id)
+            return False, None, "page access token missing", False
+
+        tenant_language = (
+            await db.scalar(
+                select(Tenant.preferred_language).where(Tenant.id == tenant_id)
+            )
+        ) or "en"
+
+        # 2. Load the target flow, scoped to the resolved tenant (defence in
+        #    depth — the router already authorised, but the worker must never
+        #    send a flow that does not belong to the page's tenant).
+        flow = (
+            await db.execute(
+                select(NexusFlow).where(
+                    NexusFlow.id == flow_uuid,
+                    NexusFlow.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if flow is None:
+            _log.warning(
+                "broadcast.flow_not_found flow=%s tenant=%s", flow_id, tenant_id
+            )
+            return True, None, "flow not found for tenant", False  # drop, not DLQ
+
+        trigger_node = _find_any_trigger_node(flow)
+        if trigger_node is None:
+            _log.warning("broadcast.no_trigger flow=%s", flow_id)
+            return False, None, "flow has no trigger node", False
+
+        # 3. Start a fresh FlowRun and traverse from the trigger node.
+        run = FlowRun(
+            tenant_id=tenant_id,
+            flow_id=flow.id,
+            page_id=page_id,
+            sender_id=sender_id,
+            status="active",
+            context={"_input": "", "_broadcast": True},
+        )
+        db.add(run)
+        await db.flush()  # assign run.id
+
+        success, error = await _traverse(
+            client,
+            flow=flow,
+            run=run,
+            start_node=trigger_node,
+            token=token,
+            db=db,
+            language=tenant_language,
+        )
+        await db.commit()
+
+        if not success:
+            _log.warning(
+                "broadcast.traversal_failed flow=%s run=%s err=%s",
+                flow.id,
+                run.id,
+                error,
+            )
+            return False, None, error, False  # retryable=False always
+
+        return True, None, None, False

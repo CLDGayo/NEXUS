@@ -50,6 +50,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     SmallInteger,
     String,
@@ -902,10 +903,73 @@ class FlowContact(Base):
     hot_lead: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
+    # Phase 66 — last inbound *Messenger message* from this sender (UTC). This is
+    # the anchor for Meta's 24-hour standard messaging window: the Broadcasting
+    # engine may only message a sender whose last_interaction_at is within the
+    # last 24h. Stamped by ``touch_contact_interaction`` on every inbound DM
+    # (NOT on comments — a public comment does not open the messaging window).
+    # NULL means "never sent us a Messenger message" → permanently ineligible
+    # for broadcasts until they message the page. Indexed for the window filter.
+    last_interaction_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    # Phase 67 — DB-backed human-handoff pause. When a human operator replies via
+    # the Live Chat inbox, this is stamped to ``now + 24h``; the webhook gate
+    # (``is_contact_bot_paused``) then halts BOTH the NEXUS Flow engine and the
+    # LangGraph orchestrator for this sender until the stamp lapses. The durable
+    # twin of the Phase 37 Redis HITL pause (survives a broker flush + is
+    # queryable for the inbox "paused" badge). NULL / past = bot is live.
+    bot_paused_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ContactMessage(Base):
+    """Phase 67 — append-only Messenger transcript row for the Live Chat inbox.
+
+    One row per inbound or outbound message for a ``(page_id, sender_id)``
+    thread, tenant-scoped. ``direction`` is ``inbound`` (from the user) or
+    ``outbound`` (from the bot/flow OR a human operator). This is the history
+    the inbox UI renders; it is intentionally separate from the RAG ``messages``
+    table (which is the auth-gated chat SPA's conversation log).
+
+    The composite index ``ix_contact_messages_thread`` keeps the per-thread
+    history query index-backed even as the transcript grows.
+    """
+
+    __tablename__ = "contact_messages"
+    __table_args__ = (
+        CheckConstraint(
+            "direction IN ('inbound','outbound')",
+            name="ck_contact_message_direction",
+        ),
+        Index(
+            "ix_contact_messages_thread",
+            "tenant_id",
+            "page_id",
+            "sender_id",
+            "created_at",
+        ),
+        {"schema": "app"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    page_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    sender_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    direction: Mapped[str] = mapped_column(String(16), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
