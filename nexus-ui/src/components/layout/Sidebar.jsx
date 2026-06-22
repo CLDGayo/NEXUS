@@ -96,15 +96,22 @@ function SidebarContent({ collapsed, onNavigate }) {
         {nav.map((item) => {
           const { to, labelKey, Icon } = item;
           const label = t(labelKey);
-          const active = isNavActive(pathname, item);
+          // Phase 68 — external items (e.g. Docs → Quartz site) render as a
+          // plain anchor opening a new tab; they are never "active".
+          const external = item.external;
+          const active = !external && isNavActive(pathname, item);
+          const LinkComp = external ? 'a' : NavLink;
+          const linkProps = external
+            ? { href: to, target: '_blank', rel: 'noopener noreferrer' }
+            : { to };
 
           if (collapsed) {
             return (
               <Tooltip.Root key={to}>
                 <Tooltip.Trigger asChild>
-                  <NavLink to={to} className={linkClass(active)} title={label} onClick={onNavigate}>
+                  <LinkComp {...linkProps} className={linkClass(active)} title={label} onClick={onNavigate}>
                     <Icon size={16} />
-                  </NavLink>
+                  </LinkComp>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
                   <Tooltip.Content
@@ -121,10 +128,10 @@ function SidebarContent({ collapsed, onNavigate }) {
           }
 
           return (
-            <NavLink key={to} to={to} className={linkClass(active)} onClick={onNavigate}>
+            <LinkComp key={to} {...linkProps} className={linkClass(active)} onClick={onNavigate}>
               <Icon size={16} />
               {label}
-            </NavLink>
+            </LinkComp>
           );
         })}
       </nav>

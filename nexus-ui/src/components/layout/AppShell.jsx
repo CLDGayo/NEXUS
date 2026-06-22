@@ -22,7 +22,6 @@ const TITLE_KEYS = {
   '/settings':            'nav.settings',
   '/settings/workspaces': 'nav.workspaces',
   '/changelog':           'nav.whatsNew',
-  '/docs':                'nav.documentation',
   '/profile':             'title.profile',
   '/admin/users':         'title.adminUsers',
 };

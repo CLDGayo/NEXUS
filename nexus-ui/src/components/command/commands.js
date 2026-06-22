@@ -26,6 +26,8 @@ export function buildCommands({ isOwner, canManage, isSuperuser }) {
     Icon: item.Icon,
     kind: 'nav',
     to: item.to,
+    // Phase 68 — external nav items (Docs) open in a new tab from the palette.
+    external: !!item.external,
   }));
 
   const actionCommands = [

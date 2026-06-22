@@ -43,7 +43,11 @@ export default function CommandPalette({ open, onOpenChange }) {
 
   function runCommand(cmd) {
     if (cmd.kind === 'nav') {
-      navigate(cmd.to);
+      if (cmd.external) {
+        window.open(cmd.to, '_blank', 'noopener,noreferrer');
+      } else {
+        navigate(cmd.to);
+      }
     } else if (cmd.kind === 'action' && cmd.id === 'logout') {
       logout();
     }

@@ -31,7 +31,6 @@ import ProfilePage from './pages/ProfilePage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import JoinWorkspacePage from './pages/JoinWorkspacePage.jsx';
 import OAuthCallback from './pages/OAuthCallback.jsx';
-import DocsPage from './pages/DocsPage.jsx';
 import GlassSpinner from './components/graph/GlassSpinner.jsx';
 
 // GraphPage is lazy-loaded to code-split react-force-graph-2d + d3-force
@@ -110,8 +109,6 @@ export default function App() {
                 element={<WorkspaceDetailPage />}
               />
             </Route>
-            <Route path="/docs" element={<DocsPage />} />
-            <Route path="/docs/*" element={<DocsPage />} />
             <Route path="/whats-new" element={<WhatsNewPage />} />
             <Route path="/changelog" element={<ChangelogPage />} />
             <Route path="/profile" element={<ProfilePage />} />

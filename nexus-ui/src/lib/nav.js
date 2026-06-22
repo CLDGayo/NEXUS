@@ -55,8 +55,13 @@ export const MANAGER_NAV = [
   { to: '/flows',               labelKey: 'nav.flows',      Icon: Workflow },
 ];
 
+// Phase 68 — API docs migrated off the in-app SPA viewer to the external
+// Quartz site (nexus.gayo-sphere.cloud). The Docs link is now `external`, so
+// consumers (Sidebar, command palette) open it in a new tab instead of routing.
+export const DOCS_URL = 'https://nexus.gayo-sphere.cloud/docs/01-getting-started/';
+
 export const TRAILING_NAV = [
-  { to: '/docs',                labelKey: 'nav.documentation', Icon: BookOpen },
+  { to: DOCS_URL,               labelKey: 'nav.documentation', Icon: BookOpen, external: true },
   { to: '/whats-new',           labelKey: 'nav.whatsNew',      Icon: Sparkles },
   { to: '/changelog',           labelKey: 'nav.changelog',     Icon: Newspaper },
 ];
