@@ -9,6 +9,7 @@ import {
   Network,
   Package,
   Workflow,
+  Megaphone,
   Settings,
   Building2,
   SlidersHorizontal,
@@ -53,6 +54,8 @@ export const MANAGER_NAV = [
   { to: '/settings/workspaces', labelKey: 'nav.workspaces', Icon: Building2 },
   // Phase 58 — NEXUS Flow visual automation builder (manager-class).
   { to: '/flows',               labelKey: 'nav.flows',      Icon: Workflow },
+  // Phase 66 — Audience Broadcasting (manager-class).
+  { to: '/broadcasts',          labelKey: 'nav.broadcasts', Icon: Megaphone },
 ];
 
 export const TRAILING_NAV = [

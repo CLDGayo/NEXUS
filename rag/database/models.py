@@ -902,6 +902,16 @@ class FlowContact(Base):
     hot_lead: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
+    # Phase 66 — last inbound *Messenger message* from this sender (UTC). This is
+    # the anchor for Meta's 24-hour standard messaging window: the Broadcasting
+    # engine may only message a sender whose last_interaction_at is within the
+    # last 24h. Stamped by ``touch_contact_interaction`` on every inbound DM
+    # (NOT on comments — a public comment does not open the messaging window).
+    # NULL means "never sent us a Messenger message" → permanently ineligible
+    # for broadcasts until they message the page. Indexed for the window filter.
+    last_interaction_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

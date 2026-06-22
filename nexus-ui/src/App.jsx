@@ -18,6 +18,7 @@ import ConversationsPage from './pages/ConversationsPage.jsx';
 import LogsPage from './pages/LogsPage.jsx';
 import IntegrationsPage from './pages/IntegrationsPage.jsx';
 import FlowsPage from './pages/FlowsPage.jsx';
+import BroadcastsPage from './pages/BroadcastsPage.jsx';
 import ResourcesPage from './pages/ResourcesPage.jsx';
 import ProductsDashboardPage from './pages/ProductsDashboardPage.jsx';
 import ProductEditPage from './pages/ProductEditPage.jsx';
@@ -96,6 +97,8 @@ export default function App() {
                   </Suspense>
                 }
               />
+              {/* Phase 66 — Audience Broadcasting (manager-class). */}
+              <Route path="/broadcasts" element={<BroadcastsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route
                 path="/settings/ai-studio"
