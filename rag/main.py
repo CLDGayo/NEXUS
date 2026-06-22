@@ -71,6 +71,7 @@ from rag.messenger.routers import automations as v2_fb_automations  # noqa: E402
 from rag.messenger.routers import broadcasts as v2_fb_broadcasts  # noqa: E402
 from rag.messenger.routers import flows as v2_fb_flows  # noqa: E402
 from rag.messenger.routers import health as v2_health  # noqa: E402
+from rag.messenger.routers import inbox as v2_fb_inbox  # noqa: E402
 from rag.messenger.routers import outbound as v2_outbound  # noqa: E402
 from rag.messenger.routers import webhook as v2_webhook  # noqa: E402
 from rag.auth.oauth import router as v2_google_oauth  # noqa: E402
@@ -341,6 +342,8 @@ app.include_router(v2_fb_automations.router)
 app.include_router(v2_fb_flows.router)
 # Phase 66 — Audience Broadcasting (/api/tenants/{id}/facebook/broadcasts/*).
 app.include_router(v2_fb_broadcasts.router)
+# Phase 67 — Live Chat Inbox & Human Handoff (/api/tenants/{id}/facebook/inbox/*).
+app.include_router(v2_fb_inbox.router)
 # Phase 56 — Google SSO (routers carry their own /api/auth* prefixes).
 app.include_router(v2_google_oauth)
 app.include_router(v2_auth_session)

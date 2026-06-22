@@ -10,6 +10,7 @@ import {
   Package,
   Workflow,
   Megaphone,
+  Inbox,
   Settings,
   Building2,
   SlidersHorizontal,
@@ -56,6 +57,8 @@ export const MANAGER_NAV = [
   { to: '/flows',               labelKey: 'nav.flows',      Icon: Workflow },
   // Phase 66 — Audience Broadcasting (manager-class).
   { to: '/broadcasts',          labelKey: 'nav.broadcasts', Icon: Megaphone },
+  // Phase 67 — Live Chat Inbox & Human Handoff (manager-class).
+  { to: '/inbox',               labelKey: 'nav.inbox',      Icon: Inbox },
 ];
 
 export const TRAILING_NAV = [
