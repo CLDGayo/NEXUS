@@ -58,7 +58,9 @@
       "matchExact": "Exact match",
       "matchContains": "Contains",
       "matchAny": "Any comment",
-      "noKeyword": "No keyword set"
+      "noKeyword": "No keyword set",
+      "onPost": "Specific post",
+      "anyPost": "Any post"
     },
     "dmTrigger": {
       "label": "DM Trigger",
@@ -152,6 +154,11 @@
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
     "crmFieldPlaceholder": "e.g. plan",
+<<<<<<< HEAD
+    "postUrl": "Facebook Post (optional)",
+    "postUrlPlaceholder": "Post URL or ID — blank = any post",
+    "postUrlHint": "Only fire when the comment is on this post."
+=======
     "ruleGroupContext": "Message context",
     "ruleGroupContact": "Contact (CRM)",
     "opTagExists": "Has tag",
@@ -186,5 +193,6 @@
     "showing": "{{from}}–{{to}} of {{total}}",
     "legendSuccess": "Success path",
     "legendError": "Failed node"
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
   }
 }

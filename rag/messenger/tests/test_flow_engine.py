@@ -289,6 +289,19 @@ def _sessionmaker(db: MagicMock):
     return sm
 
 
+def _msg_text(post: dict[str, Any]) -> str:
+    """Human message text from a recorded POST, tolerating both endpoints:
+
+    * Send API  ``/me/messages``               → ``{"message": {"text": ...}}``
+    * Phase 63  ``/{comment_id}/private_replies`` → ``{"message": "..."}``
+    """
+    body = post.get("json") or {}
+    msg = body.get("message")
+    if isinstance(msg, dict):
+        return str(msg.get("text", ""))
+    return str(msg or "")
+
+
 # ---------------------------------------------------------------------------
 # run_flow_job tests
 # ---------------------------------------------------------------------------
@@ -439,8 +452,10 @@ class TestRunFlowJob:
         # One POST to the Graph API (sendMessage node)
         assert len(client.posts) == 1
         post = client.posts[0]
-        assert f"/{_settings.facebook_graph_version}/me/messages" in post["url"]
-        assert post["json"]["message"]["text"] == "Our price is $99"
+        # Phase 63 — the opening message of a comment-triggered run is delivered
+        # as a Private Reply to the comment, not via the Send API.
+        assert "/c_new/private_replies" in post["url"]
+        assert _msg_text(post) == "Our price is $99"
         db.commit.assert_awaited()
 
     async def test_send_message_uses_facebook_graph_version(
@@ -525,7 +540,7 @@ class TestRunFlowJob:
 
         # Prompt was sent via Graph API
         assert len(client.posts) == 1
-        assert client.posts[0]["json"]["message"]["text"] == "Email?"
+        assert _msg_text(client.posts[0]) == "Email?"
 
     async def test_condition_node_picks_true_branch(
         self, monkeypatch: pytest.MonkeyPatch
@@ -569,7 +584,7 @@ class TestRunFlowJob:
         assert delivered is True
         # The true branch sends "Premium!" — verify Graph POST text
         assert len(client.posts) == 1
-        assert client.posts[0]["json"]["message"]["text"] == "Premium!"
+        assert _msg_text(client.posts[0]) == "Premium!"
 
     async def test_condition_node_picks_false_branch(
         self, monkeypatch: pytest.MonkeyPatch
@@ -608,7 +623,7 @@ class TestRunFlowJob:
 
         assert delivered is True
         assert len(client.posts) == 1
-        assert client.posts[0]["json"]["message"]["text"] == "Standard."
+        assert _msg_text(client.posts[0]) == "Standard."
 
     async def test_cycle_guard_marks_run_failed(
         self, monkeypatch: pytest.MonkeyPatch
@@ -758,7 +773,7 @@ class TestAiRouterNode:
         assert error is None
         # Only the sales branch sendMessage should be sent
         assert len(client.posts) == 1
-        assert client.posts[0]["json"]["message"]["text"] == "Sales here!"
+        assert _msg_text(client.posts[0]) == "Sales here!"
 
     async def test_airouter_garbage_llm_output_uses_fallback(
         self, monkeypatch: pytest.MonkeyPatch
@@ -796,7 +811,7 @@ class TestAiRouterNode:
         assert delivered is True
         assert error is None
         assert len(client.posts) == 1
-        assert client.posts[0]["json"]["message"]["text"] == "Fallback response"
+        assert _msg_text(client.posts[0]) == "Fallback response"
 
     async def test_airouter_llm_exception_uses_fallback_no_crash(
         self, monkeypatch: pytest.MonkeyPatch
@@ -833,7 +848,7 @@ class TestAiRouterNode:
         assert error is None
         # Fallback branch should have fired
         assert len(client.posts) == 1
-        assert client.posts[0]["json"]["message"]["text"] == "Safe fallback"
+        assert _msg_text(client.posts[0]) == "Safe fallback"
 
     async def test_airouter_injects_tenant_language_directive(
         self, monkeypatch: pytest.MonkeyPatch
@@ -1007,7 +1022,7 @@ class TestPauseNode:
         assert error is None
         # Handoff message should have been sent via Graph API
         assert len(client.posts) == 1
-        assert client.posts[0]["json"]["message"]["text"] == "A human will contact you soon."
+        assert _msg_text(client.posts[0]) == "A human will contact you soon."
 
 
 # ---------------------------------------------------------------------------
@@ -1256,7 +1271,7 @@ class TestWebhookNode:
         # Both webhook + sendMessage were called
         assert len(client.posts) == 2
         # The second call is the sendMessage POST to Graph API
-        assert client.posts[1]["json"]["message"]["text"] == "Done!"
+        assert _msg_text(client.posts[1]) == "Done!"
 
     async def test_webhook_exception_continues_traversal(
         self, monkeypatch: pytest.MonkeyPatch
@@ -1301,7 +1316,7 @@ class TestWebhookNode:
         assert error is None
         # Both attempted; second is Graph sendMessage
         assert len(client.posts) == 2
-        assert client.posts[1]["json"]["message"]["text"] == "Still here!"
+        assert _msg_text(client.posts[1]) == "Still here!"
 
 
 # ---------------------------------------------------------------------------
@@ -1470,6 +1485,92 @@ class TestWorkerDispatch:
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
+# Phase 63 — commentTrigger post scoping + Private Reply opening
+# ---------------------------------------------------------------------------
+
+
+def _post_scoped_flow(
+    post_id: str = "", keyword: str = "", match_type: str = "any"
+) -> MagicMock:
+    trigger = {
+        "id": "n_trigger",
+        "type": "commentTrigger",
+        "position": {"x": 0, "y": 0},
+        "data": {"keyword": keyword, "matchType": match_type, "post_id": post_id},
+    }
+    return _make_flow(nodes=[trigger], edges=[])
+
+
+@pytest.mark.unit
+class TestPostIdHelpers:
+    """Pure-function tests for the post-id normalisation + match helpers."""
+
+    def test_extract_post_id_pageid_postid(self) -> None:
+        assert _fe._extract_post_id("123456789_987654321") == "987654321"
+
+    def test_extract_post_id_story_fbid_url(self) -> None:
+        assert (
+            _fe._extract_post_id(
+                "https://www.facebook.com/story.php?story_fbid=555&id=111"
+            )
+            == "555"
+        )
+
+    def test_extract_post_id_permalink_longest_run(self) -> None:
+        assert (
+            _fe._extract_post_id("https://www.facebook.com/page/posts/987654321")
+            == "987654321"
+        )
+
+    def test_extract_post_id_plain_and_empty(self) -> None:
+        assert _fe._extract_post_id("987654321") == "987654321"
+        assert _fe._extract_post_id("") == ""
+
+    def test_post_id_matches_any_when_unscoped(self) -> None:
+        assert _fe._post_id_matches("", "100_200") is True
+
+    def test_post_id_matches_tail(self) -> None:
+        assert _fe._post_id_matches("200", "100_200") is True
+        assert _fe._post_id_matches("100_200", "100_200") is True
+
+    def test_post_id_mismatch(self) -> None:
+        assert _fe._post_id_matches("999", "100_200") is False
+
+    def test_post_id_scoped_but_no_inbound(self) -> None:
+        assert _fe._post_id_matches("200", "") is False
+
+
+@pytest.mark.unit
+class TestCommentPostScopeMatch:
+    """_match_flow_for_comment honours the trigger's post scope."""
+
+    def test_unscoped_trigger_matches_any_post(self) -> None:
+        flow = _post_scoped_flow(post_id="")
+        assert _fe._match_flow_for_comment([flow], "hello", "100_200") is flow
+
+    def test_scoped_trigger_matches_its_post(self) -> None:
+        flow = _post_scoped_flow(post_id="200")
+        assert _fe._match_flow_for_comment([flow], "hello", "100_200") is flow
+
+    def test_scoped_trigger_skips_other_post(self) -> None:
+        flow = _post_scoped_flow(post_id="999")
+        assert _fe._match_flow_for_comment([flow], "hello", "100_200") is None
+
+    def test_scoped_trigger_still_requires_keyword(self) -> None:
+        # Post matches but keyword "glow" (contains) does not appear → no match.
+        flow = _post_scoped_flow(post_id="200", keyword="glow", match_type="contains")
+        assert _fe._match_flow_for_comment([flow], "hello there", "100_200") is None
+        assert (
+            _fe._match_flow_for_comment([flow], "I want GLOW please", "100_200") is flow
+        )
+
+
+@pytest.mark.unit
+class TestPrivateReplyOpening:
+    """A comment-triggered run opens via /{comment_id}/private_replies, then
+    falls through to the Send API for subsequent messages."""
+=======
 # Phase 58.4a — analytics instrumentation (_traverse records path + failure)
 # ---------------------------------------------------------------------------
 
@@ -1555,6 +1656,7 @@ class TestConditionContactRules:
     and stubs ``_load_contact`` so the chosen branch is fully deterministic
     (mirrors the TestUpdateCrmNode pattern of patching ``_get_or_create_contact``).
     """
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
 
     @pytest.fixture(autouse=True)
     def _patch_decrypt(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1564,6 +1666,116 @@ class TestConditionContactRules:
     def _patch_overlay(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(_fe, "current_page_access_token", lambda: "overlay-tok")
 
+<<<<<<< HEAD
+    async def test_first_send_is_private_reply_then_send_api(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(_settings, "facebook_graph_version", "v21.0")
+
+        trigger = _comment_trigger_node(keyword="any", match_type="contains")
+        send1 = _send_message_node(node_id="n1", message="First!")
+        send2 = _send_message_node(node_id="n2", message="Second!")
+        flow = _make_flow(
+            nodes=[trigger, send1, send2],
+            edges=[_edge("n_trigger", "n1"), _edge("n1", "n2")],
+        )
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        client = _HttpClient(resp=_Resp(200, {}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": "c_pr",
+                "message": "hi there",
+                "sender_id": "u_pr",
+                "post_id": "100_200",
+            },
+        )
+
+        assert delivered is True
+        assert error is None
+        assert len(client.posts) == 2
+
+        # Opening message → Private Reply (v21.0) to the comment, flat body.
+        opening = client.posts[0]
+        assert "/v21.0/c_pr/private_replies" in opening["url"]
+        assert opening["json"] == {"message": "First!"}
+
+        # Subsequent message → Send API to the sender PSID, nested body.
+        followup = client.posts[1]
+        assert "/v21.0/me/messages" in followup["url"]
+        assert followup["json"]["recipient"]["id"] == "u_pr"
+        assert _msg_text(followup) == "Second!"
+
+    async def test_private_reply_error_dead_letters(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A failing private reply marks the run failed, retryable=False."""
+        trigger = _comment_trigger_node(keyword="any", match_type="contains")
+        send = _send_message_node(node_id="n1", message="First!")
+        flow = _make_flow(nodes=[trigger, send], edges=[_edge("n_trigger", "n1")])
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        client = _HttpClient(resp=_Resp(400, {"error": {"code": 100, "message": "bad"}}))
+        delivered, _status, error, retryable = await _fe.run_flow_job(
+            client,
+            {
+                "page_id": "page_1",
+                "comment_id": "c_pr_err",
+                "message": "hi",
+                "sender_id": "u_pr_err",
+                "post_id": "100_200",
+            },
+        )
+
+        assert delivered is False
+        assert retryable is False
+        assert error is not None
+        # Only the private reply was attempted (traversal halted on failure).
+        assert len(client.posts) == 1
+        assert "/c_pr_err/private_replies" in client.posts[0]["url"]
+
+    async def test_post_scoped_no_match_falls_back_to_phase57(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A post-scoped flow that doesn't match the inbound post → Phase 57
+        private-reply fallback (no flow run)."""
+        flow = _post_scoped_flow(post_id="999")  # scoped to a different post
+        db = _db_stub(page_row=_make_page_row(), flows=[flow])
+        monkeypatch.setattr(_fe, "get_sessionmaker", lambda: _sessionmaker(db))
+
+        fallback_called: list[dict] = []
+
+        async def _stub_fallback(client: Any, payload: dict) -> tuple:
+            fallback_called.append(payload)
+            return True, None, None, False
+
+        import rag.messenger.private_reply as _pr_mod
+
+        original = getattr(_pr_mod, "run_private_reply_job", None)
+        _pr_mod.run_private_reply_job = _stub_fallback  # type: ignore[assignment]
+        try:
+            delivered, _status, _error, retryable = await _fe.run_flow_job(
+                _HttpClient(),
+                {
+                    "page_id": "page_1",
+                    "comment_id": "c_scope_miss",
+                    "message": "hi",
+                    "sender_id": "u_scope",
+                    "post_id": "100_200",
+                },
+            )
+        finally:
+            if original is not None:
+                _pr_mod.run_private_reply_job = original  # type: ignore[assignment]
+
+        assert len(fallback_called) == 1
+        assert delivered is True
+        assert retryable is False
+=======
     @staticmethod
     def _branching_flow(
         operator: str, value: Any = "hot_lead", variable: str = ""
@@ -1677,3 +1889,4 @@ class TestConditionContactRules:
         contact = _make_contact(hot_lead=False)
         client = await self._run_branch(monkeypatch, flow, contact, "c_hl_f", "u_hl_f")
         assert client.posts[0]["json"]["message"]["text"] == "Standard."
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355

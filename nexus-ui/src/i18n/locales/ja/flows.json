@@ -46,7 +46,9 @@
       "matchExact": "Exact match",
       "matchContains": "Contains",
       "matchAny": "Any comment",
-      "noKeyword": "No keyword set"
+      "noKeyword": "No keyword set",
+      "onPost": "特定の投稿",
+      "anyPost": "すべての投稿"
     },
     "dmTrigger": {
       "label": "DM Trigger",
@@ -140,6 +142,11 @@
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
     "crmFieldPlaceholder": "e.g. plan",
+<<<<<<< HEAD
+    "postUrl": "Facebook投稿（任意）",
+    "postUrlPlaceholder": "投稿のURLまたはID — 空欄=すべての投稿",
+    "postUrlHint": "この投稿へのコメントのときのみ起動します。"
+=======
     "ruleGroupContext": "メッセージコンテキスト",
     "ruleGroupContact": "連絡先 (CRM)",
     "opTagExists": "タグあり",
@@ -174,5 +181,6 @@
     "showing": "{{total}}件中 {{from}}–{{to}}",
     "legendSuccess": "成功パス",
     "legendError": "失敗ノード"
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
   }
 }

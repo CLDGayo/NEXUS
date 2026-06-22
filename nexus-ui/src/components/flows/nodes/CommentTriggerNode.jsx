@@ -6,6 +6,7 @@ import NodeShell from './NodeShell.jsx';
  * @typedef {Object} CommentTriggerData
  * @property {string} keyword      - trigger keyword (exact/contains/any)
  * @property {'exact'|'contains'|'any'} matchType
+ * @property {string} [post_id]    - Phase 63: scope to a specific FB post (URL/ID); empty = any post
  * @property {string} [pageId]     - auto-filled from the bound page
  * @property {string} [pageName]   - display name of the bound page
  */
@@ -50,10 +51,22 @@ export default function CommentTriggerNode({ data, selected }) {
         </p>
       )}
 
-      {/* Match badge */}
-      <div className="mt-1.5">
+      {/* Match badge + post scope */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-1">
         <span className="rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
           {matchLabel}
+        </span>
+        <span
+          className={cn(
+            'rounded-full px-1.5 py-0.5 text-[9px] font-medium',
+            data.post_id
+              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+              : 'border border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-500',
+          )}
+        >
+          {data.post_id
+            ? t('nodes.commentTrigger.onPost')
+            : t('nodes.commentTrigger.anyPost')}
         </span>
       </div>
 

@@ -46,7 +46,9 @@
       "matchExact": "Exact match",
       "matchContains": "Contains",
       "matchAny": "Any comment",
-      "noKeyword": "No keyword set"
+      "noKeyword": "No keyword set",
+      "onPost": "Tiyak na post",
+      "anyPost": "Kahit anong post"
     },
     "dmTrigger": {
       "label": "DM Trigger",
@@ -140,6 +142,11 @@
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
     "crmFieldPlaceholder": "e.g. plan",
+<<<<<<< HEAD
+    "postUrl": "Facebook Post (opsyonal)",
+    "postUrlPlaceholder": "URL o ID ng post — blangko = kahit ano",
+    "postUrlHint": "Mag-tu-trigger lang kung ang komento ay nasa post na ito."
+=======
     "ruleGroupContext": "Konteksto ng mensahe",
     "ruleGroupContact": "Kontak (CRM)",
     "opTagExists": "May tag",
@@ -174,5 +181,6 @@
     "showing": "{{from}}–{{to}} ng {{total}}",
     "legendSuccess": "Tamang daan",
     "legendError": "Nabigong node"
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
   }
 }

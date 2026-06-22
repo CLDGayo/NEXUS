@@ -183,15 +183,65 @@ def _find_trigger_node(flow: NexusFlow, trigger_type: str) -> dict[str, Any] | N
     return None
 
 
+def _extract_post_id(raw: str) -> str:
+    """Normalise a tenant-pasted Post URL / ID down to its numeric post id.
+
+    Handles the common Facebook shapes:
+        * ``story_fbid=123`` / ``fbid=123`` query params
+        * ``{pageid}_{postid}`` (the form Meta puts in the webhook ``post_id``)
+        * permalink/posts URLs — falls back to the longest digit run
+    Returns "" for empty input (meaning "not scoped to any specific post").
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    m = re.search(r"(?:story_fbid|fbid)=(\d+)", raw)
+    if m:
+        return m.group(1)
+    if re.fullmatch(r"\d+_\d+", raw):
+        return raw.split("_")[1]
+    runs = re.findall(r"\d+", raw)
+    if not runs:
+        return raw
+    return max(runs, key=len)
+
+
+def _post_id_matches(node_post: str, inbound_post: str) -> bool:
+    """Phase 63 — does the trigger's configured post scope match this comment?
+
+    An empty node post id means "any post on the page" (unchanged behaviour).
+    When the node IS scoped, the inbound ``{pageid}_{postid}`` webhook value is
+    matched against the normalised target on either the whole value or its
+    post-id tail.
+    """
+    target = _extract_post_id(node_post)
+    if not target:
+        return True  # not scoped → match any post
+    if not inbound_post:
+        return False  # scoped, but the webhook carried no post id
+    candidates = {inbound_post, _extract_post_id(inbound_post)}
+    if "_" in inbound_post:
+        candidates.add(inbound_post.split("_", 1)[1])
+    return target in candidates
+
+
 def _match_flow_for_comment(
-    flows: list[NexusFlow], message: str
+    flows: list[NexusFlow], message: str, post_id: str = ""
 ) -> NexusFlow | None:
-    """Pick the first active flow whose commentTrigger keyword matches."""
+    """Pick the first active flow whose commentTrigger matches the comment.
+
+    Phase 63 — a commentTrigger may be scoped to a specific Facebook post via
+    ``data.post_id``; when set, the inbound ``post_id`` must match before the
+    keyword rule is even consulted (ManyChat-style per-post triggers).
+    """
     for flow in flows:
         trigger = _find_trigger_node(flow, "commentTrigger")
         if trigger is None:
             continue
         data = trigger.get("data") or {}
+        node_post = str(data.get("post_id") or data.get("postId") or "")
+        if not _post_id_matches(node_post, post_id):
+            continue
         keyword = str(data.get("keyword") or "").strip()
         match_type = str(data.get("matchType") or data.get("match_type") or "exact")
         # keyword="" / "any" means match everything
@@ -280,6 +330,45 @@ async def _send_graph_message(
     return False, resp.status_code, summary
 
 
+async def _send_private_reply(
+    client: httpx.AsyncClient,
+    *,
+    comment_id: str,
+    text: str,
+    token: str,
+) -> tuple[bool, int | None, str | None]:
+    """POST a Private Reply to a Facebook comment (Graph API v21.0).
+
+    ``POST /{comment_id}/private_replies`` is the only way to open a DM thread
+    from a public comment — the comment author's id is an ASID, not a messaging
+    PSID, so the Send API cannot reach them until they reply in the thread.
+
+    Returns (success, status_code, error_summary); all errors non-retryable
+    (matches Phase 57 / _send_graph_message discipline).
+    """
+    from rag.messenger.worker import _classify_graph_error
+
+    url = f"{_graph_base()}/{comment_id}/private_replies"
+    try:
+        resp = await client.post(
+            url,
+            params={"access_token": token},
+            json={"message": text},
+        )
+    except httpx.HTTPError as exc:
+        return False, None, f"transport: {exc.__class__.__name__}: {exc}"
+
+    if resp.status_code < 400:
+        return True, resp.status_code, None
+
+    try:
+        err_body: Any = resp.json()
+    except ValueError:
+        err_body = None
+    _retryable, summary = _classify_graph_error(resp.status_code, err_body)
+    return False, resp.status_code, summary
+
+
 async def _traverse(
     client: httpx.AsyncClient,
     *,
@@ -288,7 +377,11 @@ async def _traverse(
     start_node: dict[str, Any],
     token: str,
     db: Any,
+<<<<<<< HEAD
+    comment_id: str | None = None,
+=======
     language: str = "en",
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
 ) -> tuple[bool, str | None]:
     """Traverse from start_node, mutating run in-place.
 
@@ -298,10 +391,28 @@ async def _traverse(
 
     Returns (success, error_summary).
     Halts on waitForInput (run.status='waiting') or completion.
+
+    Phase 63 — when ``comment_id`` is set (a comment-triggered run), the FIRST
+    outbound message is delivered as a Private Reply to that comment to open the
+    DM thread; every subsequent message uses the Send API. Resumed DM runs pass
+    ``comment_id=None`` so they always use the Send API.
     """
     current_node: dict[str, Any] | None = start_node
     visit_count = 0
     source_handle: str | None = None
+
+    # Mutable cell so the nested _deliver closure can flip it on first send.
+    opened: list[bool] = [False]
+
+    async def _deliver(text: str) -> tuple[bool, int | None, str | None]:
+        if comment_id and not opened[0]:
+            opened[0] = True
+            return await _send_private_reply(
+                client, comment_id=comment_id, text=text, token=token
+            )
+        return await _send_graph_message(
+            client, sender_id=run.sender_id, text=text, token=token
+        )
 
     while current_node is not None:
         if visit_count >= _NODE_VISIT_CAP:
@@ -343,12 +454,7 @@ async def _traverse(
         if node_type == "sendMessage":
             text = str(node_data.get("message") or node_data.get("text") or "")
             if text:
-                success, _status, error = await _send_graph_message(
-                    client,
-                    sender_id=run.sender_id,
-                    text=text,
-                    token=token,
-                )
+                success, _status, error = await _deliver(text)
                 if not success:
                     _log.warning(
                         "flow_engine.send_failed flow=%s run=%s node=%s err=%s",
@@ -413,12 +519,7 @@ async def _traverse(
             # Send the prompt message.
             prompt = str(node_data.get("prompt") or node_data.get("message") or "")
             if prompt:
-                success, _status, error = await _send_graph_message(
-                    client,
-                    sender_id=run.sender_id,
-                    text=prompt,
-                    token=token,
-                )
+                success, _status, error = await _deliver(prompt)
                 if not success:
                     _log.warning(
                         "flow_engine.wait_prompt_failed flow=%s run=%s err=%s",
@@ -513,12 +614,7 @@ async def _traverse(
 
             handoff_msg = str(node_data.get("message") or "")
             if handoff_msg:
-                success, _status, error = await _send_graph_message(
-                    client,
-                    sender_id=run.sender_id,
-                    text=handoff_msg,
-                    token=token,
-                )
+                success, _status, error = await _deliver(handoff_msg)
                 if not success:
                     _log.warning(
                         "flow_engine.pause_msg_failed flow=%s run=%s err=%s",
@@ -670,6 +766,7 @@ async def run_flow_job(
     comment_id = str(payload.get("comment_id") or "")
     message = str(payload.get("message") or "")
     sender_id = str(payload.get("sender_id") or "")
+    post_id = str(payload.get("post_id") or "")
 
     if not page_id or not comment_id:
         _log.warning(
@@ -746,7 +843,7 @@ async def run_flow_job(
             .all()
         )
 
-        matched_flow = _match_flow_for_comment(list(flows), message)
+        matched_flow = _match_flow_for_comment(list(flows), message, post_id)
 
         if matched_flow is None:
             # ------------------------------------------------------------------
@@ -799,7 +896,11 @@ async def run_flow_job(
             start_node=trigger_node,
             token=token,
             db=db,
+<<<<<<< HEAD
+            comment_id=comment_id,
+=======
             language=tenant_language,
+>>>>>>> 650bcf383de67c478c3645f74c83bca902a58355
         )
 
         await db.commit()

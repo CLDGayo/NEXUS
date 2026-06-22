@@ -84,6 +84,16 @@ function CommentTriggerInspector({ data, patch }) {
   const { t } = useTranslation('flows');
   return (
     <>
+      <Field label={t('inspector.postUrl')}>
+        <TextInput
+          value={data.post_id}
+          onChange={(v) => patch({ post_id: v })}
+          placeholder={t('inspector.postUrlPlaceholder')}
+        />
+        <span className="text-[10px] text-nexus-muted">
+          {t('inspector.postUrlHint')}
+        </span>
+      </Field>
       <Field label={t('inspector.keyword')}>
         <TextInput
           value={data.keyword}
