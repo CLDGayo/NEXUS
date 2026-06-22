@@ -17,7 +17,8 @@
     "changelog": "Journal des modifications",
     "admin": "Administration",
     "broadcasts": "Diffusions",
-    "inbox": "Boîte de réception"
+    "inbox": "Boîte de réception",
+    "systemSummary": "Résumé du système"
   },
   "title": {
     "newProduct": "Nouveau produit",
