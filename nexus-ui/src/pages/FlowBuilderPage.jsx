@@ -12,7 +12,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck, Webhook, UserCog, Activity, ListChecks, PencilLine, FormInput } from 'lucide-react';
+import { ArrowLeft, Save, MessageCircle, Mail, GitBranch, Send, Clock, AlertCircle, CheckCircle, Brain, UserCheck, Webhook, UserCog, Timer, Activity, ListChecks, PencilLine, FormInput } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFlows } from '../hooks/useFlows.js';
 import CommentTriggerNode from '../components/flows/nodes/CommentTriggerNode.jsx';
@@ -25,6 +25,7 @@ import AiRouterNode from '../components/flows/nodes/AiRouterNode.jsx';
 import PauseNode from '../components/flows/nodes/PauseNode.jsx';
 import WebhookNode from '../components/flows/nodes/WebhookNode.jsx';
 import UpdateCrmNode from '../components/flows/nodes/UpdateCrmNode.jsx';
+import SmartDelayNode from '../components/flows/nodes/SmartDelayNode.jsx';
 import NodeInspector from '../components/flows/NodeInspector.jsx';
 import NodePalette, { FLOW_DND_TYPE } from '../components/flows/NodePalette.jsx';
 import ExecutionsList from '../components/flows/ExecutionsList.jsx';
@@ -41,6 +42,7 @@ const NODE_TYPES = {
   pause: PauseNode,
   webhook: WebhookNode,
   updateCrm: UpdateCrmNode,
+  smartDelay: SmartDelayNode,
 };
 
 /**
@@ -332,6 +334,13 @@ export default function FlowBuilderPage() {
       Icon: UserCog,
       color: 'text-teal-500',
       defaultData: { action: 'add_tag', value: '', field: '' },
+    },
+    {
+      type: 'smartDelay',
+      label: t('nodes.smartDelay.label'),
+      Icon: Timer,
+      color: 'text-indigo-500',
+      defaultData: { days: 0, hours: 1, minutes: 0 },
     },
     {
       type: 'webhook',

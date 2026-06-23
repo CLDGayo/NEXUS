@@ -110,6 +110,11 @@
       "actionRemoveTag": "Remove Tag",
       "actionSetField": "Set Field",
       "actionSetHotLead": "Flag Hot Lead"
+    },
+    "smartDelay": {
+      "label": "Smart Delay",
+      "badge": "Wait {{delay}}",
+      "noDelay": "No delay set"
     }
   },
   "inspector": {
@@ -160,6 +165,11 @@
     "crmValuePlaceholder": "e.g. VIP",
     "crmField": "Field name",
     "crmFieldPlaceholder": "e.g. plan",
+    "delayDays": "Days",
+    "delayHours": "Hours",
+    "delayMinutes": "Minutes",
+    "delayHint": "Resumes after {{days}}d {{hours}}h {{minutes}}m",
+    "delayZeroHint": "Set a wait time (days, hours, or minutes).",
     "ruleGroupContext": "Message context",
     "ruleGroupContact": "Contact (CRM)",
     "opTagExists": "Has tag",

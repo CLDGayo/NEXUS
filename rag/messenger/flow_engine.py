@@ -71,6 +71,31 @@ _CONTACT_RULES = frozenset(
     {"tag_exists", "tag_not_exists", "attribute_equals", "is_hot_lead"}
 )
 
+# Phase 64 — Smart Delay. Clamp configured waits to 90 days so a fat-fingered
+# value can't park a run effectively forever.
+_MAX_DELAY_SECONDS = 90 * 86400
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _delay_seconds(node_data: dict[str, Any]) -> int:
+    """Total wait seconds from a smartDelay node's days/hours/minutes (clamped)."""
+
+    def _coerce(value: Any) -> int:
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            return 0
+
+    total = (
+        _coerce(node_data.get("days")) * 86400
+        + _coerce(node_data.get("hours")) * 3600
+        + _coerce(node_data.get("minutes")) * 60
+    )
+    return min(total, _MAX_DELAY_SECONDS)
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -459,6 +484,35 @@ async def _traverse(
                 run.id,
                 node_id,
                 run.sender_id,
+            )
+            return True, None
+
+        if node_type == "smartDelay":
+            # Phase 64 — pause traversal for a configured duration, then resume
+            # via the background poller (resume_due_flows). The continuation is
+            # serialized onto the FlowRun row (status='sleeping' + resume_at +
+            # current_node_id), so a server restart loses nothing.
+            delay_s = _delay_seconds(node_data)
+            next_after = _next_node(flow, node_id)
+            if next_after is None:
+                # Terminal delay — nothing to resume into; complete now.
+                run.status = "completed"
+                run.current_node_id = None
+                return True, None
+            if delay_s <= 0:
+                # Zero / invalid delay — fall through immediately.
+                source_handle = None
+                current_node = next_after
+                continue
+            run.status = "sleeping"
+            run.current_node_id = node_id
+            run.resume_at = _utcnow() + timedelta(seconds=delay_s)
+            _log.info(
+                "flow_engine.sleeping flow=%s run=%s node=%s resume_at=%s",
+                flow.id,
+                run.id,
+                node_id,
+                run.resume_at.isoformat(),
             )
             return True, None
 
@@ -1320,3 +1374,132 @@ async def run_broadcast_job(
             return False, None, error, False  # retryable=False always
 
         return True, None, None, False
+
+
+# ---------------------------------------------------------------------------
+# Phase 64 — Smart Delay: time-based resume poller
+# ---------------------------------------------------------------------------
+
+
+async def _resolve_page_token(db: Any, page_id: str) -> str | None:
+    """Page access token for ``page_id`` (decrypted binding → global overlay)."""
+
+    row = (
+        await db.execute(
+            select(MessengerPageTenant).where(
+                MessengerPageTenant.facebook_page_id == page_id
+            )
+        )
+    ).scalar_one_or_none()
+    token = (
+        decrypt_token(row.page_access_token_enc)
+        if row is not None and row.page_access_token_enc
+        else None
+    )
+    return token or current_page_access_token()
+
+
+async def _resume_one_delayed(
+    client: httpx.AsyncClient, run_id: uuid.UUID, cutoff: datetime
+) -> bool:
+    """Claim and resume a single due sleeping run. Returns True if handled."""
+
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        # Claim under SKIP LOCKED so concurrent workers never double-resume.
+        run = (
+            await db.execute(
+                select(FlowRun)
+                .where(
+                    FlowRun.id == run_id,
+                    FlowRun.status == "sleeping",
+                    FlowRun.resume_at <= cutoff,
+                )
+                .with_for_update(skip_locked=True)
+            )
+        ).scalar_one_or_none()
+        if run is None:
+            return False  # already claimed elsewhere or no longer due
+
+        flow = (
+            await db.execute(select(NexusFlow).where(NexusFlow.id == run.flow_id))
+        ).scalar_one_or_none()
+        delay_node_id = run.current_node_id
+        next_node = _next_node(flow, delay_node_id or "") if flow is not None else None
+
+        if flow is None or next_node is None:
+            # Flow deleted, or the delay node has no outgoing edge — close the
+            # run rather than letting it linger as a permanently-sleeping row.
+            run.status = "completed"
+            run.current_node_id = None
+            run.resume_at = None
+            await db.commit()
+            return True
+
+        token = await _resolve_page_token(db, run.page_id)
+        if not token:
+            _log.warning(
+                "flow_engine.resume_delay_no_token run=%s page=%s",
+                run.id,
+                run.page_id,
+            )
+            run.status = "failed"
+            run.resume_at = None
+            await db.commit()
+            return True
+
+        run.status = "active"
+        run.resume_at = None
+        success, error = await _traverse(
+            client,
+            flow=flow,
+            run=run,
+            start_node=next_node,
+            token=token,
+            db=db,
+        )
+        await db.commit()
+        if not success:
+            _log.warning("flow_engine.resume_delay_failed run=%s err=%s", run.id, error)
+        return True
+
+
+async def resume_due_flows(
+    client: httpx.AsyncClient,
+    *,
+    batch: int = 25,
+    now: datetime | None = None,
+) -> int:
+    """Resume every sleeping FlowRun whose ``resume_at`` is due.
+
+    Polled by the outbound worker each loop iteration. DB-backed scheduling:
+    the only state is the ``flow_runs`` rows, so an API/worker restart simply
+    re-scans overdue runs on boot — nothing is lost. Returns the count resumed.
+    """
+
+    cutoff = now or _utcnow()
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as db:
+        due_ids = (
+            (
+                await db.execute(
+                    select(FlowRun.id)
+                    .where(
+                        FlowRun.status == "sleeping",
+                        FlowRun.resume_at <= cutoff,
+                    )
+                    .order_by(FlowRun.resume_at)
+                    .limit(batch)
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+    resumed = 0
+    for run_id in due_ids:
+        if await _resume_one_delayed(client, run_id, cutoff):
+            resumed += 1
+    if resumed:
+        _log.info("flow_engine.resume_due_flows resumed=%d", resumed)
+    return resumed
