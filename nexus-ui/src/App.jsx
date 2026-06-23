@@ -35,7 +35,6 @@ import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import SystemSummaryPage from './pages/SystemSummaryPage.jsx';
 import JoinWorkspacePage from './pages/JoinWorkspacePage.jsx';
 import OAuthCallback from './pages/OAuthCallback.jsx';
-import DocsPage from './pages/DocsPage.jsx';
 import GlassSpinner from './components/graph/GlassSpinner.jsx';
 
 // GraphPage is lazy-loaded to code-split react-force-graph-2d + d3-force
@@ -121,8 +120,6 @@ export default function App() {
               {/* Phase 68 — Admin System Summary encyclopedia (owner/admin). */}
               <Route path="/admin/summary" element={<SystemSummaryPage />} />
             </Route>
-            <Route path="/docs" element={<DocsPage />} />
-            <Route path="/docs/*" element={<DocsPage />} />
             <Route path="/whats-new" element={<WhatsNewPage />} />
             <Route path="/changelog" element={<ChangelogPage />} />
             <Route path="/profile" element={<ProfilePage />} />

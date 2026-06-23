@@ -65,9 +65,13 @@ export const MANAGER_NAV = [
 ];
 
 export const TRAILING_NAV = [
-  { to: '/docs',                labelKey: 'nav.documentation', Icon: BookOpen },
   { to: '/whats-new',           labelKey: 'nav.whatsNew',      Icon: Sparkles },
   { to: '/changelog',           labelKey: 'nav.changelog',     Icon: Newspaper },
 ];
+
+// Phase 68 — admin-only System Summary encyclopedia (replaces the old /docs
+// item). Renders only for managers (owner OR admin); the /admin/summary route
+// is also guarded by RequireManager, so the FE hide is UX, not security.
+export const ADMIN_SUMMARY_NAV_ITEM = { to: '/admin/summary', labelKey: 'nav.systemSummary', Icon: BookOpen };
 
 export const ADMIN_NAV_ITEM = { to: '/admin/users', labelKey: 'nav.admin', Icon: Shield };

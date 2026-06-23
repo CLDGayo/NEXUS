@@ -19,7 +19,8 @@
     "documentation": "Documentation",
     "whatsNew": "What's New",
     "changelog": "Changelog",
-    "admin": "Admin"
+    "admin": "Admin",
+    "systemSummary": "System Summary"
   },
   "title": {
     "newProduct": "New product",

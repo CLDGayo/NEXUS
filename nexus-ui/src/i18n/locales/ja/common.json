@@ -17,7 +17,8 @@
     "changelog": "変更履歴",
     "admin": "管理",
     "broadcasts": "ブロードキャスト",
-    "inbox": "受信トレイ"
+    "inbox": "受信トレイ",
+    "systemSummary": "システム概要"
   },
   "title": {
     "newProduct": "新規製品",

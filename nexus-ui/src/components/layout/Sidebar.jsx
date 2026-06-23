@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useTenant } from '../../hooks/useTenant.js';
 import { useSidebar } from '../../hooks/useSidebar.js';
-import { CORE_NAV, OWNER_NAV, MANAGER_NAV, TRAILING_NAV, ADMIN_NAV_ITEM } from '../../lib/nav.js';
+import { CORE_NAV, OWNER_NAV, MANAGER_NAV, TRAILING_NAV, ADMIN_SUMMARY_NAV_ITEM, ADMIN_NAV_ITEM } from '../../lib/nav.js';
 
 function initialFor(user) {
   const source = user?.display_name || user?.email || '?';
@@ -52,6 +52,7 @@ function SidebarContent({ collapsed, onNavigate }) {
     ...(isOwner ? OWNER_NAV : []),
     ...(canManage ? MANAGER_NAV : []),
     ...TRAILING_NAV,
+    ...(canManage ? [ADMIN_SUMMARY_NAV_ITEM] : []),
     ...(isSuperuser ? [ADMIN_NAV_ITEM] : []),
   ];
   const displayName = user?.display_name || user?.email || t('sidebar.account');
