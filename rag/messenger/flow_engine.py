@@ -1448,13 +1448,6 @@ async def _resume_one_delayed(
             await db.commit()
             return True
 
-        # Phase 59 — resume under the tenant's default chatbot language.
-        tenant_language = (
-            await db.scalar(
-                select(Tenant.preferred_language).where(Tenant.id == run.tenant_id)
-            )
-        ) or "en"
-
         run.status = "active"
         run.resume_at = None
         success, error = await _traverse(
@@ -1464,7 +1457,6 @@ async def _resume_one_delayed(
             start_node=next_node,
             token=token,
             db=db,
-            language=tenant_language,
         )
         await db.commit()
         if not success:

@@ -131,6 +131,10 @@ def _run(current: str | None = None, status: str = "active"):
         sender_id="u_1",
         tenant_id=uuid.uuid4(),
         context={},
+        # Phase 61 — _traverse records the visited path + failed node for the
+        # executions overlay; the fake run must carry these fields too.
+        path=[],
+        failed_node_id=None,
     )
 
 
